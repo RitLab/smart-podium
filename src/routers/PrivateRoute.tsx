@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import HomeLayout from "../layouts/HomeLayout";
 import FeatureLayout from "../layouts/FeatureLayout";
@@ -14,59 +19,58 @@ const PrivateRoute = () => {
     <Router>
       <Routes>
         <Route
-          path="/"
+          path="/dashboard"
           element={
-            <HomeLayout>
-              <Home />
-            </HomeLayout>
-          }
-        />
+            <>
+              <Route
+                element={
+                  <HomeLayout>
+                    <Home />
+                  </HomeLayout>
+                }
+              />
 
-        <Route
-          path="/calendar"
-          element={
-            <FeatureLayout>
-              <Calendar />
-            </FeatureLayout>
-          }
-        />
+              <Route
+                path="/calendar"
+                element={
+                  <FeatureLayout>
+                    <Calendar />
+                  </FeatureLayout>
+                }
+              />
 
-        <Route
-          path="/student"
-          element={
-            <FeatureLayout>
-              <Student />
-            </FeatureLayout>
-          }
-        />
+              <Route
+                path="/student"
+                element={
+                  <FeatureLayout>
+                    <Student />
+                  </FeatureLayout>
+                }
+              />
 
-        <Route
-          path="/module"
-          element={
-            <FeatureLayout>
-              <Module />
-            </FeatureLayout>
-          }
-        />
+              <Route
+                path="/module"
+                element={
+                  <FeatureLayout>
+                    <Module />
+                  </FeatureLayout>
+                }
+              />
 
-        <Route
-          path="/internet"
-          element={
-            <FeatureLayout>
-              <Internet />
-            </FeatureLayout>
+              <Route
+                path="/internet"
+                element={
+                  <FeatureLayout>
+                    <Internet />
+                  </FeatureLayout>
+                }
+              />
+            </>
           }
         />
 
         {/* Default redirect */}
-        <Route
-          path="*"
-          element={
-            <HomeLayout>
-              <Home />
-            </HomeLayout>
-          }
-        />
+        <Route path="*" element={<Navigate to="/dashboard" replace={true} />} />
       </Routes>
     </Router>
   );
