@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { EyeIcon, EyeOffIcon, MailIcon, LockIcon } from "lucide-react";
+import { MailIcon, LockIcon } from "lucide-react";
 
 import { Logo } from "../../components/Icon";
 import { login } from "../../stores/auth";
@@ -13,7 +13,6 @@ const Login = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
