@@ -1,6 +1,6 @@
 import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import User from "../../assets/images/user.png";
 import {
@@ -10,8 +10,13 @@ import {
   UsersIcon,
   WebIcon,
 } from "../../components/Icon";
+import { useDispatch } from "react-redux";
+import { logout } from "../../stores/auth";
 
 const Home = () => {
+  const dispatch = useDispatch();
+  const navigation = useNavigate();
+
   const [time, setTime] = useState(new Date());
 
   const menus = [
@@ -53,6 +58,11 @@ const Home = () => {
     month: "long",
     year: "numeric",
   });
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigation("/login");
+  };
 
   return (
     <div className="flex flex-col items-center justify-between">
@@ -100,7 +110,10 @@ const Home = () => {
           </div>
         </div>
 
-        <button className="flex flex-col items-center gap-1 bg-red-500 text-white px-3 py-2 rounded-lg font-medium text-sm hover:bg-red-600 transition">
+        <button
+          className="flex flex-col items-center gap-1 bg-red-500 text-white px-3 py-2 rounded-lg font-medium text-sm hover:bg-red-600 transition"
+          onClick={handleLogout}
+        >
           <LogOut size={18} />
           <div>Keluar</div>
         </button>

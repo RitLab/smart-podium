@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { EyeIcon, EyeOffIcon, MailIcon, LockIcon } from "lucide-react";
 
 import { Logo } from "../../components/Icon";
-import { useDispatch } from "react-redux";
 import { login } from "../../stores/auth";
 
 const Login = () => {
