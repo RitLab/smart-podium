@@ -1,5 +1,5 @@
 const Internet = () => {
-  return <></>;
+  return <>Internet</>;
 };
 
 export default Internet;

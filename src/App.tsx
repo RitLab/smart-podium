@@ -1,16 +1,16 @@
-import { useSelector } from "react-redux";
+import { Suspense } from "react";
+import { BrowserRouter } from "react-router-dom";
 
-import PublicRoute from "./routers/PublicRoute";
-import PrivateRoute from "./routers/PrivateRoute";
+import Routes from "./routers";
 
 function App() {
-  const user = useSelector((state: any) => state.auth.user);
-
-  if (user) {
-    return <PrivateRoute />;
-  }
-
-  return <PublicRoute />;
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <BrowserRouter>
+        <Routes />
+      </BrowserRouter>
+    </Suspense>
+  );
 }
 
 export default App;

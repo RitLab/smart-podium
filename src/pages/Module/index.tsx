@@ -1,5 +1,5 @@
 const Module = () => {
-  return <></>;
+  return <>Module</>;
 };
 
 export default Module;

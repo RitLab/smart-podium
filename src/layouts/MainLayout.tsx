@@ -1,19 +1,15 @@
-import { ReactNode } from "react";
+import { Outlet } from "react-router-dom";
 import bgImage from "../assets/images/bg-solid.png";
 
-interface Props {
-  children: ReactNode;
-}
-
-const FeatureLayout = ({ children }: Props) => {
+const MainLayout = () => {
   return (
     <div
       className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      {children}
+      <Outlet />
     </div>
   );
 };
 
-export default FeatureLayout;
+export default MainLayout;
