@@ -12,6 +12,7 @@ import {
   WebIcon,
 } from "../../components/Icon";
 import { logout } from "../../stores/auth";
+import { formattedDate, formattedTime } from "../../utils";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -47,18 +48,6 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const formattedTime = time.toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const formattedDate = time.toLocaleDateString("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
   const handleLogout = () => {
     dispatch(logout());
     navigation("/login");
@@ -69,8 +58,10 @@ const Home = () => {
       <Logo />
 
       <div className="text-center mt-20">
-        <h1 className="text-6xl font-bold text-gray-800">{formattedTime}</h1>
-        <p className="text-gray-600 mt-6">{formattedDate}</p>
+        <h1 className="text-6xl font-bold text-gray-800">
+          {formattedTime(time)}
+        </h1>
+        <p className="text-gray-600 mt-6">{formattedDate(time)}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center mt-20">

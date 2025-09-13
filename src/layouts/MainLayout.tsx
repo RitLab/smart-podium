@@ -4,7 +4,6 @@ import { Clock9, Timer } from "lucide-react";
 
 import bgImage from "../assets/images/bg-solid.png";
 import user from "../assets/images/user.png";
-
 import {
   BookIcon,
   CalendarIcon,
@@ -13,6 +12,7 @@ import {
   UsersIcon,
   WebIcon,
 } from "../components/Icon";
+import { formatDuration, formattedDate, formattedTime } from "../utils";
 
 const MainLayout = () => {
   const location = useLocation();
@@ -51,25 +51,6 @@ const MainLayout = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const formattedDate = time.toLocaleDateString("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  const formattedTime = time.toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const formatDuration = (seconds: number) => {
-    const h = String(Math.floor(seconds / 3600)).padStart(2, "0");
-    const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
-    const s = String(seconds % 60).padStart(2, "0");
-    return `${h} : ${m} : ${s}`;
-  };
-
   return (
     <div
       className="h-screen w-full bg-cover bg-center flex"
@@ -85,11 +66,11 @@ const MainLayout = () => {
           {/* Profile */}
           <div className="flex items-center gap-6">
             {/* Profile Card */}
-            <div className="flex items-center bg-white shadow-md rounded-md p-3 w-auto">
+            <div className="flex items-center bg-white shadow-md rounded-md p-4 w-auto">
               <img
                 src={user}
                 alt="User"
-                className="h-12 w-12 rounded-full object-cover"
+                className="h-14 w-14 rounded-full object-cover"
               />
               <div className="mx-3">
                 <h3 className="font-semibold text-gray-900">Bastian Sinaga</h3>
@@ -101,17 +82,19 @@ const MainLayout = () => {
 
             {/* Time Card */}
             <div className="flex bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-md shadow-md">
-              <div className="px-5 py-3 border-r border-white/30 flex flex-col justify-center">
-                <p className="text-sm">{formattedDate}</p>
-                <div className="flex items-center gap-2">
-                  <Clock9 />
-                  <span className="text-lg font-bold">{formattedTime}</span>
+              <div className="p-4 border-r border-white/30 flex flex-col justify-center">
+                <p className="text-sm">{formattedDate(time)}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Clock9 size={16} />
+                  <span className="text-lg font-bold">
+                    {formattedTime(time)}
+                  </span>
                 </div>
               </div>
-              <div className="px-5 py-3 flex flex-col justify-center">
+              <div className="p-4 flex flex-col justify-center">
                 <p className="text-sm">Waktu Belajar</p>
-                <div className="flex items-center gap-2">
-                  <Timer />
+                <div className="flex items-center gap-2 mt-1">
+                  <Timer size={16} />
                   <span className="text-lg font-bold">
                     {formatDuration(studySeconds)}
                   </span>
