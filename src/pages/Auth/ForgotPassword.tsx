@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MailIcon } from "lucide-react";
 
 import { Logo } from "../../components/Icon";
+import Input from "../../components/Input";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -37,20 +38,14 @@ const ForgotPassword = () => {
       </div>
 
       <form className="space-y-4 mt-6" onSubmit={handleLogin}>
-        <div className="relative">
-          <MailIcon
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            size={18}
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <Input
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          leftIcon={<MailIcon size={18} />}
+        />
 
         {error && (
           <div className="text-sm text-red-600 text-center">{error}</div>

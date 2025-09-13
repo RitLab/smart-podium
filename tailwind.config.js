@@ -1,6 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  safelist: [
+    {
+      pattern:
+        /(text|from|to)-(blue|green|yellow|red|orange)-(50|100|500|600|700|800)/,
+      variants: ["hover"],
+    },
+  ],
   theme: {
     extend: {
       fontFamily: {

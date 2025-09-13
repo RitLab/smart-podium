@@ -1,6 +1,7 @@
-import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import { NavLink, useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 
 import User from "../../assets/images/user.png";
 import {
@@ -10,7 +11,6 @@ import {
   UsersIcon,
   WebIcon,
 } from "../../components/Icon";
-import { useDispatch } from "react-redux";
 import { logout } from "../../stores/auth";
 
 const Home = () => {
@@ -84,7 +84,7 @@ const Home = () => {
                 className="flex flex-col items-center hover:scale-105"
               >
                 <div
-                  className={`h-32 w-32 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-br from-${menu.color}-400 to-${menu.color}-600`}
+                  className={`h-32 w-32 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`}
                 >
                   <Icon width={80} height={80} className="text-white" />
                 </div>

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { EyeIcon, EyeOffIcon, MailIcon, LockIcon } from "lucide-react";
 
 import { Logo } from "../../components/Icon";
 import { login } from "../../stores/auth";
+import Input from "../../components/Input";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const Login = () => {
         setError("Salah");
       } else {
         dispatch(login({ email, password }));
+        navigate("/home");
       }
       setLoading(false);
     }, 1000);
@@ -55,42 +57,23 @@ const Login = () => {
       </div>
 
       <form className="space-y-4 mt-6" onSubmit={handleSubmit}>
-        <div className="relative">
-          <MailIcon
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            size={18}
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <Input
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          leftIcon={<MailIcon size={18} />}
+        />
 
-        <div className="mb-2 relative">
-          <LockIcon
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            size={18}
-          />
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full pl-10 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-          >
-            {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-          </button>
-        </div>
+        <Input
+          placeholder="Password"
+          variant="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          leftIcon={<LockIcon size={18} />}
+        />
 
         {error && (
           <div className="text-sm text-red-600 text-center">{error}</div>

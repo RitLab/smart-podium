@@ -85,7 +85,7 @@ const MainLayout = () => {
           {/* Profile */}
           <div className="flex items-center gap-6">
             {/* Profile Card */}
-            <div className="flex items-center bg-white shadow-md rounded-xl p-3 w-auto">
+            <div className="flex items-center bg-white shadow-md rounded-md p-3 w-auto">
               <img
                 src={user}
                 alt="User"
@@ -100,7 +100,7 @@ const MainLayout = () => {
             </div>
 
             {/* Time Card */}
-            <div className="flex bg-gradient-to-r from-blue-700 to-cyan-500 text-white rounded-xl shadow-md">
+            <div className="flex bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-md shadow-md">
               <div className="px-5 py-3 border-r border-white/30 flex flex-col justify-center">
                 <p className="text-sm">{formattedDate}</p>
                 <div className="flex items-center gap-2">
@@ -138,9 +138,9 @@ const MainLayout = () => {
               <NavLink
                 key={menu.path}
                 to={menu.path}
-                className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${
+                className={`h-12 w-12 flex items-center justify-center rounded-lg transition hover:scale-105 bg-gradient-to-b ${
                   isActive
-                    ? `from-${menu.color}-400 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`
+                    ? `from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`
                     : `from-gray-50 to-gray-100 hover:from-${menu.color}-50 hover:to-${menu.color}-100`
                 }`}
               >
