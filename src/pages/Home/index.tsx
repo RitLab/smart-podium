@@ -1,7 +1,8 @@
 import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
+import User from "../../assets/images/user.png";
 import {
   BookIcon,
   CalendarIcon,
@@ -9,12 +10,31 @@ import {
   UsersIcon,
   WebIcon,
 } from "../../components/Icon";
-import User from "../../assets/images/user.png";
-import MenuCard from "../../components/MenuCard";
 
 const Home = () => {
-  const navigation = useNavigate();
   const [time, setTime] = useState(new Date());
+
+  const menus = [
+    {
+      path: "/calendar",
+      label: "Kalender Akademik",
+      icon: CalendarIcon,
+      color: "blue",
+    },
+    {
+      path: "/student",
+      label: "Manajemen Peserta Didik",
+      icon: UsersIcon,
+      color: "green",
+    },
+    {
+      path: "/module",
+      label: "Materi Pelajaran",
+      icon: BookIcon,
+      color: "yellow",
+    },
+    { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
+  ];
 
   // Biar jam real-time
   useEffect(() => {
@@ -44,30 +64,25 @@ const Home = () => {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center mt-20">
-        <MenuCard
-          icon={<CalendarIcon className="h-16 w-16" />}
-          label="Kalender Akademik"
-          bg="from-blue-400 to-blue-600"
-          handleClick={() => navigation("/calendar")}
-        />
-        <MenuCard
-          icon={<UsersIcon className="h-16 w-16" />}
-          label="Manajemen Peserta Didik"
-          bg="from-green-400 to-green-600"
-          handleClick={() => navigation("/student")}
-        />
-        <MenuCard
-          icon={<BookIcon className="h-16 w-16" />}
-          label="Materi Pelajaran"
-          bg="from-yellow-400 to-yellow-500"
-          handleClick={() => navigation("/module")}
-        />
-        <MenuCard
-          icon={<WebIcon className="h-16 w-16" />}
-          label="Penampil Web"
-          bg="from-red-400 to-red-500"
-          handleClick={() => navigation("/internet")}
-        />
+        {menus.map((menu) => {
+          const Icon = menu.icon;
+          return (
+            <>
+              <NavLink
+                key={menu.path}
+                to={menu.path}
+                className="flex flex-col items-center hover:scale-105"
+              >
+                <div
+                  className={`h-32 w-32 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-br from-${menu.color}-400 to-${menu.color}-600`}
+                >
+                  <Icon width={80} height={80} className="text-white" />
+                </div>
+                <p className="mt-4 text-gray-700 font-medium">{menu.label}</p>
+              </NavLink>
+            </>
+          );
+        })}
       </div>
 
       <div className="w-full max-w-md flex items-center justify-between p-4 rounded-xl shadow-md bg-white border mt-20">
