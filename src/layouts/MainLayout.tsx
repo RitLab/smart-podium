@@ -1,6 +1,6 @@
+import { Clock9, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Clock9, Timer } from "lucide-react";
 
 import bgImage from "../assets/images/bg-solid.png";
 import user from "../assets/images/user.png";
@@ -53,7 +53,7 @@ const MainLayout = () => {
 
   return (
     <div
-      className="h-screen w-full bg-cover bg-center flex"
+      className="min-h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
       {/* Main Content */}

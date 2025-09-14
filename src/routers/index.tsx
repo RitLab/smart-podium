@@ -1,5 +1,4 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
-import { useSelector } from "react-redux";
 
 import AuthLayout from "../layouts/AuthLayout";
 import HomeLayout from "../layouts/HomeLayout";
@@ -16,10 +15,13 @@ import Internet from "../pages/Internet";
 import File from "../pages/Module/File";
 
 const PrivateRoute = ({ redirectTo = "/login" }) => {
-  const user = useSelector((state: any) => state.auth.user);
-  console.log("user", user);
+  const token = localStorage.getItem("token");
 
-  return user ? <Outlet /> : <Navigate to={redirectTo} replace />;
+  return token && token !== "" ? (
+    <Outlet />
+  ) : (
+    <Navigate to={redirectTo} replace />
+  );
 };
 
 export default () => {

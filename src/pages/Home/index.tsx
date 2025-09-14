@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 
 import User from "../../assets/images/user.png";
 import {
@@ -11,13 +10,16 @@ import {
   UsersIcon,
   WebIcon,
 } from "../../components/Icon";
-import { logout } from "../../stores/auth";
+
 import { formattedDate, formattedTime } from "../../utils";
+import { useLogout } from "../Auth/hook";
+import { useToast } from "../../components/Toast";
 
 const Home = () => {
-  const dispatch = useDispatch();
   const navigation = useNavigate();
+  const { showToast } = useToast();
 
+  const [loading, setLoading] = useState(false);
   const [time, setTime] = useState(new Date());
 
   const menus = [
@@ -48,9 +50,17 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigation("/login");
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await useLogout();
+      showToast("Sukses", "success");
+      navigation("/login");
+    } catch (error: any) {
+      showToast(error.message || error, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -105,8 +115,17 @@ const Home = () => {
           className="flex flex-col items-center gap-1 bg-red-500 text-white px-3 py-2 rounded-lg font-medium text-sm hover:bg-red-600 transition"
           onClick={handleLogout}
         >
-          <LogOut size={18} />
-          <div>Keluar</div>
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin" size={18} />
+              <div>Loading...</div>
+            </>
+          ) : (
+            <>
+              <LogOut size={18} />
+              <div>Keluar</div>
+            </>
+          )}
         </button>
       </div>
     </div>
