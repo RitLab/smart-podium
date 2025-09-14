@@ -10,7 +10,7 @@ type CalendarState = {
 
 const initialState: CalendarState = {
   events: [],
-  loading: false,
+  loading: true,
   error: null,
 };
 
