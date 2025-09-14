@@ -1,10 +1,10 @@
-import axios, { AxiosError, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 const bypassToken = ["/login", "/forgot-password"];
 
 axios.defaults.baseURL = "http://localhost:3000";
 
-axios.interceptors.request.use((config) => {
+axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   let token = localStorage.getItem("token");
   if (token && !bypassToken.some((item) => config.url?.includes(item))) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -13,7 +13,7 @@ axios.interceptors.request.use((config) => {
 });
 
 axios.interceptors.response.use(
-  (res) => res,
+  (res: AxiosResponse) => res,
   (error: AxiosError) => {
     const { data, status } = error.response!;
     switch (status) {

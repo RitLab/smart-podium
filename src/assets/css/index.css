@@ -31,3 +31,11 @@ body,
     font-weight: 700;
     font-style: normal;
 }
+
+#calendarEvent::-webkit-scrollbar {
+    @apply w-2;
+}
+
+#calendarEvent::-webkit-scrollbar-thumb {
+    @apply bg-blue-800 rounded-full;
+}
