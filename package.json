@@ -7,11 +7,15 @@
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mock": "json-server --watch src/mock/db.json --port 3000"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
+    "axios": "^1.12.1",
     "clsx": "^2.1.1",
+    "json-server": "^1.0.0-beta.3",
+    "json-server-auth": "^2.1.0",
     "lucide-react": "^0.544.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

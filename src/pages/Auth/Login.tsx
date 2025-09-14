@@ -6,6 +6,7 @@ import { MailIcon, LockIcon } from "lucide-react";
 import { Logo } from "../../components/Icon";
 import { login } from "../../stores/auth";
 import Input from "../../components/Input";
+import { useLogin } from "./hook";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -29,17 +30,26 @@ const Login = () => {
       return;
     }
 
-    setLoading(true);
+    // setLoading(true);
+    // setTimeout(() => {
+    //   if (password === "1111") {
+    //     setError("Salah");
+    //   } else {
+    //     dispatch(login({ email, password }));
+    //     navigate("/home");
+    //   }
+    //   setLoading(false);
+    // }, 1000);
 
-    setTimeout(() => {
-      if (password === "1111") {
-        setError("Salah");
-      } else {
-        dispatch(login({ email, password }));
-        navigate("/home");
-      }
+    try {
+      setLoading(true);
+      await useLogin({ email, password });
+      navigate("/home");
+    } catch (error: any) {
+      setError(error?.message || error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const handleSSO = () => {};

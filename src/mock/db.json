@@ -1,0 +1,13 @@
+{
+    "logout": {},
+    "forgot-password": {},
+    "user": {
+        "id": "1",
+        "name": "Budi Ashari",
+        "username": "Bret",
+        "email": "test@mail.com",
+        "password": "123",
+        "class": "Sastra Nuklir",
+        "photo": "https://picsum.photos/id/91/400/400"
+    }
+}
