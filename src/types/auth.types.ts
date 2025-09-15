@@ -1,21 +1,21 @@
-export type Login = {
+export interface Login {
   email: string;
   password: string;
-};
+}
 
-export type ForgotPassword = {
+export interface ForgotPassword {
   email: string;
-};
+}
 
-export type Auth = {
+export interface Auth {
   token: string;
-};
+}
 
-export type User = {
+export interface User {
   id: string;
   name: string;
   username: string;
   email: string;
   class: string;
   photo: string;
-};
+}

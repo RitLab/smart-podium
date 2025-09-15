@@ -69,9 +69,9 @@ export const Badge: React.FC<BadgeProps> = ({
         className
       )}
     >
-      {iconLeft && <span className="w-3 h-3">{iconLeft}</span>}
+      {iconLeft && <span>{iconLeft}</span>}
       {children}
-      {iconRight && <span className="w-3 h-3">{iconRight}</span>}
+      {iconRight && <span>{iconRight}</span>}
     </span>
   );
 };

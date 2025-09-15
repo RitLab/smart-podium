@@ -80,7 +80,7 @@ const MainLayout = () => {
                   className="h-14 w-14 rounded-full object-cover"
                   onError={(e) => {
                     const target = e.currentTarget as HTMLImageElement;
-                    target.onerror = null; // cegah infinite loop kalau fallback juga gagal
+                    target.onerror = null;
                     target.src = userImage;
                   }}
                 />

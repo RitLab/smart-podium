@@ -1,18 +1,18 @@
 {
-    "login": {
-        "token": "123134123123"
-    },
-    "logout": {},
-    "forgot-password": {},
-    "user": {
-        "id": "1",
-        "name": "Bastian Sinaga",
-        "email": "test@mail.com",
-        "password": "123",
-        "class": "Pelatihan Penanggulangan Terorisme",
-        "photo": "https://picsum.photos/id/91/400/400"
-    },
-    "events": [
+  "login": {
+    "token": "123134123123"
+  },
+  "logout": {},
+  "forgot-password": {},
+  "user": {
+    "id": "1",
+    "name": "Bastian Sinaga",
+    "email": "test@mail.com",
+    "password": "123",
+    "class": "Pelatihan Penanggulangan Terorisme",
+    "photo": "https://i.pravatar.cc/300"
+  },
+  "events": [
     {
       "date": "1 September 2025",
       "day": "Senin",
@@ -99,5 +99,85 @@
         }
       ]
     }
-  ]
+  ],
+  "participant": {
+    "page": 1,
+    "per_page": 12,
+    "page_count": 20,
+    "total_count": 240,
+    "data": [
+      {
+        "id": 1,
+        "name": "Tanto Sunoto",
+        "image": "https://i.pravatar.cc/300?img=1",
+        "present": true
+      },
+      {
+        "id": 2,
+        "name": "Tatiana Mango",
+        "image": "https://i.pravatar.cc/300?img=2",
+        "present": true
+      },
+      {
+        "id": 3,
+        "name": "Paityn Dias",
+        "image": "https://i.pravatar.cc/300?img=3",
+        "present": false
+      },
+      {
+        "id": 4,
+        "name": "Angel Lubin",
+        "image": "https://i.pravatar.cc/300?img=4",
+        "present": true
+      },
+      {
+        "id": 5,
+        "name": "Randy Arcand",
+        "image": "https://i.pravatar.cc/300?img=5",
+        "present": true
+      },
+      {
+        "id": 6,
+        "name": "Jocelyn Siphron",
+        "image": "https://i.pravatar.cc/300?img=6",
+        "present": true
+      },
+      {
+        "id": 7,
+        "name": "Tanto Sunoto",
+        "image": "https://i.pravatar.cc/300?img=7",
+        "present": true
+      },
+      {
+        "id": 8,
+        "name": "Tatiana Mango",
+        "image": "https://i.pravatar.cc/300?img=8",
+        "present": true
+      },
+      {
+        "id": 9,
+        "name": "Paityn Dias",
+        "image": "https://i.pravatar.cc/300?img=9",
+        "present": false
+      },
+      {
+        "id": 10,
+        "name": "Angel Lubin",
+        "image": "https://i.pravatar.cc/300?img=10",
+        "present": true
+      },
+      {
+        "id": 11,
+        "name": "Randy Arcand",
+        "image": "https://i.pravatar.cc/300?img=11",
+        "present": true
+      },
+      {
+        "id": 12,
+        "name": "Jocelyn Siphron",
+        "image": "https://i.pravatar.cc/300?img=12",
+        "present": true
+      }
+    ]
+  }
 }
