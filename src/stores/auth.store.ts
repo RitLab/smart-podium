@@ -15,7 +15,7 @@ const initialState: AuthState = {
 };
 
 export const loginUser = createAsyncThunk<Auth, Login>(
-  "calendar/loginUser",
+  "auth/loginUser",
   async (payload, { rejectWithValue }) => {
     try {
       const data = await authService.login(payload);
@@ -27,7 +27,7 @@ export const loginUser = createAsyncThunk<Auth, Login>(
 );
 
 export const logoutUser = createAsyncThunk<Auth>(
-  "calendar/logoutUser",
+  "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
       const data = await authService.logout();
@@ -39,7 +39,7 @@ export const logoutUser = createAsyncThunk<Auth>(
 );
 
 export const forgotPassUser = createAsyncThunk<Auth, ForgotPassword>(
-  "calendar/forgotPassUser",
+  "auth/forgotPassUser",
   async (payload, { rejectWithValue }) => {
     try {
       const data = await authService.forgotPassword(payload);
@@ -51,7 +51,7 @@ export const forgotPassUser = createAsyncThunk<Auth, ForgotPassword>(
 );
 
 export const fetchUser = createAsyncThunk<User>(
-  "calendar/fetchUser",
+  "auth/fetchUser",
   async (_, { rejectWithValue }) => {
     try {
       const data = await authService.getUser();

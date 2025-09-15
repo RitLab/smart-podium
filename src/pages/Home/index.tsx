@@ -103,7 +103,7 @@ const Home = () => {
             className="h-12 w-12 rounded-full object-cover"
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;
-              target.onerror = null; // cegah infinite loop kalau fallback juga gagal
+              target.onerror = null;
               target.src = userImage;
             }}
           />
