@@ -1,27 +1,25 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { MailIcon } from "lucide-react";
 
 import { Logo } from "../../components/Icon";
 import Input from "../../components/Input";
+import { AppDispatch, RootState } from "../../stores";
+import { forgotPassUser } from "../../stores/auth.store";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleLogin = async (e: any) => {
     e.preventDefault();
-    setError("");
-
-    setLoading(true);
-
-    setTimeout(() => {
+    dispatch(forgotPassUser({ email }));
+    if (!error) {
       navigate("/login");
-      setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

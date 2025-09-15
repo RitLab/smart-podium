@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Loader2, LogOut } from "lucide-react";
 
-import User from "../../assets/images/user.png";
+import userImage from "../../assets/images/user.png";
 import {
   BookIcon,
   CalendarIcon,
@@ -40,12 +40,10 @@ const menus = [
 
 const Home = () => {
   const navigation = useNavigate();
-
   const dispatch = useDispatch<AppDispatch>();
   const { user, error, loading } = useSelector(
     (state: RootState) => state.auth
   );
-
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -100,9 +98,14 @@ const Home = () => {
       <div className="w-full max-w-md flex items-center justify-between p-4 rounded-xl shadow-md bg-white border mt-20">
         <div className="flex items-center gap-3">
           <img
-            src={User}
-            alt="Profile"
+            src={user?.photo}
+            alt={user?.name}
             className="h-12 w-12 rounded-full object-cover"
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              target.onerror = null; // cegah infinite loop kalau fallback juga gagal
+              target.src = userImage;
+            }}
           />
           <div>
             <h3 className="font-semibold text-gray-800">{user?.name}</h3>

@@ -6,11 +6,10 @@
     "forgot-password": {},
     "user": {
         "id": "1",
-        "name": "Budi Ashari",
-        "username": "Bret",
+        "name": "Bastian Sinaga",
         "email": "test@mail.com",
         "password": "123",
-        "class": "Sastra Nuklir",
+        "class": "Pelatihan Penanggulangan Terorisme",
         "photo": "https://picsum.photos/id/91/400/400"
     },
     "events": [

@@ -10,7 +10,6 @@ import { loginUser } from "../../stores/auth.store";
 
 const Login = () => {
   const navigate = useNavigate();
-
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.auth);
 

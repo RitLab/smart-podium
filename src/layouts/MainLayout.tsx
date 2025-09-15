@@ -1,9 +1,10 @@
 import { Clock9, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import bgImage from "../assets/images/bg-solid.png";
-import user from "../assets/images/user.png";
+import userImage from "../assets/images/user.png";
 import {
   BookIcon,
   CalendarIcon,
@@ -13,36 +14,42 @@ import {
   WebIcon,
 } from "../components/Icon";
 import { formatDuration, formattedDate, formattedTime } from "../utils";
+import { AppDispatch, RootState } from "../stores";
+import { fetchUser } from "../stores/auth.store";
+
+const menus = [
+  {
+    path: "/calendar",
+    label: "Kalender Akademik",
+    icon: CalendarIcon,
+    color: "blue",
+  },
+  {
+    path: "/student",
+    label: "Manajemen Peserta Didik",
+    icon: UsersIcon,
+    color: "green",
+  },
+  {
+    path: "/module",
+    label: "Materi Pelajaran",
+    icon: BookIcon,
+    color: "yellow",
+  },
+  { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
+];
 
 const MainLayout = () => {
   const location = useLocation();
-
-  const menus = [
-    {
-      path: "/calendar",
-      label: "Kalender Akademik",
-      icon: CalendarIcon,
-      color: "blue",
-    },
-    {
-      path: "/student",
-      label: "Manajemen Peserta Didik",
-      icon: UsersIcon,
-      color: "green",
-    },
-    {
-      path: "/module",
-      label: "Materi Pelajaran",
-      icon: BookIcon,
-      color: "yellow",
-    },
-    { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
-  ];
-
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [time, setTime] = useState(new Date());
   const [studySeconds, setStudySeconds] = useState(0);
 
-  // Real-time clock
+  useEffect(() => {
+    dispatch(fetchUser());
+  }, [dispatch]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTime(new Date());
@@ -56,34 +63,33 @@ const MainLayout = () => {
       className="min-h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      {/* Main Content */}
-      <div className={`flex-1 flex flex-col ${location.pathname !== '/internet' ? 'pt-20 pl-24 pr-12' : 'p-8'}`}>
+      <div
+        className={`flex-1 flex flex-col ${
+          location.pathname !== "/internet" ? "pt-20 pl-24 pr-12" : "p-8"
+        }`}
+      >
         {location.pathname !== "/internet" && (
-          // Header
           <header className="flex items-center justify-between">
-            {/* Logo */}
             <Logo />
 
-            {/* Profile */}
             <div className="flex items-center gap-6">
-              {/* Profile Card */}
               <div className="flex items-center bg-white shadow-md rounded-md p-4 w-auto">
                 <img
-                  src={user}
-                  alt="User"
+                  src={user?.photo}
+                  alt={user?.name}
                   className="h-14 w-14 rounded-full object-cover"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.onerror = null; // cegah infinite loop kalau fallback juga gagal
+                    target.src = userImage;
+                  }}
                 />
                 <div className="mx-3">
-                  <h3 className="font-semibold text-gray-900">
-                    Bastian Sinaga
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Pelatihan Penanggulangan Terorisme
-                  </p>
+                  <h3 className="font-semibold text-gray-900">{user?.name}</h3>
+                  <p className="text-sm text-gray-600">{user?.class}</p>
                 </div>
               </div>
 
-              {/* Time Card */}
               <div className="flex bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-md shadow-md">
                 <div className="p-4 border-r border-white/30 flex flex-col justify-center">
                   <p className="text-sm">{formattedDate(time)}</p>
@@ -108,14 +114,16 @@ const MainLayout = () => {
           </header>
         )}
 
-        {/* Body kosong (bisa diisi konten lain) */}
-        <main className={`flex-1 ${location.pathname !== '/internet' ? 'py-24' : 'py-8'}`}>
+        <main
+          className={`flex-1 ${
+            location.pathname !== "/internet" ? "py-24" : "py-8"
+          }`}
+        >
           <Outlet />
         </main>
       </div>
 
       <aside className="flex flex-col justify-center">
-        {/* Sidebar Right */}
         <div className="w-20 h-auto flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
           {menus.map((menu) => {
             const Icon = menu.icon;
