@@ -1,21 +1,21 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { MailIcon, LockIcon } from "lucide-react";
 
 import { Logo } from "../../components/Icon";
-import { login } from "../../stores/auth";
 import Input from "../../components/Input";
-import { useLogin } from "./hook";
+import { AppDispatch, RootState } from "../../stores";
+import { loginUser } from "../../stores/auth.store";
 
 const Login = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleForgotPassword = () => {
     navigate("/forgot-password");
@@ -23,32 +23,10 @@ const Login = () => {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setError("");
 
-    if (!email.trim() || !password) {
-      setError("Email dan password wajib diisi.");
-      return;
-    }
-
-    // setLoading(true);
-    // setTimeout(() => {
-    //   if (password === "1111") {
-    //     setError("Salah");
-    //   } else {
-    //     dispatch(login({ email, password }));
-    //     navigate("/home");
-    //   }
-    //   setLoading(false);
-    // }, 1000);
-
-    try {
-      setLoading(true);
-      await useLogin({ email, password });
+    dispatch(loginUser({ email, password }));
+    if (!error) {
       navigate("/home");
-    } catch (error: any) {
-      setError(error?.message || error);
-    } finally {
-      setLoading(false);
     }
   };
 

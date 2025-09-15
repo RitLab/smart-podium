@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 
-import authReducer from "./auth";
-import calendarReducer from './calendar';
+import authReducer from "./auth.store";
+import calendarReducer from "./calendar";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    calendar: calendarReducer
+    calendar: calendarReducer,
   },
 });
 

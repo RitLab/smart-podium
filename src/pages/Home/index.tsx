@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Loader2, LogOut } from "lucide-react";
 
@@ -12,54 +13,54 @@ import {
 } from "../../components/Icon";
 
 import { formattedDate, formattedTime } from "../../utils";
-import { useLogout } from "../Auth/hook";
-import { useToast } from "../../components/Toast";
+import { AppDispatch, RootState } from "../../stores";
+import { fetchUser, logoutUser } from "../../stores/auth.store";
+
+const menus = [
+  {
+    path: "/calendar",
+    label: "Kalender Akademik",
+    icon: CalendarIcon,
+    color: "blue",
+  },
+  {
+    path: "/student",
+    label: "Manajemen Peserta Didik",
+    icon: UsersIcon,
+    color: "green",
+  },
+  {
+    path: "/module",
+    label: "Materi Pelajaran",
+    icon: BookIcon,
+    color: "yellow",
+  },
+  { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
+];
 
 const Home = () => {
   const navigation = useNavigate();
-  const { showToast } = useToast();
 
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, error, loading } = useSelector(
+    (state: RootState) => state.auth
+  );
+
   const [time, setTime] = useState(new Date());
 
-  const menus = [
-    {
-      path: "/calendar",
-      label: "Kalender Akademik",
-      icon: CalendarIcon,
-      color: "blue",
-    },
-    {
-      path: "/student",
-      label: "Manajemen Peserta Didik",
-      icon: UsersIcon,
-      color: "green",
-    },
-    {
-      path: "/module",
-      label: "Materi Pelajaran",
-      icon: BookIcon,
-      color: "yellow",
-    },
-    { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
-  ];
-
-  // Biar jam real-time
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    dispatch(fetchUser());
+  }, [dispatch]);
+
   const handleLogout = async () => {
-    try {
-      setLoading(true);
-      await useLogout();
-      showToast("Sukses", "success");
+    dispatch(logoutUser());
+    if (!error) {
       navigation("/login");
-    } catch (error: any) {
-      showToast(error.message || error, "error");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -104,10 +105,8 @@ const Home = () => {
             className="h-12 w-12 rounded-full object-cover"
           />
           <div>
-            <h3 className="font-semibold text-gray-800">Bastian Sinaga</h3>
-            <p className="text-sm text-gray-600">
-              Pelatihan Penanggulangan Terorisme
-            </p>
+            <h3 className="font-semibold text-gray-800">{user?.name}</h3>
+            <p className="text-sm text-gray-600">{user?.class}</p>
           </div>
         </div>
 
