@@ -9,7 +9,6 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "mock": "json-server --watch src/mock/db.json --port 3000",
-    "mock:calendar": "json-server --watch src/mock/calendar.json --port 3000"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
