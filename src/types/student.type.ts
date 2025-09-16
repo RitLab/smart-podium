@@ -1,12 +1,16 @@
 import { Pagination } from "./index.types";
 
-export interface Participant {
+export interface Student {
   id: 1;
   name: string;
   image: string;
-  present: boolean;
+  status: "present" | "absent" | "loa";
 }
 
-export interface ParticipantList extends Pagination {
-  data: Participant[];
+export interface StudentList {
+  total_present: number;
+  total_absent: number;
+  total_loa: number;
+  students: Student[];
+  pagination: Pagination;
 }

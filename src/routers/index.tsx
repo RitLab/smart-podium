@@ -14,13 +14,9 @@ import Internet from "../pages/Internet";
 import File from "../pages/Module/File";
 
 const PrivateRoute = ({ redirectTo = "/login" }) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token") || "";
 
-  return token && token !== "" ? (
-    <Outlet />
-  ) : (
-    <Navigate to={redirectTo} replace />
-  );
+  return token !== "" ? <Outlet /> : <Navigate to={redirectTo} replace />;
 };
 
 export default () => {
@@ -37,7 +33,7 @@ export default () => {
         <Route element={<PrivateRoute />}>
           <Route path="file" element={<File />} />
 
-          <Route element={<MainLayout />}>
+          <Route path="/" element={<MainLayout />}>
             <Route path="home" element={<Home />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="student" element={<Student />} />

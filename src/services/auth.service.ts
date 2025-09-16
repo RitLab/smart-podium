@@ -10,6 +10,10 @@ export const authService = {
     const data = await handler.get<any>("/logout");
     return data;
   },
+  forgotPassword: async (payload: ForgotPassword): Promise<any> => {
+    const data = await handler.get<any>("/forgot-password", payload);
+    return data;
+  },
   //   login: async (payload: Login): Promise<Auth> => {
   //     const data = await handler.post<Auth>("/login", payload);
   //     return data;
@@ -18,10 +22,10 @@ export const authService = {
   //     const data = await handler.post<any>("/logout");
   //     return data;
   //   },
-  forgotPassword: async (payload: ForgotPassword): Promise<any> => {
-    const data = await handler.post<any>("/forgot-password", payload);
-    return data;
-  },
+  // forgotPassword: async (payload: ForgotPassword): Promise<any> => {
+  //   const data = await handler.post<any>("/forgot-password", payload);
+  //   return data;
+  // },
   getUser: async (): Promise<User> => {
     const data = await handler.get<User>(`/user`);
     return data;

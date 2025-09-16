@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import bgImage from "../assets/images/bg-solid.png";
-import userImage from "../assets/images/user.png";
 import {
   BookIcon,
   CalendarIcon,
@@ -13,7 +12,8 @@ import {
   UsersIcon,
   WebIcon,
 } from "../components/Icon";
-import LoadingOverlay from "../components/Loading";
+import { Image } from "../components/Image";
+import { LoadingOverlay } from "../components/Loading";
 import { formatDuration, formattedDate, formattedTime } from "../utils";
 import { AppDispatch, RootState } from "../stores";
 import { fetchUser } from "../stores/auth.store";
@@ -65,16 +65,7 @@ const Navbar = () => {
 
       <div className="flex items-center gap-6">
         <div className="flex items-center bg-white shadow-md rounded-md p-4 w-auto">
-          <img
-            src={user?.photo}
-            alt={user?.name}
-            className="h-14 w-14 rounded-full object-cover"
-            onError={(e) => {
-              const target = e.currentTarget as HTMLImageElement;
-              target.onerror = null;
-              target.src = userImage;
-            }}
-          />
+          <Image src={user?.photo} alt={user?.name} className="h-14 w-14" />
           <div className="mx-3">
             <h3 className="font-semibold text-gray-900">{user?.name}</h3>
             <p className="text-sm text-gray-600">{user?.class}</p>
@@ -113,23 +104,25 @@ const Sidebar = () => {
           const isActive = location.pathname === menu.path;
 
           return (
-            <NavLink
-              key={menu.path}
-              to={menu.path}
-              className={`h-12 w-12 flex items-center justify-center rounded-lg transition hover:scale-105 bg-gradient-to-b ${
-                isActive
-                  ? `from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`
-                  : `from-gray-50 to-gray-100 hover:from-${menu.color}-50 hover:to-${menu.color}-100`
-              }`}
-            >
-              <Icon
-                width={24}
-                height={24}
-                className={`${
-                  isActive ? `text-white` : `text-${menu.color}-600`
-                }`}
-              />
-            </NavLink>
+            <div key={menu.path}>
+              <NavLink to={menu.path}>
+                <div
+                  className={`h-12 w-12 flex items-center justify-center rounded-lg transition hover:scale-105 bg-gradient-to-b ${
+                    isActive
+                      ? `from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`
+                      : `from-gray-50 to-gray-100 hover:from-${menu.color}-50 hover:to-${menu.color}-100`
+                  }`}
+                >
+                  <Icon
+                    width={24}
+                    height={24}
+                    className={`${
+                      isActive ? `text-white` : `text-${menu.color}-600`
+                    }`}
+                  />
+                </div>
+              </NavLink>
+            </div>
           );
         })}
 
@@ -166,8 +159,8 @@ const MainLayout = () => {
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        {loading && <LoadingOverlay />}
         <Outlet />
+        {loading && <LoadingOverlay />}
       </div>
     );
   }
@@ -188,8 +181,8 @@ const MainLayout = () => {
           <Outlet />
         </main>
       </div>
-
       <Sidebar />
+      {loading && <LoadingOverlay />}
     </div>
   );
 };

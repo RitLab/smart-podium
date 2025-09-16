@@ -18,7 +18,7 @@ const ForgotPassword = () => {
   const handleLogin = async (e: any) => {
     e.preventDefault();
     dispatch(forgotPassUser({ email }));
-    if (!error) {
+    if (!error && !loading) {
       navigate("/login");
     }
   };

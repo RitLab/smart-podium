@@ -44,7 +44,8 @@ axios.interceptors.response.use(
 export const responseBody = <T>(response: AxiosResponse<T>) => response.data;
 
 export default {
-  get: <T>(url: string) => axios.get<T>(url).then(responseBody),
+  get: <T>(url: string, params?: {}) =>
+    axios.get<T>(url, { params }).then(responseBody),
   post: <T>(url: string, body?: {}) =>
     axios.post<T>(url, body).then(responseBody),
   put: <T>(url: string, body?: {}) =>

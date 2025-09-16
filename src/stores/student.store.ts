@@ -1,33 +1,43 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Participant, ParticipantList } from "../types/student.type";
+import { Student, StudentList } from "../types/student.type";
 import { studentService } from "../services/student.services";
 import { Pagination } from "../types/index.types";
 import { setError, setLoading } from "./ui.store";
 
+type TotalType = {
+  total_present: number;
+  total_absent: number;
+  total_loa: number;
+};
+
 type StudentState = {
-  participantList?: Participant[];
-  pagination?: Pagination;
+  studentList: Student[];
+  pagination: Pagination;
+  total: TotalType;
 };
 
 const initialState: StudentState = {
-  participantList: undefined,
-  pagination: undefined,
+  studentList: [],
+  pagination: { page: 0, page_count: 0, per_page: 0, total_count: 0 },
+  total: {
+    total_present: 0,
+    total_absent: 0,
+    total_loa: 0,
+  },
 };
 
-export const fetchParticipantList = createAsyncThunk<ParticipantList>(
-  "student/fetchParticipantList",
+export const fetchStudents = createAsyncThunk<StudentList>(
+  "student/fetchStudents",
   async (_, { dispatch, rejectWithValue }) => {
     try {
       dispatch(setLoading(true));
       dispatch(setError(""));
 
-      const data = await studentService.getParticipantList();
+      const data = await studentService.getStudents();
       return data;
     } catch (error: any) {
-      dispatch(setError(error.message || "Failed to fetch participant list"));
-      return rejectWithValue(
-        error.message || "Failed to fetch participant list"
-      );
+      dispatch(setError(error.message || "Failed to fetch student list"));
+      return rejectWithValue(error.message || "Failed to fetch student list");
     } finally {
       dispatch(setLoading(false));
     }
@@ -38,25 +48,28 @@ const studentSlice = createSlice({
   name: "student",
   initialState,
   reducers: {
-    setParticipantList: (state, action: PayloadAction<Participant[]>) => {
-      state.participantList = action.payload;
+    setStudentList: (state, action: PayloadAction<Student[]>) => {
+      state.studentList = action.payload;
     },
     setPagination: (state, action: PayloadAction<Pagination>) => {
       state.pagination = action.payload;
     },
+    setTotal: (state, action: PayloadAction<TotalType>) => {
+      state.total = action.payload;
+    },
   },
   extraReducers: (builder) => {
-    builder.addCase(fetchParticipantList.fulfilled, (state, action) => {
-      state.participantList = action.payload.data;
-      state.pagination = {
-        page: action.payload.page,
-        page_count: action.payload.page_count,
-        per_page: action.payload.per_page,
-        total_count: action.payload.total_count,
+    builder.addCase(fetchStudents.fulfilled, (state, action) => {
+      state.studentList = action.payload.students;
+      state.pagination = action.payload.pagination;
+      state.total = {
+        total_absent: action.payload.total_absent,
+        total_loa: action.payload.total_loa,
+        total_present: action.payload.total_present,
       };
     });
   },
 });
 
-export const { setParticipantList, setPagination } = studentSlice.actions;
+export const { setStudentList, setTotal, setPagination } = studentSlice.actions;
 export default studentSlice.reducer;
