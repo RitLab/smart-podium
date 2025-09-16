@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { BrowserRouter } from "react-router-dom";
 
 import Routes from "./routers";
-import { ToastProvider } from "./components/Toast";
+import { ToastProvider } from "./provider/Toast.Provider";
 
 function App() {
   return (

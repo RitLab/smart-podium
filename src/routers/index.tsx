@@ -1,7 +1,6 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 
 import AuthLayout from "../layouts/AuthLayout";
-import HomeLayout from "../layouts/HomeLayout";
 import MainLayout from "../layouts/MainLayout";
 
 import Login from "../pages/Auth/Login";
@@ -32,23 +31,14 @@ export default () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
 
-      <Route path="/file">
-        <Route element={<PrivateRoute />}>
-          <Route index element={<File />} />
-        </Route>
-      </Route>
-
       <Route path="/">
         <Route index element={<Navigate to="/home" replace />} />
 
         <Route element={<PrivateRoute />}>
-          <Route path="home" element={<HomeLayout />}>
-            <Route index element={<Home />} />
-          </Route>
-
           <Route path="file" element={<File />} />
 
           <Route element={<MainLayout />}>
+            <Route path="home" element={<Home />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="student" element={<Student />} />
             <Route path="module" element={<Module />} />

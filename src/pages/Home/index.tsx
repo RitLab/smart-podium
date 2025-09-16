@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Loader2, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 import userImage from "../../assets/images/user.png";
 import {
@@ -41,9 +41,9 @@ const menus = [
 const Home = () => {
   const navigation = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { user, error, loading } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { error } = useSelector((state: RootState) => state.ui);
+
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -117,17 +117,8 @@ const Home = () => {
           className="flex flex-col items-center gap-1 bg-red-500 text-white px-3 py-2 rounded-lg font-medium text-sm hover:bg-red-600 transition"
           onClick={handleLogout}
         >
-          {loading ? (
-            <>
-              <Loader2 className="animate-spin" size={18} />
-              <div>Loading...</div>
-            </>
-          ) : (
-            <>
-              <LogOut size={18} />
-              <div>Keluar</div>
-            </>
-          )}
+          <LogOut size={18} />
+          <div>Keluar</div>
         </button>
       </div>
     </div>
