@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import CalendarComponents from "../../components/Calendar";
 import type { AppDispatch, RootState } from "../../stores";
-import { fetchEvents } from "../../stores/calendar";
+import { fetchEvents } from "../../stores/calendar.store";
 import { DateClick } from "../../types/event.types";
 
 const Calendar = () => {
@@ -13,7 +13,11 @@ const Calendar = () => {
 
   const calendarRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number>();
-  const [dateClick, setDateClick] = useState<{year: number; month: number; day: number}>()
+  const [dateClick, setDateClick] = useState<{
+    year: number;
+    month: number;
+    day: number;
+  }>();
 
   // set calendar height for event list section height
   useEffect(() => {
@@ -44,8 +48,8 @@ const Calendar = () => {
   };
 
   const onDateClick = (date: DateClick) => {
-    setDateClick(date)
-  }
+    setDateClick(date);
+  };
 
   return (
     <div className="grid grid-cols-3 w-full gap-4">
@@ -60,7 +64,9 @@ const Calendar = () => {
         className="w-full shadow-lg p-8 bg-white rounded-md overflow-scroll"
         style={{ height }}
       >
-        <div>{dateClick?.year} - {dateClick?.month} - {dateClick?.day}</div>
+        <div>
+          {dateClick?.year} - {dateClick?.month} - {dateClick?.day}
+        </div>
         <div className="text-xs flex flex-col gap-4">
           {events.map((ev) => (
             <div key={ev.date}>

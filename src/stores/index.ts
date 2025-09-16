@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import authReducer from "./auth.store";
-import calendarReducer from "./calendar";
+import calendarReducer from "./calendar.store";
 import studentReducer from "./student.store";
 
 export const store = configureStore({

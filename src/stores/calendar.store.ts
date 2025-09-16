@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { eventService } from "../../services/event.services";
-import { EventGroup } from "../../types/event.types";
+import { eventService } from "../services/event.services";
+import { EventGroup } from "../types/event.types";
 
 type CalendarState = {
   events: EventGroup[];
