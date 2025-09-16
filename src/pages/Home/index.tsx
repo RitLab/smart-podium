@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
-import userImage from "../../assets/images/user.png";
 import {
   BookIcon,
   CalendarIcon,
@@ -11,6 +10,7 @@ import {
   UsersIcon,
   WebIcon,
 } from "../../components/Icon";
+import { Image } from "../../components/Image";
 
 import { formattedDate, formattedTime } from "../../utils";
 import { AppDispatch, RootState } from "../../stores";
@@ -42,7 +42,7 @@ const Home = () => {
   const navigation = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { error } = useSelector((state: RootState) => state.ui);
+  const { error, loading } = useSelector((state: RootState) => state.ui);
 
   const [time, setTime] = useState(new Date());
 
@@ -57,7 +57,7 @@ const Home = () => {
 
   const handleLogout = async () => {
     dispatch(logoutUser());
-    if (!error) {
+    if (!error && !loading) {
       navigation("/login");
     }
   };
@@ -77,36 +77,26 @@ const Home = () => {
         {menus.map((menu) => {
           const Icon = menu.icon;
           return (
-            <>
-              <NavLink
-                key={menu.path}
-                to={menu.path}
-                className="flex flex-col items-center hover:scale-105"
-              >
-                <div
-                  className={`h-32 w-32 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`}
-                >
-                  <Icon width={80} height={80} className="text-white" />
+            <div key={menu.path}>
+              <NavLink to={menu.path}>
+                <div className="flex flex-col items-center hover:scale-105">
+                  <div
+                    className={`h-32 w-32 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`}
+                  >
+                    <Icon width={80} height={80} className="text-white" />
+                  </div>
+                  <p className="mt-4 text-gray-700 font-medium">{menu.label}</p>
                 </div>
-                <p className="mt-4 text-gray-700 font-medium">{menu.label}</p>
               </NavLink>
-            </>
+            </div>
           );
         })}
       </div>
 
       <div className="w-full max-w-md flex items-center justify-between p-4 rounded-xl shadow-md bg-white border mt-20">
         <div className="flex items-center gap-3">
-          <img
-            src={user?.photo}
-            alt={user?.name}
-            className="h-12 w-12 rounded-full object-cover"
-            onError={(e) => {
-              const target = e.currentTarget as HTMLImageElement;
-              target.onerror = null;
-              target.src = userImage;
-            }}
-          />
+          <Image src={user?.photo} alt={user?.name} className="h-12 w-12" />
+
           <div>
             <h3 className="font-semibold text-gray-800">{user?.name}</h3>
             <p className="text-sm text-gray-600">{user?.class}</p>

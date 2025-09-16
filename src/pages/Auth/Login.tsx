@@ -22,9 +22,8 @@ const Login = () => {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-
-    dispatch(loginUser({ email, password }));
-    if (!error) {
+    await dispatch(loginUser({ email, password }));
+    if (!error && !loading) {
       navigate("/home");
     }
   };
