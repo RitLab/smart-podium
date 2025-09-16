@@ -11,7 +11,8 @@ import { forgotPassUser } from "../../stores/auth.store";
 const ForgotPassword = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const { error, loading } = useSelector((state: RootState) => state.ui);
+
   const [email, setEmail] = useState("");
 
   const handleLogin = async (e: any) => {

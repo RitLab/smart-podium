@@ -1,63 +1,84 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Auth, ForgotPassword, Login, User } from "../types/auth.types";
 import { authService } from "../services/auth.service";
+import { setError, setLoading } from "./ui.store";
 
 type AuthState = {
   user: User | null;
-  loading: boolean;
-  error: string | null;
 };
 
 const initialState: AuthState = {
   user: null,
-  loading: false,
-  error: null,
 };
 
 export const loginUser = createAsyncThunk<Auth, Login>(
   "auth/loginUser",
-  async (payload, { rejectWithValue }) => {
+  async (payload, { dispatch, rejectWithValue }) => {
     try {
+      dispatch(setLoading(true));
+      dispatch(setError(""));
+
       const data = await authService.login(payload);
       return data;
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch events");
+      dispatch(setError(error.message || "Failed to login"));
+      return rejectWithValue(error.message || "Failed to login");
+    } finally {
+      dispatch(setLoading(false));
     }
   }
 );
 
 export const logoutUser = createAsyncThunk<Auth>(
   "auth/logoutUser",
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
+      dispatch(setLoading(true));
+      dispatch(setError(""));
+
       const data = await authService.logout();
       return data;
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch events");
+      dispatch(setError(error.message || "Failed to logout"));
+      return rejectWithValue(error.message || "Failed to logout");
+    } finally {
+      dispatch(setLoading(false));
     }
   }
 );
 
 export const forgotPassUser = createAsyncThunk<Auth, ForgotPassword>(
   "auth/forgotPassUser",
-  async (payload, { rejectWithValue }) => {
+  async (payload, { dispatch, rejectWithValue }) => {
     try {
+      dispatch(setLoading(true));
+      dispatch(setError(""));
+
       const data = await authService.forgotPassword(payload);
       return data;
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch events");
+      dispatch(setError(error.message || "Failed to forgot password"));
+      return rejectWithValue(error.message || "Failed to forgot password");
+    } finally {
+      dispatch(setLoading(false));
     }
   }
 );
 
 export const fetchUser = createAsyncThunk<User>(
   "auth/fetchUser",
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
+      dispatch(setLoading(true));
+      dispatch(setError(""));
+
       const data = await authService.getUser();
       return data;
     } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch events");
+      dispatch(setError(error.message || "Failed to fetch user"));
+      return rejectWithValue(error.message || "Failed to fetch user");
+    } finally {
+      dispatch(setLoading(false));
     }
   }
 );
@@ -72,64 +93,26 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     // Login
-    builder
-      .addCase(loginUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.loading = false;
-        localStorage.setItem("token", action.payload.token);
-      })
-      .addCase(loginUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message as string;
-      });
+    builder.addCase(loginUser.fulfilled, (_, action) => {
+      localStorage.setItem("token", action.payload.token);
+    });
 
     // Logout
-    builder
-      .addCase(logoutUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.user = null;
-      })
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.loading = false;
-        localStorage.setItem("token", "");
-      })
-      .addCase(logoutUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message as string;
-      });
+    builder.addCase(logoutUser.fulfilled, (state) => {
+      state.user = null;
+      localStorage.setItem("token", "");
+    });
 
     // Forgot Password
-    builder
-      .addCase(forgotPassUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(forgotPassUser.fulfilled, (state) => {
-        state.loading = false;
-      })
-      .addCase(forgotPassUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message as string;
-      });
+    builder.addCase(forgotPassUser.fulfilled, (state) => {
+      state.user = null;
+      localStorage.setItem("token", "");
+    });
 
     // Get User
-    builder
-      .addCase(fetchUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload;
-      })
-      .addCase(fetchUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message as string;
-      });
+    builder.addCase(fetchUser.fulfilled, (state, action) => {
+      state.user = action.payload;
+    });
   },
 });
 
