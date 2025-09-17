@@ -1,19 +1,13 @@
 import React from "react";
 import clsx from "clsx";
+import { SizeType, VariantType } from "../types/ui.types";
 
 type BadgeProps = {
   children: React.ReactNode;
-  variant?:
-    | "primary"
-    | "error"
-    | "warning"
-    | "success"
-    | "accept"
-    | "neutral"
-    | "dark";
+  variant?: VariantType;
   outline?: boolean;
   soft?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: SizeType;
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
   className?: string;
@@ -39,19 +33,14 @@ const variants = {
     soft: "bg-red-100 text-red-700",
   },
   success: {
-    solid: "bg-green-500 text-white",
-    outline: "border border-green-500 text-green-500",
+    solid: "bg-green-600 text-white",
+    outline: "border border-green-600 text-green-600",
     soft: "bg-green-100 text-green-700",
   },
   warning: {
     solid: "bg-yellow-500 text-white",
     outline: "border border-yellow-500 text-yellow-500",
     soft: "bg-yellow-100 text-yellow-700",
-  },
-  accept: {
-    solid: "bg-green-600 text-white",
-    outline: "border border-green-600 text-green-600",
-    soft: "bg-green-100 text-green-700",
   },
   neutral: {
     solid: "bg-gray-300 text-gray-800",

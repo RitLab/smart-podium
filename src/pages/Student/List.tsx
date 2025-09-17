@@ -3,13 +3,14 @@ import { Circle } from "lucide-react";
 import { Badge } from "../../components/Badge";
 import { Card } from "../../components/Card";
 import { Image } from "../../components/Image";
-import { Student } from "../../types/student.type";
+import { HandlingStatus, Status, Student } from "../../types/student.type";
 
 type ListStudentProps = {
   student: Student;
+  handleStatus: (status: Status) => HandlingStatus;
 };
 
-const ListStudent = ({ student }: ListStudentProps) => {
+const ListStudent = ({ student, handleStatus }: ListStudentProps) => {
   return (
     <Card>
       <div className="flex flex-col items-center justify-center text-center py-10 px-2">
@@ -24,20 +25,10 @@ const ListStudent = ({ student }: ListStudentProps) => {
         <h3 className="text-md font-medium mb-4">{student.name}</h3>
         <Badge
           size="sm"
-          variant={
-            student.status === "present"
-              ? "success"
-              : student.status === "loa"
-              ? "warning"
-              : "error"
-          }
+          variant={handleStatus(student.status).variant}
           iconLeft={<Circle size={10} className="mr-1" />}
         >
-          {student.status === "present"
-            ? "Hadir"
-            : student.status === "loa"
-            ? "Izin"
-            : "Tidak Hadir"}
+          {handleStatus(student.status).label}
         </Badge>
       </div>
     </Card>

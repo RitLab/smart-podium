@@ -164,18 +164,6 @@
         "name": "Angel Lubin",
         "image": "https://i.pravatar.cc/300?img=10",
         "status": "present"
-      },
-      {
-        "id": 11,
-        "name": "Randy Arcand",
-        "image": "https://i.pravatar.cc/300?img=11",
-        "status": "present"
-      },
-      {
-        "id": 12,
-        "name": "Jocelyn Siphron",
-        "image": "https://i.pravatar.cc/300?img=12",
-        "status": "present"
       }
     ],
     "pagination": {
