@@ -9,3 +9,13 @@ export interface Toast {
 export interface ToastContextType {
   showToast: (message: string, type?: ToastType) => void;
 }
+
+export type VariantType =
+  | "primary"
+  | "error"
+  | "warning"
+  | "success"
+  | "neutral"
+  | "dark";
+
+export type SizeType = "sm" | "md" | "lg";

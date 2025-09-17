@@ -1,12 +1,13 @@
 import React from "react";
 import clsx from "clsx";
+import { SizeType, VariantType } from "../types/ui.types";
 
 type ButtonProps = {
   children: React.ReactNode;
-  variant?: "primary" | "error" | "accept" | "neutral" | "dark";
+  variant?: VariantType;
   outline?: boolean;
   soft?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: SizeType;
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
   className?: string;
@@ -36,11 +37,17 @@ const variants = {
       "border border-red-500 text-red-500 hover:bg-red-50 focus:ring-red-400",
     soft: "bg-red-100 text-red-700 hover:bg-red-200 focus:ring-red-400",
   },
-  accept: {
+  success: {
     solid: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
     outline:
       "border border-green-600 text-green-600 hover:bg-green-50 focus:ring-green-500",
     soft: "bg-green-100 text-green-700 hover:bg-green-200 focus:ring-green-500",
+  },
+  warning: {
+    solid: "bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400",
+    outline:
+      "border border-yellow-500 text-yellow-500 hover:bg-yellow-50 focus:ring-yellow-400",
+    soft: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 focus:ring-yellow-400",
   },
   neutral: {
     solid: "bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-400",
