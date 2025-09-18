@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { Card } from "../../components/Card";
 import { Image } from "../../components/Image";
 import { HandlingStatus, Status, Student } from "../../types/student.type";
 import { Button } from "../../components/Button";
-import { RootState } from "../../stores";
+import { AppDispatch, RootState } from "../../stores";
 import { formattedDate } from "../../utils";
+import { updateStatusStudent } from "../../stores/student.store";
 
 type DetailProps = {
   student: Student;
@@ -14,6 +15,7 @@ type DetailProps = {
 };
 
 const Detail = ({ student, statusList }: DetailProps) => {
+  const dispatch = useDispatch<AppDispatch>();
   const { total } = useSelector((state: RootState) => state.student);
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -92,7 +94,14 @@ const Detail = ({ student, statusList }: DetailProps) => {
             >
               Batalkan
             </Button>
-            <Button className="w-full py-2" onClick={() => {}}>
+            <Button
+              className="w-full py-2"
+              onClick={() => {
+                dispatch(
+                  updateStatusStudent({ id: student.id, status: status! })
+                );
+              }}
+            >
               Konfirmasi
             </Button>
           </div>

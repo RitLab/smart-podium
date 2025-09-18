@@ -172,5 +172,9 @@
       "page_count": 20,
       "total_count": 240
     }
+  },
+  "change-status-students": {
+    "id": 3,
+    "status": "present"
   }
 }
