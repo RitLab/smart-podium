@@ -1,4 +1,4 @@
-import { Circle } from "lucide-react";
+import React from "react";
 
 import { Badge } from "../../components/Badge";
 import { Card } from "../../components/Card";
@@ -7,12 +7,20 @@ import { HandlingStatus, Status, Student } from "../../types/student.type";
 
 type ListStudentProps = {
   student: Student;
+  setStudent: React.Dispatch<React.SetStateAction<Student>>;
   handleStatus: (status: Status) => HandlingStatus;
 };
 
-const ListStudent = ({ student, handleStatus }: ListStudentProps) => {
+const ListStudent = ({
+  student,
+  setStudent,
+  handleStatus,
+}: ListStudentProps) => {
   return (
-    <Card>
+    <Card
+      className="hover:shadow-lg transition-shadow hover:bg-gray-50 cursor-pointer"
+      onClick={() => setStudent(student)}
+    >
       <div className="flex flex-col items-center justify-center text-center py-10 px-2">
         <Image
           src={student.image}
@@ -26,7 +34,7 @@ const ListStudent = ({ student, handleStatus }: ListStudentProps) => {
         <Badge
           size="sm"
           variant={handleStatus(student.status).variant}
-          iconLeft={<Circle size={10} className="mr-1" />}
+          isStatus
         >
           {handleStatus(student.status).label}
         </Badge>

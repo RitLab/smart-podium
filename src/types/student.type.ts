@@ -22,3 +22,8 @@ export interface StudentList {
   students: Student[];
   pagination: Pagination;
 }
+
+export interface UpdateStatusPayload {
+  id: number;
+  status: Status;
+}

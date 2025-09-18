@@ -5,7 +5,11 @@ import { AppDispatch, RootState } from "../../stores";
 import { fetchStudents } from "../../stores/student.store";
 import ListStudent from "./List";
 import Detail from "./Detail";
-import { HandlingStatus, Status } from "../../types/student.type";
+import {
+  HandlingStatus,
+  Status,
+  Student as StudentType,
+} from "../../types/student.type";
 
 const statusList: HandlingStatus[] = [
   { status: "present", label: "Hadir", variant: "success" },
@@ -16,7 +20,7 @@ const statusList: HandlingStatus[] = [
 const Student = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { studentList } = useSelector((state: RootState) => state.student);
-  const [status, setStatus] = useState<Status>("");
+  const [student, setStudent] = useState<StudentType>({} as StudentType);
 
   useEffect(() => {
     dispatch(fetchStudents());
@@ -34,25 +38,20 @@ const Student = () => {
   return (
     <>
       <div className="w-full flex gap-12">
-        <div className="w-2/3">
+        <div className={Object.keys(student).length === 0 ? "w-full" : "w-2/3"}>
           <div className="grid grid-cols-5 gap-6">
             {studentList?.map((student) => (
               <ListStudent
                 key={student.id}
                 student={student}
+                setStudent={setStudent}
                 handleStatus={handleStatus}
               />
             ))}
           </div>
         </div>
-        <div className="w-1/3">
-          <Detail
-            name="Bastian Sinaga"
-            image="https://i.pravatar.cc/300"
-            statusList={statusList}
-            status={status}
-            setStatus={setStatus}
-          />
+        <div className={Object.keys(student).length === 0 ? "hidden" : "w-1/3"}>
+          <Detail student={student} statusList={statusList} />
         </div>
       </div>
     </>

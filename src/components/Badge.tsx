@@ -11,6 +11,7 @@ type BadgeProps = {
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
   className?: string;
+  isStatus?: boolean;
 };
 
 const baseStyles = "inline-flex items-center gap-1 rounded-full font-medium";
@@ -63,6 +64,7 @@ export const Badge: React.FC<BadgeProps> = ({
   iconLeft,
   iconRight,
   className,
+  isStatus = false,
 }) => {
   const styleType = outline ? "outline" : soft ? "soft" : "solid";
 
@@ -75,9 +77,10 @@ export const Badge: React.FC<BadgeProps> = ({
         className
       )}
     >
-      {iconLeft && <span>{iconLeft}</span>}
+      {isStatus && <span className="h-2 w-2 rounded-full bg-white" />}
+      {iconLeft && !isStatus && <span>{iconLeft}</span>}
       {children}
-      {iconRight && <span>{iconRight}</span>}
+      {iconRight && !isStatus && <span>{iconRight}</span>}
     </span>
   );
 };

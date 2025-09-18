@@ -1,5 +1,9 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Student, StudentList } from "../types/student.type";
+import {
+  Student,
+  StudentList,
+  UpdateStatusPayload,
+} from "../types/student.type";
 import { studentService } from "../services/student.services";
 import { Pagination } from "../types/index.types";
 import { setError, setLoading } from "./ui.store";
@@ -34,6 +38,27 @@ export const fetchStudents = createAsyncThunk<StudentList>(
       dispatch(setError(""));
 
       const data = await studentService.getStudents();
+      return data;
+    } catch (error: any) {
+      dispatch(setError(error.message || "Failed to fetch student list"));
+      return rejectWithValue(error.message || "Failed to fetch student list");
+    } finally {
+      dispatch(setLoading(false));
+    }
+  }
+);
+
+export const updateStatusStudent = createAsyncThunk<any, UpdateStatusPayload>(
+  "student/updateStatusStudent",
+  async (payload, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true));
+      dispatch(setError(""));
+
+      const data = await studentService.updateStatusStudent(payload);
+      if (data) {
+        dispatch(fetchStudents());
+      }
       return data;
     } catch (error: any) {
       dispatch(setError(error.message || "Failed to fetch student list"));
