@@ -151,7 +151,7 @@
         "id": 8,
         "name": "Tatiana Mango",
         "image": "https://i.pravatar.cc/300?img=8",
-        "status": "present"
+        "status": ""
       },
       {
         "id": 9,
@@ -163,7 +163,7 @@
         "id": 10,
         "name": "Angel Lubin",
         "image": "https://i.pravatar.cc/300?img=10",
-        "status": "present"
+        "status": ""
       }
     ],
     "pagination": {

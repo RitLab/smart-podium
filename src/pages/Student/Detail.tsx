@@ -1,43 +1,51 @@
-import React from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 
 import { Card } from "../../components/Card";
 import { Image } from "../../components/Image";
-import { HandlingStatus, Status } from "../../types/student.type";
+import { HandlingStatus, Status, Student } from "../../types/student.type";
 import { Button } from "../../components/Button";
+import { RootState } from "../../stores";
+import { formattedDate } from "../../utils";
 
 type DetailProps = {
-  image: string;
-  name: string;
+  student: Student;
   statusList: HandlingStatus[];
-  status: Status;
-  setStatus: React.Dispatch<React.SetStateAction<Status>>;
 };
 
-const Detail = ({
-  image,
-  name,
-  statusList,
-  status,
-  setStatus,
-}: DetailProps) => {
+const Detail = ({ student, statusList }: DetailProps) => {
+  const { total } = useSelector((state: RootState) => state.student);
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const [time, setTime] = useState(new Date());
+  const [status, setStatus] = useState<Status>();
+
+  useEffect(() => {
+    setTime(new Date());
+  }, []);
+
+  useEffect(() => {
+    setStatus(student.status);
+  }, [student]);
+
   return (
     <Card>
-      <div className="p-12">
+      <div className="p-12 flex flex-col gap-8">
         <div className="bg-gray-100 rounded-lg mt-10 p-6 flex flex-col items-center">
           <div className="flex justify-center -mt-20 mb-4">
             <Image
-              src={image}
-              alt={name}
+              src={student.image}
+              alt={student.name}
               className="w-28 h-28 border-4 border-white shadow "
             />
           </div>
 
-          <h2 className="text-xl font-semibold mb-4">{name}</h2>
+          <h2 className="text-xl font-semibold mb-4">{student.name}</h2>
           <div className="text-sm text-gray-600 mb-1 font-bold">Instructor</div>
-          <div className="text-sm text-gray-600 mb-2">Mr. Bastian Sinaga</div>
+          <div className="text-sm text-gray-600 mb-2">{user?.name}</div>
           <div className="text-sm text-gray-600 mb-1 font-bold">Date</div>
           <div className="text-sm text-gray-600 mb-2">
-            Monday, January 6, 2025
+            {formattedDate(time)}
           </div>
 
           <div className="mt-6 flex justify-center gap-4 w-full">
@@ -53,6 +61,42 @@ const Detail = ({
             ))}
           </div>
         </div>
+
+        <div className="bg-gray-100 rounded-lg p-6 flex justify-between items-center">
+          <div className="flex-1 text-center">
+            <p className="text-gray-600 text-sm">Hadir</p>
+            <p className="text-2xl font-semibold">{total.total_present || 0}</p>
+          </div>
+
+          <div className="w-px bg-gray-300 h-12 mx-6" />
+
+          <div className="flex-1 text-center">
+            <p className="text-gray-600 text-sm">Izin</p>
+            <p className="text-2xl font-semibold">{total.total_loa || 0}</p>
+          </div>
+
+          <div className="w-px bg-gray-300 h-12 mx-6" />
+
+          <div className="flex-1 text-center">
+            <p className="text-gray-600 text-sm">Tidak Hadir</p>
+            <p className="text-2xl font-semibold">{total.total_absent || 0}</p>
+          </div>
+        </div>
+
+        {status !== student.status && (
+          <div className="flex gap-4 w-full">
+            <Button
+              outline
+              className="w-full py-2"
+              onClick={() => setStatus(student.status)}
+            >
+              Batalkan
+            </Button>
+            <Button className="w-full py-2" onClick={() => {}}>
+              Konfirmasi
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   );

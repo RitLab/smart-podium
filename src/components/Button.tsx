@@ -16,7 +16,7 @@ type ButtonProps = {
 };
 
 const baseStyles =
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
+  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors";
 
 const sizes = {
   sm: "px-2.5 py-1 text-xs",
@@ -26,40 +26,34 @@ const sizes = {
 
 const variants = {
   primary: {
-    solid: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-    outline:
-      "border border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-blue-500",
-    soft: "bg-blue-100 text-blue-700 hover:bg-blue-200 focus:ring-blue-500",
+    solid: "bg-blue-800 text-white hover:bg-blue-900",
+    outline: "border border-blue-800 text-blue-800 hover:bg-blue-50",
+    soft: "bg-blue-100 text-blue-900 hover:bg-blue-200",
   },
   error: {
-    solid: "bg-red-500 text-white hover:bg-red-600 focus:ring-red-400",
-    outline:
-      "border border-red-500 text-red-500 hover:bg-red-50 focus:ring-red-400",
-    soft: "bg-red-100 text-red-700 hover:bg-red-200 focus:ring-red-400",
+    solid: "bg-red-500 text-white hover:bg-red-600",
+    outline: "border border-red-500 text-red-500 hover:bg-red-50",
+    soft: "bg-red-100 text-red-700 hover:bg-red-200",
   },
   success: {
-    solid: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
-    outline:
-      "border border-green-600 text-green-600 hover:bg-green-50 focus:ring-green-500",
-    soft: "bg-green-100 text-green-700 hover:bg-green-200 focus:ring-green-500",
+    solid: "bg-green-600 text-white hover:bg-green-700",
+    outline: "border border-green-600 text-green-600 hover:bg-green-50",
+    soft: "bg-green-100 text-green-700 hover:bg-green-200",
   },
   warning: {
-    solid: "bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400",
-    outline:
-      "border border-yellow-500 text-yellow-500 hover:bg-yellow-50 focus:ring-yellow-400",
-    soft: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 focus:ring-yellow-400",
+    solid: "bg-yellow-500 text-white hover:bg-yellow-600",
+    outline: "border border-yellow-500 text-yellow-500 hover:bg-yellow-50",
+    soft: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200",
   },
   neutral: {
-    solid: "bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-400",
-    outline:
-      "border border-gray-400 text-gray-600 hover:bg-gray-100 focus:ring-gray-400",
-    soft: "bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-400",
+    solid: "bg-gray-300 text-gray-800 hover:bg-gray-400",
+    outline: "border border-gray-400 text-gray-600 hover:bg-gray-100",
+    soft: "bg-gray-100 text-gray-700 hover:bg-gray-200",
   },
   dark: {
-    solid: "bg-black text-white hover:bg-gray-900 focus:ring-gray-700",
-    outline:
-      "border border-black text-black hover:bg-gray-100 focus:ring-gray-700",
-    soft: "bg-gray-800 text-gray-200 hover:bg-gray-700 focus:ring-gray-700",
+    solid: "bg-black text-white hover:bg-gray-900",
+    outline: "border border-black text-black hover:bg-gray-100",
+    soft: "bg-gray-800 text-gray-200 hover:bg-gray-700",
   },
 };
 
