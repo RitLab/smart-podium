@@ -13,7 +13,7 @@ import {
   WebIcon,
 } from "../components/Icon";
 import { Image } from "../components/Image";
-import { LoadingOverlay } from "../components/Loading";
+import Loading from "../components/Loading";
 import { formatDuration, formattedDate, formattedTime } from "../utils";
 import { AppDispatch, RootState } from "../stores";
 import { fetchUser } from "../stores/auth.store";
@@ -160,7 +160,7 @@ const MainLayout = () => {
         style={{ backgroundImage: `url(${bgImage})` }}
       >
         <Outlet />
-        {loading && <LoadingOverlay />}
+        {loading && <Loading />}
       </div>
     );
   }
@@ -182,7 +182,7 @@ const MainLayout = () => {
         </main>
       </div>
       <Sidebar />
-      {loading && <LoadingOverlay />}
+      {loading && <Loading />}
     </div>
   );
 };
