@@ -13,21 +13,21 @@ body,
 
 @font-face {
     font-family: 'Avenir Next Cyr';
-    src: url('../fonts/avenir-font/AvenirNextCyr-Regular.woff2') format('woff2');
+    src: url('../fonts/AvenirNextCyr-Regular.woff2') format('woff2');
     font-weight: 400;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Avenir Next Cyr';
-    src: url('../fonts/avenir-font/AvenirNextCyr-Medium.woff2') format('woff2');
+    src: url('../fonts/AvenirNextCyr-Medium.woff2') format('woff2');
     font-weight: 500;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'Avenir Next Cyr';
-    src: url('../fonts/avenir-font/AvenirNextCyr-Bold.woff2') format('woff2');
+    src: url('../fonts/AvenirNextCyr-Bold.woff2') format('woff2');
     font-weight: 700;
     font-style: normal;
 }
