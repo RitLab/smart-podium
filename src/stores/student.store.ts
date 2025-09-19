@@ -5,8 +5,9 @@ import {
   UpdateStatusPayload,
 } from "../types/student.type";
 import { studentService } from "../services/student.services";
-import { Pagination } from "../types/index.types";
+import { Pagination, PaginationParams } from "../types/index.types";
 import { setError, setLoading } from "./ui.store";
+import { RootState } from ".";
 
 type TotalType = {
   total_present: number;
@@ -22,7 +23,7 @@ type StudentState = {
 
 const initialState: StudentState = {
   studentList: [],
-  pagination: { page: 0, page_count: 0, per_page: 0, total_count: 0 },
+  pagination: { page: 1, page_count: 1, per_page: 10, total_count: 0 },
   total: {
     total_present: 0,
     total_absent: 0,
@@ -30,14 +31,14 @@ const initialState: StudentState = {
   },
 };
 
-export const fetchStudents = createAsyncThunk<StudentList>(
+export const fetchStudents = createAsyncThunk<StudentList, PaginationParams>(
   "student/fetchStudents",
-  async (_, { dispatch, rejectWithValue }) => {
+  async (payload, { dispatch, rejectWithValue }) => {
     try {
       dispatch(setLoading(true));
       dispatch(setError(""));
 
-      const data = await studentService.getStudents();
+      const data = await studentService.getStudents(payload);
       return data;
     } catch (error: any) {
       dispatch(setError(error.message || "Failed to fetch student list"));
@@ -48,16 +49,21 @@ export const fetchStudents = createAsyncThunk<StudentList>(
   }
 );
 
-export const updateStatusStudent = createAsyncThunk<any, UpdateStatusPayload>(
+export const updateStatusStudent = createAsyncThunk<
+  any,
+  UpdateStatusPayload,
+  { state: RootState }
+>(
   "student/updateStatusStudent",
-  async (payload, { dispatch, rejectWithValue }) => {
+  async (payload, { dispatch, rejectWithValue, getState }) => {
     try {
       dispatch(setLoading(true));
       dispatch(setError(""));
 
       const data = await studentService.updateStatusStudent(payload);
+      const { page, per_page } = getState().student.pagination;
       if (data) {
-        dispatch(fetchStudents());
+        dispatch(fetchStudents({ page, per_page }));
       }
       return data;
     } catch (error: any) {

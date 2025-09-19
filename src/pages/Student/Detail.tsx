@@ -32,25 +32,29 @@ const Detail = ({ student, statusList }: DetailProps) => {
 
   return (
     <Card>
-      <div className="p-12 flex flex-col gap-8">
-        <div className="bg-gray-100 rounded-lg mt-10 p-6 flex flex-col items-center">
-          <div className="flex justify-center -mt-20 mb-4">
+      <div className="p-4 flex flex-col gap-8">
+        <div className="bg-gray-100 rounded-lg mt-28 p-4 flex flex-col items-center">
+          <div className="flex justify-center -mt-32">
             <Image
               src={student.image}
               alt={student.name}
-              className="w-28 h-28 border-4 border-white shadow "
+              className="w-48 h-48 border-4 border-white shadow-lg"
             />
           </div>
 
-          <h2 className="text-xl font-semibold mb-4">{student.name}</h2>
-          <div className="text-sm text-gray-600 mb-1 font-bold">Instructor</div>
-          <div className="text-sm text-gray-600 mb-2">{user?.name}</div>
-          <div className="text-sm text-gray-600 mb-1 font-bold">Date</div>
-          <div className="text-sm text-gray-600 mb-2">
-            {formattedDate(time)}
+          <h2 className="text-2xl font-bold my-8">{student.name}</h2>
+          <div>
+            <div className="text-sm text-gray-600 mb-1 font-bold">
+              Instructor
+            </div>
+            <div className="text-sm text-gray-600 mb-2">{user?.name}</div>
+            <div className="text-sm text-gray-600 mb-1 font-bold">Date</div>
+            <div className="text-sm text-gray-600 mb-2">
+              {formattedDate(time)}
+            </div>
           </div>
 
-          <div className="mt-6 flex justify-center gap-4 w-full">
+          <div className="mt-6 mb-1 flex justify-center gap-4 w-full">
             {statusList.map((item) => (
               <Button
                 variant={status === item.status ? item.variant : "neutral"}
@@ -64,20 +68,20 @@ const Detail = ({ student, statusList }: DetailProps) => {
           </div>
         </div>
 
-        <div className="bg-gray-100 rounded-lg p-6 flex justify-between items-center">
+        <div className="bg-gray-100 rounded-lg py-6 px-2 flex justify-between items-center">
           <div className="flex-1 text-center">
             <p className="text-gray-600 text-sm">Hadir</p>
             <p className="text-2xl font-semibold">{total.total_present || 0}</p>
           </div>
 
-          <div className="w-px bg-gray-300 h-12 mx-6" />
+          <div className="w-px bg-gray-300 h-12 mx-2" />
 
           <div className="flex-1 text-center">
             <p className="text-gray-600 text-sm">Izin</p>
             <p className="text-2xl font-semibold">{total.total_loa || 0}</p>
           </div>
 
-          <div className="w-px bg-gray-300 h-12 mx-6" />
+          <div className="w-px bg-gray-300 h-12 mx-2" />
 
           <div className="flex-1 text-center">
             <p className="text-gray-600 text-sm">Tidak Hadir</p>

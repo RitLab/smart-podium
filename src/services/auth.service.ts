@@ -3,31 +3,24 @@ import handler from "./handler";
 
 export const authService = {
   login: async (payload: Login): Promise<Auth> => {
-    const data = await handler.get<Auth>("/login");
-    return data;
+    return await handler.get<Auth>("/login");
   },
   logout: async (): Promise<any> => {
-    const data = await handler.get<any>("/logout");
-    return data;
+    return await handler.get<any>("/logout");
   },
   forgotPassword: async (payload: ForgotPassword): Promise<any> => {
-    const data = await handler.get<any>("/forgot-password", payload);
-    return data;
+    return await handler.get<any>("/forgot-password", payload);
   },
   //   login: async (payload: Login): Promise<Auth> => {
-  //     const data = await handler.post<Auth>("/login", payload);
-  //     return data;
+  //     return await handler.post<Auth>("/login", payload);
   //   },
   //   logout: async (): Promise<any> => {
-  //     const data = await handler.post<any>("/logout");
-  //     return data;
+  //     return await handler.post<any>("/logout");
   //   },
   // forgotPassword: async (payload: ForgotPassword): Promise<any> => {
-  //   const data = await handler.post<any>("/forgot-password", payload);
-  //   return data;
+  //   return await handler.post<any>("/forgot-password", payload);
   // },
   getUser: async (): Promise<User> => {
-    const data = await handler.get<User>(`/user`);
-    return data;
+    return await handler.get<User>(`/user`);
   },
 };

@@ -9,7 +9,7 @@ type ImageProps = {
 export const Image = ({ src, alt, className }: ImageProps) => {
   return (
     <img
-      src={src}
+      src={src || userImage}
       alt={alt}
       className={`rounded-full object-cover ${className}`}
       onError={(e) => {

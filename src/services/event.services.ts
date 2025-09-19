@@ -3,7 +3,6 @@ import handler from "./handler";
 
 export const eventService = {
   getEvents: async (): Promise<EventGroup[]> => {
-    const data = await handler.get<EventGroup[]>("/events");
-    return data;
+    return await handler.get<EventGroup[]>("/events");
   },
 };

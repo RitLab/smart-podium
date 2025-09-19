@@ -17,9 +17,9 @@ type BadgeProps = {
 const baseStyles = "inline-flex items-center gap-1 rounded-full font-medium";
 
 const sizes = {
-  sm: "px-2 py-0.5 text-xs",
-  md: "px-3 py-1 text-sm",
-  lg: "px-4 py-1.5 text-base",
+  sm: "px-2 py-0.5 text-xs min-h-4",
+  md: "px-3 py-1 text-sm min-h-6",
+  lg: "px-4 py-1.5 text-base min-h-8",
 };
 
 const variants = {
@@ -77,7 +77,7 @@ export const Badge: React.FC<BadgeProps> = ({
         className
       )}
     >
-      {isStatus && <span className="h-2 w-2 rounded-full bg-white" />}
+      {isStatus && <span className="h-1 w-1 rounded-full bg-white" />}
       {iconLeft && !isStatus && <span>{iconLeft}</span>}
       {children}
       {iconRight && !isStatus && <span>{iconRight}</span>}

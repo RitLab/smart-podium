@@ -19,7 +19,7 @@ axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 axios.interceptors.response.use(
   (res: AxiosResponse) => res,
   (error: AxiosError) => {
-    const { data, status } = error.response!;
+    const { data, status } = error?.response || {};
     switch (status) {
       case 400:
         console.error(data);
@@ -45,7 +45,7 @@ export const responseBody = <T>(response: AxiosResponse<T>) => response.data;
 
 export default {
   get: <T>(url: string, params?: {}) =>
-    axios.get<T>(url, { params }).then(responseBody),
+    axios.get<T>(url, params).then(responseBody),
   post: <T>(url: string, body?: {}) =>
     axios.post<T>(url, body).then(responseBody),
   put: <T>(url: string, body?: {}) =>
