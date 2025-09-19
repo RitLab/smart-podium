@@ -1,31 +1,29 @@
-import React from "react";
-
 import { Badge } from "../../components/Badge";
 import { Card } from "../../components/Card";
 import { Image } from "../../components/Image";
 import { HandlingStatus, Status, Student } from "../../types/student.type";
 
-type ListStudentProps = {
+type ItemStudentProps = {
   student: Student;
-  setStudent: React.Dispatch<React.SetStateAction<Student>>;
+  setStudent: (params: Student) => void;
   handleStatus: (status: Status) => HandlingStatus;
 };
 
-const ListStudent = ({
+const ItemStudent = ({
   student,
   setStudent,
   handleStatus,
-}: ListStudentProps) => {
+}: ItemStudentProps) => {
   return (
     <Card
       className="hover:shadow-lg transition-shadow hover:bg-gray-50 cursor-pointer"
       onClick={() => setStudent(student)}
     >
-      <div className="flex flex-col items-center justify-center text-center py-10 px-2">
+      <div className="flex flex-col items-center justify-center text-center py-14 px-2">
         <Image
           src={student.image}
           alt={student.name}
-          className={`w-20 h-20 mb-4 ${
+          className={`w-24 h-24 mb-4 ${
             student.status !== "present" ? "" : "grayscale"
           }`}
         />
@@ -43,4 +41,4 @@ const ListStudent = ({
   );
 };
 
-export default ListStudent;
+export default ItemStudent;

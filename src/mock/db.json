@@ -164,6 +164,18 @@
         "name": "Angel Lubin",
         "image": "https://i.pravatar.cc/300?img=10",
         "status": ""
+      },
+      {
+        "id": 11,
+        "name": "Budi Satrio",
+        "image": "https://i.pravatar.cc/300?img=11",
+        "status": "present"
+      },
+      {
+        "id": 12,
+        "name": "Siska Melinda",
+        "image": "https://i.pravatar.cc/300?img=12",
+        "status": "present"
       }
     ],
     "pagination": {
