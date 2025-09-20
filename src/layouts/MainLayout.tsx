@@ -1,7 +1,7 @@
 import { Clock9, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import bgImage from "../assets/images/bg-solid.png";
 import {
@@ -140,6 +140,12 @@ const Sidebar = () => {
 };
 
 const MainLayout = () => {
+  const token = localStorage.getItem("token") || "";
+
+  if (token === "") {
+    return <Navigate to="/login" replace />;
+  }
+
   const location = useLocation();
   const { showToast } = useToast();
   const { error, loading } = useSelector((state: RootState) => state.ui);

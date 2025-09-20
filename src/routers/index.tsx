@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
@@ -13,12 +13,6 @@ import Module from "../pages/Module";
 import Internet from "../pages/Internet";
 import File from "../pages/Module/File";
 
-const PrivateRoute = ({ redirectTo = "/login" }) => {
-  const token = localStorage.getItem("token") || "";
-
-  return token !== "" ? <Outlet /> : <Navigate to={redirectTo} replace />;
-};
-
 export default () => {
   return (
     <Routes>
@@ -29,17 +23,13 @@ export default () => {
 
       <Route path="/">
         <Route index element={<Navigate to="/home" replace />} />
-
-        <Route element={<PrivateRoute />}>
-          <Route path="file" element={<File />} />
-
-          <Route path="/" element={<MainLayout />}>
-            <Route path="home" element={<Home />} />
-            <Route path="calendar" element={<Calendar />} />
-            <Route path="student" element={<Student />} />
-            <Route path="module" element={<Module />} />
-            <Route path="internet" element={<Internet />} />
-          </Route>
+        <Route path="file" element={<File />} />
+        <Route path="/" element={<MainLayout />}>
+          <Route path="home" element={<Home />} />
+          <Route path="calendar" element={<Calendar />} />
+          <Route path="student" element={<Student />} />
+          <Route path="module" element={<Module />} />
+          <Route path="internet" element={<Internet />} />
         </Route>
       </Route>
 
