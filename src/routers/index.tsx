@@ -5,7 +5,6 @@ import MainLayout from "../layouts/MainLayout";
 
 import Login from "../pages/Auth/Login";
 import ForgotPassword from "../pages/Auth/ForgotPassword";
-import NotFound from "../pages/NotFound";
 import Home from "../pages/Home";
 import Calendar from "../pages/Calendar";
 import Student from "../pages/Student";
@@ -31,10 +30,11 @@ export default () => {
           <Route path="module" element={<Module />} />
           <Route path="internet" element={<Internet />} />
         </Route>
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Route>
 
       {/* catch all */}
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 };
