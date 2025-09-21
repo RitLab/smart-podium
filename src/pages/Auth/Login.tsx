@@ -22,9 +22,13 @@ const Login = () => {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    await dispatch(loginUser({ email, password }));
-    if (!error && !loading) {
-      navigate("/home");
+    try {
+      const resultAction = await dispatch(loginUser({ email, password }));
+      if (loginUser.fulfilled.match(resultAction)) {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 

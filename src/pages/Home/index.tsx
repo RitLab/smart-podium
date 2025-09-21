@@ -39,10 +39,9 @@ const menus = [
 ];
 
 const Home = () => {
-  const navigation = useNavigate();
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { error, loading } = useSelector((state: RootState) => state.ui);
 
   const [time, setTime] = useState(new Date());
 
@@ -55,10 +54,15 @@ const Home = () => {
     dispatch(fetchUser());
   }, [dispatch]);
 
-  const handleLogout = async () => {
-    dispatch(logoutUser());
-    if (!error && !loading) {
-      navigation("/login");
+  const handleLogout = async (e: any) => {
+    e.preventDefault();
+    try {
+      const resultAction = await dispatch(logoutUser());
+      if (logoutUser.fulfilled.match(resultAction)) {
+        navigate("/login");
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
