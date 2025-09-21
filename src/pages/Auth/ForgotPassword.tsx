@@ -15,9 +15,9 @@ const ForgotPassword = () => {
 
   const [email, setEmail] = useState("");
 
-  const handleLogin = async (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
-    dispatch(forgotPassUser({ email }));
+    await dispatch(forgotPassUser({ email }));
     if (!error && !loading) {
       navigate("/login");
     }
@@ -36,7 +36,7 @@ const ForgotPassword = () => {
         Masukkan Email Anda, akan dikirim kode verifikasi di email
       </div>
 
-      <form className="space-y-4 mt-6" onSubmit={handleLogin}>
+      <form className="space-y-4 mt-6" onSubmit={handleSubmit}>
         <Input
           placeholder="Email"
           type="email"
