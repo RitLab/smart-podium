@@ -18,10 +18,9 @@ const ForgotPassword = () => {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     try {
-      const resultAction = await dispatch(forgotPassUser({ email }));
-      if (forgotPassUser.fulfilled.match(resultAction)) {
-        navigate("/dashboard");
-      }
+      await dispatch(forgotPassUser({ email })).unwrap();
+
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
     }

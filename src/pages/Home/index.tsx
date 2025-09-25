@@ -57,10 +57,9 @@ const Home = () => {
   const handleLogout = async (e: any) => {
     e.preventDefault();
     try {
-      const resultAction = await dispatch(logoutUser());
-      if (logoutUser.fulfilled.match(resultAction)) {
-        navigate("/login");
-      }
+      await dispatch(logoutUser()).unwrap();
+
+      navigate("/login");
     } catch (err) {
       console.error(err);
     }

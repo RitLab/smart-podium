@@ -23,10 +23,9 @@ const Login = () => {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     try {
-      const resultAction = await dispatch(loginUser({ email, password }));
-      if (loginUser.fulfilled.match(resultAction)) {
-        navigate("/dashboard");
-      }
+      await dispatch(loginUser({ email, password })).unwrap();
+
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
     }
