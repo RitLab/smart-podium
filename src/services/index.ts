@@ -44,6 +44,7 @@ axios.interceptors.response.use(
 );
 
 export const baseURL = import.meta.env.VITE_API_URL || "";
+
 export const authURL = import.meta.env.VITE_API_AUTH_URL || "";
 
 export const responseBody = <T>(response: AxiosResponse<T>) => response.data;

@@ -24,4 +24,3 @@ release
 *.njsproj
 *.sln
 *.sw?
-.env
