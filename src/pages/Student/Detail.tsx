@@ -31,27 +31,23 @@ const Detail = ({ student, statusList }: DetailProps) => {
   }, [student]);
 
   return (
-    <Card>
+    <Card className="border">
       <div className="p-4 flex flex-col gap-8">
-        <div className="bg-gray-100 rounded-lg mt-28 p-4 flex flex-col items-center">
-          <div className="flex justify-center -mt-32">
+        <div className="bg-gray-100 rounded-lg mt-20 p-4 flex flex-col items-center">
+          <div className="flex justify-center -mt-24">
             <Image
               src={student.image}
               alt={student.name}
-              className="w-48 h-48 border-4 border-white shadow-lg"
+              className="w-32 h-32 border-4 border-white shadow-lg"
             />
           </div>
 
-          <h2 className="text-2xl font-bold my-8">{student.name}</h2>
-          <div>
-            <div className="text-sm text-gray-600 mb-1 font-bold">
-              Instructor
-            </div>
-            <div className="text-sm text-gray-600 mb-2">{user?.name}</div>
-            <div className="text-sm text-gray-600 mb-1 font-bold">Date</div>
-            <div className="text-sm text-gray-600 mb-2">
-              {formattedDate(time)}
-            </div>
+          <h2 className="text-2xl font-bold mt-4 mb-8">{student.name}</h2>
+          <div className="text-sm text-gray-600 mb-1 font-bold">Instructor</div>
+          <div className="text-sm text-gray-600 mb-2">{user?.name}</div>
+          <div className="text-sm text-gray-600 mb-1 font-bold">Date</div>
+          <div className="text-sm text-gray-600 mb-2">
+            {formattedDate(time)}
           </div>
 
           <div className="mt-6 mb-1 flex justify-center gap-4 w-full">
@@ -59,7 +55,7 @@ const Detail = ({ student, statusList }: DetailProps) => {
               <Button
                 variant={status === item.status ? item.variant : "neutral"}
                 size="sm"
-                className="w-full py-2"
+                className="w-full p-1"
                 onClick={() => setStatus(item.status)}
               >
                 {item.label}

@@ -4,11 +4,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import bgImage from "../assets/images/bg-solid.png";
+import Logo from "../assets/images/logo.png";
 import {
   BookIcon,
   CalendarIcon,
   HomeIcon,
-  Logo,
   UsersIcon,
   WebIcon,
 } from "../components/Icon";
@@ -61,7 +61,7 @@ const Navbar = () => {
 
   return (
     <header className="flex items-center justify-between">
-      <Logo />
+      <img src={Logo} alt="Logo" className="h-28 w-96 object-contain" />
 
       <div className="flex items-center gap-6">
         <div className="flex items-center bg-white shadow-md rounded-md p-4 w-auto">
@@ -72,7 +72,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        <div className="flex bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-md shadow-md">
+        <div className="flex bg-gradient-to-r from-blue-900 to-blue-700 text-white rounded-md shadow-md">
           <div className="p-4 border-r border-white/30 flex flex-col justify-center">
             <p className="text-sm">{formattedDate(time)}</p>
             <div className="flex items-center gap-2 mt-1">

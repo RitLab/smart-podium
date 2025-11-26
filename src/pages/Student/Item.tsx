@@ -16,7 +16,7 @@ const ItemStudent = ({
 }: ItemStudentProps) => {
   return (
     <Card
-      className="hover:shadow-lg transition-shadow hover:bg-gray-50 cursor-pointer"
+      className="border hover:shadow-lg transition-shadow hover:bg-gray-50 cursor-pointer"
       onClick={() => setStudent(student)}
     >
       <div className="flex flex-col items-center justify-center text-center py-14 px-2">

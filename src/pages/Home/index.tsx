@@ -3,10 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
+import Logo from "../../assets/images/logo.png";
 import {
   BookIcon,
   CalendarIcon,
-  Logo,
   UsersIcon,
   WebIcon,
 } from "../../components/Icon";
@@ -14,7 +14,7 @@ import { Image } from "../../components/Image";
 
 import { formattedDate, formattedTime } from "../../utils";
 import { AppDispatch, RootState } from "../../stores";
-import { fetchUser, logoutUser } from "../../stores/auth.store";
+import { fetchUser } from "../../stores/auth.store";
 
 const menus = [
   {
@@ -54,29 +54,46 @@ const Home = () => {
     dispatch(fetchUser());
   }, [dispatch]);
 
-  const handleLogout = async (e: any) => {
+  const handleStart = async (e: any) => {
     e.preventDefault();
     try {
-      await dispatch(logoutUser()).unwrap();
-
-      navigate("/login");
+      navigate("/module");
     } catch (err) {
       console.error(err);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-between">
-      <Logo />
+    <div className="h-full flex flex-col items-center justify-between py-20">
+      <div className="flex flex-col gap-12">
+        <img src={Logo} alt="Logo" className="h-28 w-96 object-contain" />
 
-      <div className="text-center mt-20">
-        <h1 className="text-6xl font-bold text-gray-800">
-          {formattedTime(time)}
-        </h1>
-        <p className="text-gray-600 mt-6">{formattedDate(time)}</p>
+        <div className="text-center">
+          <h1 className="text-7xl font-bold text-gray-800">
+            {formattedTime(time)}
+          </h1>
+          <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>
+        </div>
+
+        <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
+          <Image src={user?.photo} alt={user?.name} className="h-16 w-16" />
+
+          <div className="flex flex-col gap-1">
+            <h3 className="text-2xl text-gray-800">{user?.name}</h3>
+            <p className="text-sm text-gray-600">{user?.class}</p>
+          </div>
+
+          <button
+            className="flex flex-col items-center gap-1 bg-gradient-to-b from-emerald-500 to-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-gradient-to-b hover:from-emerald-600 hover:to-emerald-800 transition"
+            onClick={handleStart}
+          >
+            <LogOut size={18} />
+            <div>Mulai</div>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center mt-20">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
         {menus.map((menu) => {
           const Icon = menu.icon;
           return (
@@ -84,9 +101,9 @@ const Home = () => {
               <NavLink to={menu.path}>
                 <div className="flex flex-col items-center hover:scale-105">
                   <div
-                    className={`h-32 w-32 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`}
+                    className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`}
                   >
-                    <Icon width={80} height={80} className="text-white" />
+                    <Icon width={58} height={58} className="text-white" />
                   </div>
                   <p className="mt-4 text-gray-700 font-medium">{menu.label}</p>
                 </div>
@@ -94,25 +111,6 @@ const Home = () => {
             </div>
           );
         })}
-      </div>
-
-      <div className="w-full max-w-md flex items-center justify-between p-4 rounded-xl shadow-md bg-white border mt-20">
-        <div className="flex items-center gap-3">
-          <Image src={user?.photo} alt={user?.name} className="h-12 w-12" />
-
-          <div>
-            <h3 className="font-semibold text-gray-800">{user?.name}</h3>
-            <p className="text-sm text-gray-600">{user?.class}</p>
-          </div>
-        </div>
-
-        <button
-          className="flex flex-col items-center gap-1 bg-red-500 text-white px-3 py-2 rounded-lg font-medium text-sm hover:bg-red-600 transition"
-          onClick={handleLogout}
-        >
-          <LogOut size={18} />
-          <div>Keluar</div>
-        </button>
       </div>
     </div>
   );

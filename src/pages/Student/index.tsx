@@ -51,48 +51,51 @@ const Student = () => {
   };
 
   return (
-    <>
-      <div className="w-full flex gap-12">
-        <div
-          className={
-            (Object.keys(student).length === 0 ? "w-full" : "w-3/4") +
-            " transition-all"
-          }
-        >
-          <div
-            className={`grid grid-cols-${Math.round(
-              pagination.per_page / 2
-            )} gap-6`}
-          >
-            {studentList?.map((item) => (
-              <ItemStudent
-                key={item.id}
-                student={item}
-                setStudent={(value) => handelSetStudent(value)}
-                handleStatus={handleStatus}
+    <div className="w-full flex gap-12">
+      <div
+        className={
+          (Object.keys(student).length === 0 ? "w-full" : "w-4/5") +
+          " transition-all"
+        }
+      >
+        {studentList.length > 0 && (
+          <>
+            <div
+              className={`grid grid-cols-${Math.round(
+                pagination.per_page / 2
+              )} gap-6`}
+            >
+              {studentList?.map((item) => (
+                <ItemStudent
+                  key={item.id}
+                  student={item}
+                  setStudent={(value) => handelSetStudent(value)}
+                  handleStatus={handleStatus}
+                />
+              ))}
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.page_count}
+                onPageChange={(page) =>
+                  fetchData({ page, per_page: pagination.per_page })
+                }
               />
-            ))}
-          </div>
-          <div className="mt-8 flex justify-end">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.page_count}
-              onPageChange={(page) =>
-                fetchData({ page, per_page: pagination.per_page })
-              }
-            />
-          </div>
-        </div>
-        <div
-          className={
-            (Object.keys(student).length === 0 ? "hidden" : "w-1/4") +
-            " transition-all"
-          }
-        >
-          <Detail student={student} statusList={statusList} />
-        </div>
+            </div>
+          </>
+        )}
       </div>
-    </>
+      <div
+        className={
+          (Object.keys(student).length === 0 ? "hidden" : "w-1/5") +
+          " transition-all"
+        }
+      >
+        <Detail student={student} statusList={statusList} />
+      </div>
+    </div>
   );
 };
 
