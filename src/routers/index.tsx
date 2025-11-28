@@ -3,8 +3,9 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
 
-import Login from "../pages/Auth/Login";
-import ForgotPassword from "../pages/Auth/ForgotPassword";
+import LockScreen from "../pages/Auth/LockScreen";
+import InputPIN from "../pages/Auth/InputPIN";
+import SettingPIN from "../pages/Auth/SettingPIN";
 import Home from "../pages/Home";
 import Calendar from "../pages/Calendar";
 import Student from "../pages/Student";
@@ -16,8 +17,9 @@ export default () => {
   return (
     <Routes>
       <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/lock-screen" element={<LockScreen />} />
+        <Route path="/input-pin" element={<InputPIN />} />
+        <Route path="/setting-pin" element={<SettingPIN />} />
       </Route>
 
       <Route path="/">
@@ -34,7 +36,7 @@ export default () => {
       </Route>
 
       {/* catch all */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/lock-screen" replace />} />
     </Routes>
   );
 };

@@ -1,9 +1,17 @@
 {
-  "login": {
+  "get-token": {
     "token": "123134123123"
   },
-  "logout": {},
-  "forgot-password": {},
+  "class": [
+    {
+      "id": "1",
+      "name": "Pelatihan Penanggulangan Terorisme"
+    },
+    {
+      "id": "2",
+      "name": "Pelatihan Penanggulangan Bencana"
+    }
+  ],
   "user": {
     "id": "1",
     "name": "Bastian Sinaga",

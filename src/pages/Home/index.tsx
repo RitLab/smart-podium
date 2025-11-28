@@ -64,9 +64,9 @@ const Home = () => {
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-between py-20">
-      <div className="flex flex-col gap-12">
-        <img src={Logo} alt="Logo" className="h-28 w-96 object-contain" />
+    <div className="h-full flex flex-col items-center justify-between py-24">
+      <div className="flex flex-col gap-16">
+        <img src={Logo} alt="Logo" className="h-18 w-96 object-contain" />
 
         <div className="text-center">
           <h1 className="text-7xl font-bold text-gray-800">

@@ -1,64 +1,59 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Auth, ForgotPassword, Login, User } from "../types/auth.types";
+import { Class, TokenPayload, TokenResponse, User } from "../types/auth.types";
 import { authService } from "../services/auth.service";
 import { setError, setLoading } from "./ui.store";
 
 type AuthState = {
   user: User | null;
+  classList: Class[];
+  errorPin: string;
+  loading: boolean;
 };
 
 const initialState: AuthState = {
   user: null,
+  classList: [],
+  errorPin: "",
+  loading: false,
 };
 
-export const loginUser = createAsyncThunk<Auth, Login>(
-  "auth/loginUser",
-  async (payload, { dispatch, rejectWithValue }) => {
+export const getToken = createAsyncThunk<TokenResponse, { pin: string }>(
+  "auth/getToken",
+  async (payload, { rejectWithValue }) => {
     try {
-      dispatch(setLoading(true));
-      dispatch(setError(""));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const data = await authService.login(payload);
+      const correctPin = localStorage.getItem("pin");
+      if (correctPin !== payload.pin) {
+        return rejectWithValue("Invalid PIN");
+      }
+
+      const payloadData: TokenPayload = {
+        pin: payload.pin,
+        class_id: localStorage.getItem("class_id") || "",
+      };
+
+      const data = await authService.getToken(payloadData);
       return data;
     } catch (error: any) {
-      dispatch(setError(error.message || "Failed to login"));
+      console.error(error);
       return rejectWithValue(error.message || "Failed to login");
-    } finally {
-      dispatch(setLoading(false));
     }
   }
 );
 
-export const logoutUser = createAsyncThunk<Auth>(
-  "auth/logoutUser",
+export const fetchClass = createAsyncThunk<Class[]>(
+  "auth/fetchClass",
   async (_, { dispatch, rejectWithValue }) => {
     try {
       dispatch(setLoading(true));
       dispatch(setError(""));
 
-      const data = await authService.logout();
+      const data = await authService.getCLass();
       return data;
     } catch (error: any) {
-      dispatch(setError(error.message || "Failed to logout"));
-      return rejectWithValue(error.message || "Failed to logout");
-    } finally {
-      dispatch(setLoading(false));
-    }
-  }
-);
-
-export const forgotPassUser = createAsyncThunk<Auth, ForgotPassword>(
-  "auth/forgotPassUser",
-  async (payload, { dispatch, rejectWithValue }) => {
-    try {
-      dispatch(setLoading(true));
-      dispatch(setError(""));
-
-      const data = await authService.forgotPassword(payload);
-      return data;
-    } catch (error: any) {
-      dispatch(setError(error.message || "Failed to forgot password"));
-      return rejectWithValue(error.message || "Failed to forgot password");
+      dispatch(setError(error.message || "Failed to fetch class"));
+      return rejectWithValue(error.message || "Failed to fetch class");
     } finally {
       dispatch(setLoading(false));
     }
@@ -90,23 +85,29 @@ const authSlice = createSlice({
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
     },
+    setErrorPin: (state, action: PayloadAction<string>) => {
+      state.errorPin = action.payload;
+    },
   },
   extraReducers: (builder) => {
-    // Login
-    builder.addCase(loginUser.fulfilled, (_, action) => {
-      localStorage.setItem("token", action.payload.token);
-    });
+    // Get Token
+    builder
+      .addCase(getToken.pending, (state) => {
+        state.errorPin = "";
+        state.loading = true;
+      })
+      .addCase(getToken.fulfilled, (state, action) => {
+        state.loading = false;
+        sessionStorage.setItem("token", action.payload.token);
+      })
+      .addCase(getToken.rejected, (state, action) => {
+        state.errorPin = action.payload as string;
+        state.loading = false;
+      });
 
-    // Logout
-    builder.addCase(logoutUser.fulfilled, (state) => {
-      state.user = null;
-      localStorage.setItem("token", "");
-    });
-
-    // Forgot Password
-    builder.addCase(forgotPassUser.fulfilled, (state) => {
-      state.user = null;
-      localStorage.setItem("token", "");
+    // Get Class
+    builder.addCase(fetchClass.fulfilled, (state, action) => {
+      state.classList = action.payload;
     });
 
     // Get User
@@ -116,5 +117,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser } = authSlice.actions;
+export const { setUser, setErrorPin } = authSlice.actions;
 export default authSlice.reducer;

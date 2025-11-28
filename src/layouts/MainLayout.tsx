@@ -140,10 +140,10 @@ const Sidebar = () => {
 };
 
 const MainLayout = () => {
-  const token = localStorage.getItem("token") || "";
+  const token = sessionStorage.getItem("token") || "";
 
   if (token === "") {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/lock-screen" replace />;
   }
 
   const location = useLocation();
