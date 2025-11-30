@@ -1,14 +1,15 @@
 import { Image as ImageIcon, Minus, Plus, Save, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const ImageViewer: React.FC = () => {
+  const navigate = useNavigate();
+
   const [searchParams] = useSearchParams();
   const imageUrl = searchParams.get("url") || "";
   const imageTitle = searchParams.get("title") || "Lihat Gambar";
 
   console.log(imageUrl);
-  
 
   // State
   const [zoom, setZoom] = useState(1); // 1 = 100%
@@ -80,7 +81,7 @@ const ImageViewer: React.FC = () => {
         <div className="flex-1 flex justify-end">
           <button
             className="p-1 hover:bg-gray-100 rounded-full transition text-gray-500 hover:text-red-500"
-            onClick={() => window.close()}
+            onClick={() => navigate(-1)}
           >
             <X className="w-6 h-6" />
           </button>
