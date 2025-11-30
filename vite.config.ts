@@ -1,13 +1,23 @@
-import { defineConfig } from "vite";
-import path from "node:path";
-import electron from "vite-plugin-electron/simple";
 import react from "@vitejs/plugin-react";
+import path from "node:path";
 import tailwindcss from "tailwindcss";
+import { defineConfig } from "vite";
+import electron from "vite-plugin-electron/simple";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    nodePolyfills({
+      // Sertakan polyfill untuk 'url'
+      include: ["url", "buffer", "stream"],
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
+    }),
     electron({
       main: {
         // Shortcut of `build.lib.entry`.

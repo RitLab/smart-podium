@@ -3,15 +3,17 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
 
-import LockScreen from "../pages/Auth/LockScreen";
 import InputPIN from "../pages/Auth/InputPIN";
+import LockScreen from "../pages/Auth/LockScreen";
 import SettingPIN from "../pages/Auth/SettingPIN";
-import Home from "../pages/Home";
 import Calendar from "../pages/Calendar";
-import Student from "../pages/Student";
-import Module from "../pages/Module";
+import Home from "../pages/Home";
 import Internet from "../pages/Internet";
+import Module from "../pages/Module";
 import File from "../pages/Module/File";
+import ImageViewer from "../pages/Module/ImageViewer";
+import VideoPlayer from "../pages/Module/VideoPlayer";
+import Student from "../pages/Student";
 
 export default () => {
   return (
@@ -25,6 +27,8 @@ export default () => {
       <Route path="/">
         <Route index element={<Navigate to="/home" replace />} />
         <Route path="file" element={<File />} />
+        <Route path="video" element={<VideoPlayer />} />
+        <Route path="image" element={<ImageViewer />} />
         <Route path="/" element={<MainLayout />}>
           <Route path="home" element={<Home />} />
           <Route path="calendar" element={<Calendar />} />
