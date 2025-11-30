@@ -140,7 +140,13 @@ const Sidebar = () => {
 };
 
 const MainLayout = () => {
+  const class_id = localStorage.getItem("class_id") || "";
+  const pin = localStorage.getItem("pin") || "";
   const token = sessionStorage.getItem("token") || "";
+
+  if (class_id === "" || pin === "") {
+    return <Navigate to="/setting-pin" replace />;
+  }
 
   if (token === "") {
     return <Navigate to="/lock-screen" replace />;
@@ -178,12 +184,12 @@ const MainLayout = () => {
     >
       <div
         className={`flex-1 flex flex-col ${
-          !isInternet ? "pt-20 pl-24 pr-12" : "p-8"
+          !isInternet ? "pt-12 pl-24 pr-12" : "p-8"
         }`}
       >
         {!isInternet && <Navbar />}
 
-        <main className={`flex-1 ${!isInternet ? "py-24" : "py-8"}`}>
+        <main className={`flex-1 ${!isInternet ? "py-12" : "py-8"}`}>
           <Outlet />
         </main>
       </div>
