@@ -1,5 +1,5 @@
-import bgImage from "../assets/images/bg-image.png";
 import { Navigate, Outlet } from "react-router-dom";
+import bgImage from "../assets/images/bg-image.png";
 
 const AuthLayout = () => {
   const class_id = localStorage.getItem("class_id") || "";
