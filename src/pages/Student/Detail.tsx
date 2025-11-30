@@ -50,7 +50,7 @@ const Detail = ({ student, statusList }: DetailProps) => {
             {formattedDate(time)}
           </div>
 
-          <div className="mt-6 mb-1 flex justify-center gap-4 w-full">
+          <div className="mt-6 mb-1 flex justify-center gap-2 w-full">
             {statusList.map((item) => (
               <Button
                 variant={status === item.status ? item.variant : "neutral"}
@@ -67,21 +67,16 @@ const Detail = ({ student, statusList }: DetailProps) => {
         <div className="bg-gray-100 rounded-lg py-6 px-2 flex justify-between items-center">
           <div className="flex-1 text-center">
             <p className="text-gray-600 text-sm">Hadir</p>
-            <p className="text-2xl font-semibold">{total.total_present || 0}</p>
-          </div>
-
-          <div className="w-px bg-gray-300 h-12 mx-2" />
-
-          <div className="flex-1 text-center">
-            <p className="text-gray-600 text-sm">Izin</p>
-            <p className="text-2xl font-semibold">{total.total_loa || 0}</p>
+            <p className="text-3xl font-semibold">{total.total_present || 0}</p>
           </div>
 
           <div className="w-px bg-gray-300 h-12 mx-2" />
 
           <div className="flex-1 text-center">
             <p className="text-gray-600 text-sm">Tidak Hadir</p>
-            <p className="text-2xl font-semibold">{total.total_absent || 0}</p>
+            <p className="text-3xl font-semibold">
+              {total.total_absent + total.total_loa || 0}
+            </p>
           </div>
         </div>
 

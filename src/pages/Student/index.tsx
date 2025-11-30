@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { AppDispatch, RootState } from "../../stores";
@@ -50,6 +50,15 @@ const Student = () => {
     return data;
   };
 
+  const gridCols = useMemo(() => {
+    const cols = Math.round(pagination.per_page / 2);
+    return `grid-cols-${cols}`;
+  }, [pagination.per_page]);
+
+  if (studentList.length === 0) {
+    return <div>Data siswa tidak ditemukan.</div>;
+  }
+
   return (
     <div className="w-full flex gap-12">
       <div
@@ -58,34 +67,26 @@ const Student = () => {
           " transition-all"
         }
       >
-        {studentList.length > 0 && (
-          <>
-            <div
-              className={`grid grid-cols-${Math.round(
-                pagination.per_page / 2
-              )} gap-6`}
-            >
-              {studentList?.map((item) => (
-                <ItemStudent
-                  key={item.id}
-                  student={item}
-                  setStudent={(value) => handelSetStudent(value)}
-                  handleStatus={handleStatus}
-                />
-              ))}
-            </div>
+        <div className={`grid ${gridCols} gap-6`}>
+          {studentList?.map((item) => (
+            <ItemStudent
+              key={item.id}
+              student={item}
+              setStudent={(value) => handelSetStudent(value)}
+              handleStatus={handleStatus}
+            />
+          ))}
+        </div>
 
-            <div className="mt-8 flex justify-end">
-              <Pagination
-                currentPage={pagination.page}
-                totalPages={pagination.page_count}
-                onPageChange={(page) =>
-                  fetchData({ page, per_page: pagination.per_page })
-                }
-              />
-            </div>
-          </>
-        )}
+        <div className="mt-8 flex justify-end">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.page_count}
+            onPageChange={(page) =>
+              fetchData({ page, per_page: pagination.per_page })
+            }
+          />
+        </div>
       </div>
       <div
         className={

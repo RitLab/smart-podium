@@ -1,6 +1,7 @@
 import { Box, FileText, Image, Mic, Video } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Card } from "../../components/Card";
 
 interface MaterialItem {
   id: number;
@@ -89,9 +90,13 @@ const Materi: React.FC = () => {
   return (
     <div className="grid grid-cols-12 gap-4 p-4">
       {/* LEFT CONTENT */}
-      <div className="col-span-8 space-y-4">
+      <Card
+        className={`${
+          selectedItem ? "col-span-8" : "col-span-12"
+        } space-y-4 p-6`}
+      >
         {/* TABS */}
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {listBab.map((bab, idx) => (
             <button
               key={idx}
@@ -99,7 +104,7 @@ const Materi: React.FC = () => {
                 setActiveTab(idx);
                 setSelectedItem(null); // reset ketika pindah BAB
               }}
-              className={`px-6 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+              className={`px-6 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
                 activeTab === idx
                   ? "bg-gray-900 text-white shadow"
                   : "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -110,8 +115,8 @@ const Materi: React.FC = () => {
           ))}
         </div>
 
-        <h2 className="text-lg font-bold">
-          {listBab[activeTab]} – Pengantar Pemberantasan Terorisme
+        <h2 className="text-lg font-bold mb-4">
+          {listBab[activeTab]} - Pengantar Pemberantasan Terorisme
         </h2>
 
         {/* GRID MATERI */}
@@ -122,99 +127,95 @@ const Materi: React.FC = () => {
               className={`${
                 selectedItem?.id === item.id
                   ? "bg-blue-500/20 border-blue-500"
-                  : "bg-white"
-              } border rounded-xl p-3 cursor-pointer hover:shadow transition`}
+                  : "bg-gray-100 border-transparent"
+              } rounded-xl p-4 cursor-pointer hover:shadow transition`}
               onClick={() => handleSelectMaterial(item)}
             >
-              <div className="flex gap-2 items-center">
-                <div className="p-1">
+              <div className="flex gap-2 items-center mb-3">
+                <div className="ml-1">
                   <FileIcon type={item.type} />
                 </div>
-                <p className="text-sm truncate font-semibold my-2">
+                <div className="text-sm truncate font-semibold">
                   {item.title}
-                </p>
+                </div>
               </div>
               <img
                 src={item.thumbnail}
-                className="w-full h-32 object-cover rounded-lg"
+                className={`w-full ${
+                  selectedItem ? "h-32" : "h-48"
+                } object-cover rounded-lg`}
               />
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* RIGHT PANEL */}
-      <div className="col-span-4">
-        <div className="bg-white shadow-lg rounded-2xl p-5">
-          {/* Jika belum pilih item */}
-          {!selectedItem && (
-            <div className="text-gray-400 text-center py-20">
-              <p>Pilih materi di sisi kiri untuk melihat detail</p>
-            </div>
+      {selectedItem && (
+        <Card className="col-span-4 p-4">
+          <div className="flex gap-4 items-center mb-4">
+            <img
+              src={selectedItem.thumbnail}
+              className="w-32 h-40 object-cover rounded-lg"
+            />
+
+            <h3 className="text-xl font-bold">{selectedItem.title}</h3>
+          </div>
+
+          <div className="mt-2 mb-4">Module Specifications</div>
+
+          <div className="p-4 rounded-lg border mb-4">
+            <p className="text-gray-600 leading-relaxed">
+              {selectedItem.description}
+            </p>
+          </div>
+
+          {selectedItem.type == "image" && (
+            <button
+              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
+              onClick={() =>
+                navigate(
+                  `/image?url=${encodeURIComponent(
+                    selectedItem.fileUrl
+                  )}&title=${encodeURIComponent(selectedItem.title)}`
+                )
+              }
+            >
+              Open Image
+            </button>
           )}
 
-          {/* Jika sudah pilih item */}
-          {selectedItem && (
-            <>
-              <img
-                src={selectedItem.thumbnail}
-                className="w-full rounded-lg mb-4"
-              />
-
-              <h3 className="text-xl font-bold mb-3">{selectedItem.title}</h3>
-
-              <p className="text-gray-600 leading-relaxed mb-4">
-                {selectedItem.description}
-              </p>
-
-              {selectedItem && selectedItem.type == "image" && (
-                <button
-                  className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
-                  onClick={() =>
-                    navigate(
-                      `/image?url=${encodeURIComponent(
-                        selectedItem.fileUrl
-                      )}&title=${encodeURIComponent(selectedItem.title)}`
-                    )
-                  }
-                >
-                  Open Image
-                </button>
-              )}
-
-              {selectedItem && selectedItem.type == "pdf" && (
-                <button
-                  className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
-                  onClick={() =>
-                    navigate(
-                      `/file?url=${encodeURIComponent(
-                        selectedItem.fileUrl
-                      )}&title=${encodeURIComponent(selectedItem.title)}`
-                    )
-                  }
-                >
-                  Open File
-                </button>
-              )}
-
-              {selectedItem && selectedItem.type == "video" && (
-                <button
-                  className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
-                  onClick={() =>
-                    navigate(
-                      `/video?url=${encodeURIComponent(
-                        selectedItem.fileUrl
-                      )}&title=${encodeURIComponent(selectedItem.title)}`
-                    )
-                  }
-                >
-                  Play Video
-                </button>
-              )}
-            </>
+          {selectedItem.type == "pdf" && (
+            <button
+              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
+              onClick={() =>
+                navigate(
+                  `/file?url=${encodeURIComponent(
+                    selectedItem.fileUrl
+                  )}&title=${encodeURIComponent(selectedItem.title)}`
+                )
+              }
+            >
+              Open File
+            </button>
           )}
-        </div>
-      </div>
+
+          {selectedItem.type == "video" && (
+            <button
+              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
+              onClick={() =>
+                navigate(
+                  `/video?url=${encodeURIComponent(
+                    selectedItem.fileUrl
+                  )}&title=${encodeURIComponent(selectedItem.title)}`
+                )
+              }
+            >
+              Play Video
+            </button>
+          )}
+        </Card>
+      )}
     </div>
   );
 };
