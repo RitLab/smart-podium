@@ -36,7 +36,7 @@ const SettingPIN = () => {
 
     try {
       dispatch(setError(""));
-      await dispatch(getToken({ pin: pin })).unwrap();
+      await dispatch(getToken({ pin: pin, classId: classId })).unwrap();
       navigate("/home");
     } catch (err) {
       console.error(err);

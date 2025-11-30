@@ -17,7 +17,12 @@ const initialState: AuthState = {
   loading: false,
 };
 
-export const getToken = createAsyncThunk<TokenResponse, { pin: string }>(
+type Token = {
+  pin: string;
+  classId?: string;
+};
+
+export const getToken = createAsyncThunk<TokenResponse, Token>(
   "auth/getToken",
   async (payload, { rejectWithValue }) => {
     try {
@@ -30,7 +35,7 @@ export const getToken = createAsyncThunk<TokenResponse, { pin: string }>(
 
       const payloadData: TokenPayload = {
         pin: payload.pin,
-        class_id: localStorage.getItem("class_id") || "",
+        class_id: payload.classId || localStorage.getItem("class_id") || "",
       };
 
       const data = await authService.getToken(payloadData);
