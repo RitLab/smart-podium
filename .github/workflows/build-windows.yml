@@ -2,7 +2,7 @@ name: Build Windows EXE
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build:
@@ -15,10 +15,13 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Dependencies
         run: npm install
+
+      - name: Build (Renderer + Electron Main)
+        run: npm run build
 
       - name: Build Windows App
         run: npx electron-builder --win
@@ -28,4 +31,3 @@ jobs:
         with:
           name: windows-build
           path: dist/**
-          compression-level: 0

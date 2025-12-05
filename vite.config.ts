@@ -22,6 +22,11 @@ export default defineConfig({
       main: {
         // Shortcut of `build.lib.entry`.
         entry: "electron/main.ts",
+        vite: {
+          build: {
+            outDir: "dist-electron",
+          },
+        },
       },
       preload: {
         // Shortcut of `build.rollupOptions.input`.
