@@ -2,7 +2,7 @@ name: Build Windows EXE
 
 on:
   push:
-    branches: [ "main" ] # Bisa kamu ubah ke branch lain, seperti "master"
+    branches: [ "master" ]
 
 jobs:
   build:
