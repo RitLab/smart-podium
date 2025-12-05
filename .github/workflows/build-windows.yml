@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build Windows App
 
 on:
   push:
@@ -9,25 +9,30 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout Source
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm install
 
-      - name: Build (Renderer + Electron Main)
+      - name: Build Renderer & Main
         run: npm run build
 
+      - name: Debug print dist-electron
+        run: dir dist-electron
+
       - name: Build Windows App
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win
 
-      - name: Upload Artifact (Windows EXE)
+      - name: Upload Release
         uses: actions/upload-artifact@v4
         with:
-          name: windows-build
-          path: dist/**
+          name: build-win
+          path: release/

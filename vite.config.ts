@@ -21,10 +21,16 @@ export default defineConfig({
     electron({
       main: {
         // Shortcut of `build.lib.entry`.
-        entry: "electron/main.ts",
+        // entry: "electron/main.ts",
+        entry: {
+          main: "electron/main.ts",
+          preload: "electron/preload.ts",
+        },
         vite: {
           build: {
             outDir: "dist-electron",
+            minify: true,
+            sourcemap: false,
           },
         },
       },
@@ -43,6 +49,9 @@ export default defineConfig({
           : {},
     }),
   ],
+  build: {
+    outDir: "dist",
+  },
   css: {
     postcss: {
       plugins: [tailwindcss()], // Add tailwindcss as a PostCSS plugin
