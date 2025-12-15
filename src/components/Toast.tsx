@@ -1,6 +1,6 @@
 import React from "react";
 import { X } from "lucide-react";
-import type { Toast } from "@/types/ui.types";
+import type { Toast } from "@/types/ui";
 
 type ToastProps = {
   toasts: Toast[];

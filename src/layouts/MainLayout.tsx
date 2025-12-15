@@ -1,5 +1,5 @@
 import { Clock9, Timer } from "lucide-react";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 
@@ -16,8 +16,9 @@ import { Image } from "@/components/Image";
 import Loading from "@/components/Loading";
 import { formatDuration, formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
-import { fetchUser } from "@/stores/auth.store";
-import { useToast } from "@/provider/Toast.Provider";
+import { fetchUser } from "@/stores/auth";
+import { Toast, ToastContextType, ToastType } from "@/types/ui";
+import ToastComponent from "@/components/Toast";
 
 const menus = [
   {
@@ -40,6 +41,68 @@ const menus = [
   },
   { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
 ];
+
+const colorMap = {
+  blue: {
+    active: "from-blue-500 to-blue-600 hover:from-blue-700 hover:to-blue-800",
+    inactive: "from-gray-50 to-gray-100 hover:from-blue-50 hover:to-blue-100",
+    iconActive: "text-white",
+    iconInactive: "text-blue-600",
+  },
+  green: {
+    active:
+      "from-green-500 to-green-600 hover:from-green-700 hover:to-green-800",
+    inactive: "from-gray-50 to-gray-100 hover:from-green-50 hover:to-green-100",
+    iconActive: "text-white",
+    iconInactive: "text-green-600",
+  },
+  yellow: {
+    active:
+      "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
+    inactive:
+      "from-gray-50 to-gray-100 hover:from-yellow-50 hover:to-yellow-100",
+    iconActive: "text-white",
+    iconInactive: "text-yellow-600",
+  },
+  red: {
+    active: "from-red-500 to-red-600 hover:from-red-700 hover:to-red-800",
+    inactive: "from-gray-50 to-gray-100 hover:from-red-50 hover:to-red-100",
+    iconActive: "text-white",
+    iconInactive: "text-red-600",
+  },
+} as const;
+
+const ToastContext = createContext<ToastContextType>({
+  showToast: () => {},
+});
+
+const useToast = () => {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error("useToast must be used within ToastProvider");
+  }
+  return context;
+};
+
+const ToastProvider = ({ children }: { children: React.ReactNode }) => {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const showToast = (message: string, type: ToastType = "info") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 3000);
+  };
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      <ToastComponent toasts={toasts} setToasts={setToasts} />
+    </ToastContext.Provider>
+  );
+};
 
 const Navbar = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -96,33 +159,30 @@ const Navbar = () => {
 };
 
 const Sidebar = () => {
+  const location = useLocation();
+
   return (
     <aside className="flex flex-col justify-center">
-      <div className="w-20 h-auto flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
+      <div className="w-20 flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
         {menus.map((menu) => {
           const Icon = menu.icon;
           const isActive = location.pathname === menu.path;
+          const color = colorMap[menu.color as keyof typeof colorMap];
 
           return (
-            <div key={menu.path}>
-              <NavLink to={menu.path}>
-                <div
-                  className={`h-12 w-12 flex items-center justify-center rounded-lg transition hover:scale-105 bg-gradient-to-b ${
-                    isActive
-                      ? `from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`
-                      : `from-gray-50 to-gray-100 hover:from-${menu.color}-50 hover:to-${menu.color}-100`
-                  }`}
-                >
-                  <Icon
-                    width={24}
-                    height={24}
-                    className={`${
-                      isActive ? `text-white` : `text-${menu.color}-600`
-                    }`}
-                  />
-                </div>
-              </NavLink>
-            </div>
+            <NavLink key={menu.path} to={menu.path}>
+              <div
+                className={`h-12 w-12 flex items-center justify-center rounded-lg transition hover:scale-105 bg-gradient-to-b ${
+                  isActive ? color.active : color.inactive
+                }`}
+              >
+                <Icon
+                  width={24}
+                  height={24}
+                  className={isActive ? color.iconActive : color.iconInactive}
+                />
+              </div>
+            </NavLink>
           );
         })}
 
@@ -172,30 +232,33 @@ const MainLayout = () => {
         style={{ backgroundImage: `url(${bgImage})` }}
       >
         <Outlet />
+
         {loading && <Loading />}
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-screen w-full bg-cover bg-center flex"
-      style={{ backgroundImage: `url(${bgImage})` }}
-    >
+    <ToastProvider>
       <div
-        className={`flex-1 flex flex-col ${
-          !isInternet ? "pt-12 pl-24 pr-12" : "p-8"
-        }`}
+        className="min-h-screen w-full bg-cover bg-center flex"
+        style={{ backgroundImage: `url(${bgImage})` }}
       >
-        {!isInternet && <Navbar />}
+        <div
+          className={`flex-1 flex flex-col ${
+            !isInternet ? "pt-12 pl-24 pr-12" : "p-8"
+          }`}
+        >
+          {!isInternet && <Navbar />}
 
-        <main className={`flex-1 ${!isInternet ? "py-12" : "py-8"}`}>
-          <Outlet />
-        </main>
+          <main className={`flex-1 ${!isInternet ? "py-12" : "py-8"}`}>
+            <Outlet />
+          </main>
+        </div>
+        <Sidebar />
+        {loading && <Loading />}
       </div>
-      <Sidebar />
-      {loading && <Loading />}
-    </div>
+    </ToastProvider>
   );
 };
 

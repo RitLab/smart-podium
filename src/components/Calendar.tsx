@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { DateClick, EventGroup, EventItem } from "@/types/event.types";
+import type { DateClick, EventGroup, EventItem } from "@/types/event";
 
 type CalendarCell = {
   day: number;
@@ -147,7 +147,11 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
       {/* day list */}
       <div className="grid grid-cols-7 w-full bg-blue-800">
         {dayList.map((day) => {
-          return <div className="p-2 text-center text-sm">{day}</div>;
+          return (
+            <div className="p-2 text-center text-sm" key={day}>
+              {day}
+            </div>
+          );
         })}
       </div>
 

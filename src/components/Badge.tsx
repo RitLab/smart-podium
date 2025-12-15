@@ -1,6 +1,6 @@
 import React from "react";
 import clsx from "clsx";
-import type { SizeType, VariantType } from "@/types/ui.types";
+import type { SizeType, VariantType } from "@/types/ui";
 
 type BadgeProps = {
   children: React.ReactNode;

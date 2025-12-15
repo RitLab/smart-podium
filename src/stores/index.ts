@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 
-import uiReducer from "./ui.store";
-import authReducer from "./auth.store";
-import calendarReducer from "./calendar.store";
-import studentReducer from "./student.store";
+import uiReducer from "./ui";
+import authReducer from "./auth";
+import calendarReducer from "./calendar";
+import studentReducer from "./student";
 
 export const store = configureStore({
   reducer: {

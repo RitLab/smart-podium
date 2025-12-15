@@ -17,7 +17,8 @@
     "build": "tsc && vite build && electron-builder",
     "preview": "vite preview",
     "pretest": "vite build --mode=test",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mock": "npx json-server src/mock/db.json"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",

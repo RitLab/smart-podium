@@ -3,14 +3,9 @@ import {
   createSlice,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import type {
-  Class,
-  TokenPayload,
-  TokenResponse,
-  User,
-} from "@/types/auth.types";
-import { authService } from "@/services/auth.service";
-import { setError, setLoading } from "./ui.store";
+import type { Class, TokenPayload, TokenResponse, User } from "@/types/auth";
+import { authService } from "@/services/auth";
+import { setError, setLoading } from "./ui";
 
 type AuthState = {
   user: User | null;

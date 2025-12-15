@@ -3,11 +3,11 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { Card } from "@/components/Card";
 import { Image } from "@/components/Image";
-import type { HandlingStatus, Status, Student } from "@/types/student.type";
+import type { HandlingStatus, Status, Student } from "@/types/student";
 import { Button } from "@/components/Button";
 import type { AppDispatch, RootState } from "@/stores";
 import { formattedDate } from "@/utils";
-import { updateStatusStudent } from "@/stores/student.store";
+import { updateStatusStudent } from "@/stores/student";
 
 type DetailProps = {
   student: Student;
@@ -51,8 +51,9 @@ const Detail = ({ student, statusList }: DetailProps) => {
           </div>
 
           <div className="mt-6 mb-1 flex justify-center gap-2 w-full">
-            {statusList.map((item) => (
+            {statusList.map((item, index) => (
               <Button
+                key={index}
                 variant={status === item.status ? item.variant : "neutral"}
                 size="sm"
                 className="w-full p-1"

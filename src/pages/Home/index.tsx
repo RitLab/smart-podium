@@ -9,7 +9,7 @@ import { Image } from "@/components/Image";
 
 import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
-import { fetchUser } from "@/stores/auth.store";
+import { fetchUser } from "@/stores/auth";
 
 const menus = [
   {

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import CalendarComponents from "@/components/Calendar";
 import type { AppDispatch, RootState } from "@/stores";
-import { fetchEvents } from "@/stores/calendar.store";
-import type { DateClick } from "@/types/event.types";
+import { fetchEvents } from "@/stores/calendar";
+import type { DateClick } from "@/types/event";
 
 const Calendar = () => {
   const dispatch = useDispatch<AppDispatch>();

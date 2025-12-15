@@ -1,5 +1,5 @@
-import type { Pagination } from "./index.types";
-import type { VariantType } from "./ui.types";
+import type { Pagination } from ".";
+import type { VariantType } from "./ui";
 
 export type Status = "present" | "absent" | "loa" | "";
 
@@ -9,7 +9,7 @@ export type HandlingStatus = {
   variant: VariantType;
 };
 export interface Student {
-  id: 1;
+  id: number;
   name: string;
   image: string;
   status: Status;

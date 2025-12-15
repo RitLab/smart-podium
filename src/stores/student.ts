@@ -8,10 +8,10 @@ import type {
   Student,
   StudentList,
   UpdateStatusPayload,
-} from "@/types/student.type";
-import type { Pagination, PaginationParams } from "@/types/index.types";
-import { studentService } from "@/services/student.services";
-import { setError, setLoading } from "./ui.store";
+} from "@/types/student";
+import type { Pagination, PaginationParams } from "@/types";
+import { studentService } from "@/services/student";
+import { setError, setLoading } from "./ui";
 import type { RootState } from ".";
 
 type TotalType = {

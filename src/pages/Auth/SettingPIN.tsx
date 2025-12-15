@@ -7,8 +7,8 @@ import type { AppDispatch, RootState } from "@/stores";
 import Logo from "@/assets/images/logo.png";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
-import { setError, setLoading } from "@/stores/ui.store";
-import { fetchClass, getToken } from "@/stores/auth.store";
+import { setError, setLoading } from "@/stores/ui";
+import { fetchClass, getToken } from "@/stores/auth";
 
 const SettingPIN = () => {
   const navigate = useNavigate();

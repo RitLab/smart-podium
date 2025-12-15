@@ -3,8 +3,8 @@ import {
   createSlice,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import { eventService } from "@/services/event.services";
-import type { EventGroup } from "@/types/event.types";
+import { eventService } from "@/services/event";
+import type { EventGroup } from "@/types/event";
 
 type CalendarState = {
   events: EventGroup[];

@@ -1,10 +1,5 @@
 // import { authURL, handler } from ".";
-import type {
-  Class,
-  TokenPayload,
-  TokenResponse,
-  User,
-} from "@/types/auth.types";
+import type { Class, TokenPayload, TokenResponse, User } from "@/types/auth";
 
 export const authService = {
   // USE MOCK
