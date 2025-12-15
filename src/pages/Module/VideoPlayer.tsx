@@ -1,7 +1,7 @@
 import { Captions, Pause, Play, Volume2, VolumeX, X } from "lucide-react";
 import React, { useRef, useState } from "react";
 import ReactPlayer from "react-player";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 
 // WORKAROUND: Casting ReactPlayer ke 'any' untuk mengatasi strict typing issue
 const Player = ReactPlayer as any;

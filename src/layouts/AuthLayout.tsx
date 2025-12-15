@@ -1,5 +1,5 @@
-import { Outlet } from "react-router-dom";
-import bgImage from "../assets/images/bg-image.png";
+import { Outlet } from "react-router";
+import bgImage from "@/assets/images/bg-image.png";
 
 const AuthLayout = () => {
   return (

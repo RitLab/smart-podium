@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from "react";
 
-import ToastComponent from "../components/Toast";
-import { Toast, ToastContextType, ToastType } from "../types/ui.types";
+import ToastComponent from "@/components/Toast";
+import type { Toast, ToastContextType, ToastType } from "@/types/ui.types";
 
 const ToastContext = createContext<ToastContextType>({
   showToast: () => {},

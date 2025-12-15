@@ -1,6 +1,6 @@
 import React from "react";
 import clsx from "clsx";
-import { SizeType, VariantType } from "../types/ui.types";
+import type { SizeType, VariantType } from "@/types/ui.types";
 
 type ButtonProps = {
   children: React.ReactNode;

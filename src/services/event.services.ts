@@ -1,5 +1,5 @@
-import { EventGroup } from "../types/event.types";
 import { baseURL, handler } from ".";
+import type { EventGroup } from "@/types/event.types";
 
 export const eventService = {
   getEvents: async (): Promise<EventGroup[]> => {

@@ -1,6 +1,15 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Class, TokenPayload, TokenResponse, User } from "../types/auth.types";
-import { authService } from "../services/auth.service";
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
+import type {
+  Class,
+  TokenPayload,
+  TokenResponse,
+  User,
+} from "@/types/auth.types";
+import { authService } from "@/services/auth.service";
 import { setError, setLoading } from "./ui.store";
 
 type AuthState = {

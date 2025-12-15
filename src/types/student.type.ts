@@ -1,5 +1,5 @@
-import { Pagination } from "./index.types";
-import { VariantType } from "./ui.types";
+import type { Pagination } from "./index.types";
+import type { VariantType } from "./ui.types";
 
 export type Status = "present" | "absent" | "loa" | "";
 

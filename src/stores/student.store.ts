@@ -1,13 +1,18 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
+
+import type {
   Student,
   StudentList,
   UpdateStatusPayload,
-} from "../types/student.type";
-import { studentService } from "../services/student.services";
-import { Pagination, PaginationParams } from "../types/index.types";
+} from "@/types/student.type";
+import type { Pagination, PaginationParams } from "@/types/index.types";
+import { studentService } from "@/services/student.services";
 import { setError, setLoading } from "./ui.store";
-import { RootState } from ".";
+import type { RootState } from ".";
 
 type TotalType = {
   total_present: number;

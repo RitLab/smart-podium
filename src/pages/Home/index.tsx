@@ -1,20 +1,15 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router";
 import { LogOut } from "lucide-react";
 
-import Logo from "../../assets/images/logo.png";
-import {
-  BookIcon,
-  CalendarIcon,
-  UsersIcon,
-  WebIcon,
-} from "../../components/Icon";
-import { Image } from "../../components/Image";
+import Logo from "@/assets/images/logo.png";
+import { BookIcon, CalendarIcon, UsersIcon, WebIcon } from "@/components/Icon";
+import { Image } from "@/components/Image";
 
-import { formattedDate, formattedTime } from "../../utils";
-import { AppDispatch, RootState } from "../../stores";
-import { fetchUser } from "../../stores/auth.store";
+import { formattedDate, formattedTime } from "@/utils";
+import type { AppDispatch, RootState } from "@/stores";
+import { fetchUser } from "@/stores/auth.store";
 
 const menus = [
   {

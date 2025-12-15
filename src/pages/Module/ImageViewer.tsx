@@ -1,6 +1,6 @@
 import { Image as ImageIcon, Minus, Plus, Save, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 
 const ImageViewer: React.FC = () => {
   const navigate = useNavigate();

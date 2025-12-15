@@ -1,6 +1,6 @@
-import { PaginationParams } from "../types/index.types";
-import { StudentList, UpdateStatusPayload } from "../types/student.type";
 import { baseURL, handler } from ".";
+import type { PaginationParams } from "@/types/index.types";
+import type { StudentList, UpdateStatusPayload } from "@/types/student.type";
 
 export const studentService = {
   getStudents: async (params: PaginationParams): Promise<StudentList> => {

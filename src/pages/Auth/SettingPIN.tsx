@@ -1,14 +1,14 @@
+import { LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
-import { AppDispatch, RootState } from "../../stores";
-import Logo from "../../assets/images/logo.png";
-import Input from "../../components/Input";
-import Select from "../../components/Select";
-import { setError, setLoading } from "../../stores/ui.store";
-import { fetchClass, getToken } from "../../stores/auth.store";
-import { LoaderCircle } from "lucide-react";
+import type { AppDispatch, RootState } from "@/stores";
+import Logo from "@/assets/images/logo.png";
+import Input from "@/components/Input";
+import Select from "@/components/Select";
+import { setError, setLoading } from "@/stores/ui.store";
+import { fetchClass, getToken } from "@/stores/auth.store";
 
 const SettingPIN = () => {
   const navigate = useNavigate();

@@ -1,7 +1,7 @@
-import { Badge } from "../../components/Badge";
-import { Card } from "../../components/Card";
-import { Image } from "../../components/Image";
-import { HandlingStatus, Status, Student } from "../../types/student.type";
+import { Badge } from "@/components/Badge";
+import { Card } from "@/components/Card";
+import { Image } from "@/components/Image";
+import type { HandlingStatus, Status, Student } from "@/types/student.type";
 
 type ItemStudentProps = {
   student: Student;

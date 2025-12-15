@@ -1,19 +1,19 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router";
 
-import AuthLayout from "../layouts/AuthLayout";
-import MainLayout from "../layouts/MainLayout";
+import AuthLayout from "@/layouts/AuthLayout";
+import MainLayout from "@/layouts/MainLayout";
 
-import InputPIN from "../pages/Auth/InputPIN";
-import LockScreen from "../pages/Auth/LockScreen";
-import SettingPIN from "../pages/Auth/SettingPIN";
-import Calendar from "../pages/Calendar";
-import Home from "../pages/Home";
-import Internet from "../pages/Internet";
-import Module from "../pages/Module";
-import File from "../pages/Module/File";
-import ImageViewer from "../pages/Module/ImageViewer";
-import VideoPlayer from "../pages/Module/VideoPlayer";
-import Student from "../pages/Student";
+import InputPIN from "@/pages/Auth/InputPIN";
+import LockScreen from "@/pages/Auth/LockScreen";
+import SettingPIN from "@/pages/Auth/SettingPIN";
+import Calendar from "@/pages/Calendar";
+import Home from "@/pages/Home";
+import Internet from "@/pages/Internet";
+import Module from "@/pages/Module";
+import File from "@/pages/Module/File";
+import ImageViewer from "@/pages/Module/ImageViewer";
+import VideoPlayer from "@/pages/Module/VideoPlayer";
+import Student from "@/pages/Student";
 
 export default () => {
   return (

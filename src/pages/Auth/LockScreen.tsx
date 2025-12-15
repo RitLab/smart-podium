@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 
-import LogoWhite from "../../assets/images/logo-white.png";
-import { formattedDate, formattedTime } from "../../utils";
-import { Image } from "../../components/Image";
-import { useNavigate } from "react-router-dom";
+import LogoWhite from "@/assets/images/logo-white.png";
+import { formattedDate, formattedTime } from "@/utils";
+import { Image } from "@/components/Image";
 
 const LockScreen = () => {
   const navigate = useNavigate();

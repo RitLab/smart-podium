@@ -1,7 +1,7 @@
 import { Download, Minus, Plus, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 
 // Worker react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.mjs`;
@@ -146,7 +146,9 @@ const File: React.FC = () => {
                   <div
                     key={index}
                     data-page={index + 1}
-                    ref={(el) => (pageRefs.current[index] = el)}
+                    ref={(el) => {
+                      pageRefs.current[index] = el;
+                    }}
                   >
                     <Page
                       pageNumber={index + 1}
@@ -178,11 +180,17 @@ const File: React.FC = () => {
             {Math.round(scale * 100)}%
           </div>
 
-          <button onClick={handleZoomIn} className="text-white hover:text-orange-400">
+          <button
+            onClick={handleZoomIn}
+            className="text-white hover:text-orange-400"
+          >
             <Plus size={20} />
           </button>
 
-          <button onClick={handleZoomOut} className="text-white hover:text-orange-400">
+          <button
+            onClick={handleZoomOut}
+            className="text-white hover:text-orange-400"
+          >
             <Minus size={20} />
           </button>
         </div>

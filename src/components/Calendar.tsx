@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { DateClick, EventGroup, EventItem } from "../types/event.types";
+import type { DateClick, EventGroup, EventItem } from "@/types/event.types";
 
 type CalendarCell = {
   day: number;
@@ -127,11 +127,21 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
     <div className="w-full text-white bg-white rounded-md border-0">
       {/* header */}
       <div className="flex bg-blue-800 gap-4 justify-center py-4 font-semibold text-sm rounded-t-md items-center">
-        <button className="border rounded-full text-center p-1" onClick={goToPrevMonth}><ChevronLeft size={12} /></button>
+        <button
+          className="border rounded-full text-center p-1"
+          onClick={goToPrevMonth}
+        >
+          <ChevronLeft size={12} />
+        </button>
         <div>
           {monthData.monthName} {monthData.year}
         </div>
-        <button className="border rounded-full text-center p-1" onClick={goToNextMonth}><ChevronRight size={12} /></button>
+        <button
+          className="border rounded-full text-center p-1"
+          onClick={goToNextMonth}
+        >
+          <ChevronRight size={12} />
+        </button>
       </div>
 
       {/* day list */}

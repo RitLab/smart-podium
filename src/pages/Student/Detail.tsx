@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { Card } from "../../components/Card";
-import { Image } from "../../components/Image";
-import { HandlingStatus, Status, Student } from "../../types/student.type";
-import { Button } from "../../components/Button";
-import { AppDispatch, RootState } from "../../stores";
-import { formattedDate } from "../../utils";
-import { updateStatusStudent } from "../../stores/student.store";
+import { Card } from "@/components/Card";
+import { Image } from "@/components/Image";
+import type { HandlingStatus, Status, Student } from "@/types/student.type";
+import { Button } from "@/components/Button";
+import type { AppDispatch, RootState } from "@/stores";
+import { formattedDate } from "@/utils";
+import { updateStatusStudent } from "@/stores/student.store";
 
 type DetailProps = {
   student: Student;

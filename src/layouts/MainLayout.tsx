@@ -1,23 +1,23 @@
 import { Clock9, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 
-import bgImage from "../assets/images/bg-solid.png";
-import Logo from "../assets/images/logo.png";
+import bgImage from "@/assets/images/bg-solid.png";
+import Logo from "@/assets/images/logo.png";
 import {
   BookIcon,
   CalendarIcon,
   HomeIcon,
   UsersIcon,
   WebIcon,
-} from "../components/Icon";
-import { Image } from "../components/Image";
-import Loading from "../components/Loading";
-import { formatDuration, formattedDate, formattedTime } from "../utils";
-import { AppDispatch, RootState } from "../stores";
-import { fetchUser } from "../stores/auth.store";
-import { useToast } from "../provider/Toast.Provider";
+} from "@/components/Icon";
+import { Image } from "@/components/Image";
+import Loading from "@/components/Loading";
+import { formatDuration, formattedDate, formattedTime } from "@/utils";
+import type { AppDispatch, RootState } from "@/stores";
+import { fetchUser } from "@/stores/auth.store";
+import { useToast } from "@/provider/Toast.Provider";
 
 const menus = [
   {

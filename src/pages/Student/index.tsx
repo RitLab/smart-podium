@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import { AppDispatch, RootState } from "../../stores";
-import { fetchStudents } from "../../stores/student.store";
-import ItemStudent from "./Item";
-import Detail from "./Detail";
-import {
+import Pagination from "@/components/Pagination";
+import type {
   HandlingStatus,
   Status,
   Student as StudentType,
-} from "../../types/student.type";
-import Pagination from "../../components/Pagination";
+} from "@/types/student.type";
+import { fetchStudents } from "@/stores/student.store";
+import type { AppDispatch, RootState } from "@/stores";
+import ItemStudent from "./Item";
+import Detail from "./Detail";
 
 const statusList: HandlingStatus[] = [
   { status: "present", label: "Hadir", variant: "success" },

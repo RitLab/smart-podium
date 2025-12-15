@@ -1,4 +1,4 @@
-import userImage from "../assets/images/user.png";
+import userImage from "@/assets/images/user.png";
 
 type ImageProps = {
   src?: string;

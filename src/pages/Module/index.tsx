@@ -1,7 +1,7 @@
 import { Box, FileText, Image, Mic, Video } from "lucide-react";
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card } from "../../components/Card";
+import { useNavigate } from "react-router";
+import { Card } from "@/components/Card";
 
 interface MaterialItem {
   id: number;

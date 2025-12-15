@@ -1,10 +1,10 @@
 import { Lock } from "lucide-react";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { AppDispatch, RootState } from "../../stores";
-import { getToken, setErrorPin } from "../../stores/auth.store";
-import Loading from "../../components/Loading";
+import { useNavigate } from "react-router";
+import type { AppDispatch, RootState } from "@/stores";
+import { getToken, setErrorPin } from "@/stores/auth.store";
+import Loading from "@/components/Loading";
 
 const length = 6;
 

@@ -1,48 +1,53 @@
 {
   "name": "smart-podium",
+  "version": "0.0.0-beta1",
+  "main": "dist-electron/main/index.js",
+  "description": "Smart Podium",
+  "author": "Muhammad Abdul Karim",
+  "license": "MIT",
   "private": true,
-  "version": "0.0.0",
+  "debug": {
+    "env": {
+      "VITE_DEV_SERVER_URL": "http://127.0.0.1:7777/"
+    }
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:win": "vite build && electron-builder --win",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build": "tsc && vite build && electron-builder",
     "preview": "vite preview",
-    "mock": "json-server --watch src/mock/db.json --port 3000"
+    "pretest": "vite build --mode=test",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@reduxjs/toolkit": "^2.9.0",
-    "axios": "^1.12.1",
+    "@reduxjs/toolkit": "^2.11.2",
+    "axios": "^1.13.2",
     "clsx": "^2.1.1",
-    "json-server": "^1.0.0-beta.3",
-    "lucide-react": "^0.544.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "electron-updater": "^6.3.9",
+    "lucide-react": "^0.561.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-pdf": "^10.2.0",
     "react-player": "^3.4.0",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^7.8.2"
+    "react-router": "^7.10.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.64",
-    "@types/react-dom": "^18.2.21",
-    "@typescript-eslint/eslint-plugin": "^7.1.1",
-    "@typescript-eslint/parser": "^7.1.1",
-    "@vitejs/plugin-react": "^4.2.1",
-    "autoprefixer": "^10.4.21",
-    "electron": "^30.0.1",
+    "@playwright/test": "^1.48.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.2.0",
     "electron-builder": "^24.13.3",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.5",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.2.2",
-    "vite": "^5.1.6",
-    "vite-plugin-electron": "^0.28.6",
-    "vite-plugin-electron-renderer": "^0.14.5",
-    "vite-plugin-node-polyfills": "^0.24.0"
-  },
-  "main": "dist-electron/main.js"
+    "json-server": "^1.0.0-beta.3",
+    "postcss": "^8.4.49",
+    "postcss-import": "^16.1.0",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.4.2",
+    "vite": "^5.4.11",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "vitest": "^2.1.5"
+  }
 }
