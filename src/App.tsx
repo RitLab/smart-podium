@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { BrowserRouter } from "react-router";
+import { HashRouter } from "react-router";
 
 import Routes from "./routers";
 import { ToastProvider } from "./provider/Toast.Provider";
@@ -7,11 +7,11 @@ import { ToastProvider } from "./provider/Toast.Provider";
 function App() {
   return (
     <Suspense fallback={<div className="p-8">Loading...</div>}>
-      <BrowserRouter>
+      <HashRouter>
         <ToastProvider>
           <Routes />
         </ToastProvider>
-      </BrowserRouter>
+      </HashRouter>
     </Suspense>
   );
 }
