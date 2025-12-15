@@ -1,7 +1,5 @@
 # electron-updater
 
-English | [简体中文](README.zh-CN.md)
-
 > Use `electron-updater` to realize the update detection, download and installation of the electric program.
 
 ```sh

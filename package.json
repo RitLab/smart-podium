@@ -1,6 +1,6 @@
 {
   "name": "smart-poidum",
-  "version": "2.2.0",
+  "version": "0.0.0-beta1",
   "main": "dist-electron/main/index.js",
   "description": "Smart Podium",
   "author": "草鞋没号 <308487730@qq.com>",
