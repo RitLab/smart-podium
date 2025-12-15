@@ -1,5 +1,5 @@
 {
-  "name": "smart-poidum",
+  "name": "smart-podium",
   "version": "0.0.0-beta1",
   "main": "dist-electron/main/index.js",
   "description": "Smart Podium",
