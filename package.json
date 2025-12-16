@@ -17,7 +17,6 @@
     "build": "tsc && vite build && electron-builder",
     "preview": "vite preview",
     "pretest": "vite build --mode=test",
-    "test": "vitest run",
     "mock": "npx json-server src/mock/db.json"
   },
   "dependencies": {
@@ -34,7 +33,6 @@
     "react-router": "^7.10.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
@@ -48,7 +46,6 @@
     "typescript": "^5.4.2",
     "vite": "^5.4.11",
     "vite-plugin-electron": "^0.29.0",
-    "vite-plugin-electron-renderer": "^0.14.6",
-    "vitest": "^2.1.5"
+    "vite-plugin-electron-renderer": "^0.14.6"
   }
 }
