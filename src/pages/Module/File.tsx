@@ -4,7 +4,7 @@ import { Document, Page, pdfjs } from "react-pdf";
 import { useNavigate, useSearchParams } from "react-router";
 
 // Worker react-pdf
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.mjs`;
 
 const File: React.FC = () => {
   const navigate = useNavigate();
