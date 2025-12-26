@@ -13,6 +13,7 @@ import Module from "@/pages/Module";
 import File from "@/pages/Module/File";
 import ImageViewer from "@/pages/Module/ImageViewer";
 import VideoPlayer from "@/pages/Module/VideoPlayer";
+import ThreeDimensionViewer from "@/pages/Module/ThreeDimensionViewer";
 import Student from "@/pages/Student";
 
 export default () => {
@@ -29,6 +30,7 @@ export default () => {
         <Route path="file" element={<File />} />
         <Route path="video" element={<VideoPlayer />} />
         <Route path="image" element={<ImageViewer />} />
+        <Route path="3d" element={<ThreeDimensionViewer />} />
         <Route path="/" element={<MainLayout />}>
           <Route path="home" element={<Home />} />
           <Route path="calendar" element={<Calendar />} />
