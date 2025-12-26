@@ -80,6 +80,15 @@ const Materi: React.FC = () => {
       fileUrl: "https://www.youtube.com/watch?v=Stl_I7U53wA",
       type: "video",
     },
+    {
+      id: 4,
+      title: "Simulasi Objek 3D",
+      thumbnail: "https://images.unsplash.com/photo-1763396519853-28ca56230bda?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      description: "Model 3D untuk simulasi dan pembelajaran interaktif.",
+      fileUrl: "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
+      type: "3d",
+    }
+
   ];
 
   // ===== HANDLE SELECT FILE (update right panel only) =====
@@ -212,6 +221,21 @@ const Materi: React.FC = () => {
               }
             >
               Play Video
+            </button>
+          )}
+
+          {selectedItem.type == "3d" && (
+            <button
+              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
+              onClick={() =>
+                navigate(
+                  `/3d?url=${encodeURIComponent(
+                    selectedItem.fileUrl
+                  )}&title=${encodeURIComponent(selectedItem.title)}`
+                )
+              }
+            >
+              Open 3D Model
             </button>
           )}
         </Card>
