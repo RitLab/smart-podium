@@ -6,52 +6,7 @@ export const eventService = {
     // return await handler.get<EventGroup[]>(`${baseURL}/events`);
     return [
       {
-        date: "1 September 2025",
-        day: "Senin",
-        items: [
-          {
-            id: 1,
-            name: "Ujian Tengah Semester",
-            type: "yellow",
-            times: {
-              start: "7.00 AM",
-              end: "3.00 PM",
-            },
-          },
-        ],
-      },
-      {
-        date: "2 September 2025",
-        day: "Selasa",
-        items: [
-          {
-            id: 1,
-            name: "Ujian Tengah Semester",
-            type: "yellow",
-            times: {
-              start: "7.00 AM",
-              end: "3.00 PM",
-            },
-          },
-        ],
-      },
-      {
-        date: "3 September 2025",
-        day: "Rabu",
-        items: [
-          {
-            id: 1,
-            name: "Ujian Tengah Semester",
-            type: "yellow",
-            times: {
-              start: "7.00 AM",
-              end: "3.00 PM",
-            },
-          },
-        ],
-      },
-      {
-        date: "4 September 2025",
+        date: "1 Januari 2026",
         day: "Kamis",
         items: [
           {
@@ -66,8 +21,53 @@ export const eventService = {
         ],
       },
       {
-        date: "5 September 2025",
+        date: "2 Januari 2026",
         day: "Jumat",
+        items: [
+          {
+            id: 1,
+            name: "Ujian Tengah Semester",
+            type: "yellow",
+            times: {
+              start: "7.00 AM",
+              end: "3.00 PM",
+            },
+          },
+        ],
+      },
+      {
+        date: "3 Januari 2026",
+        day: "Sabtu",
+        items: [
+          {
+            id: 1,
+            name: "Ujian Tengah Semester",
+            type: "yellow",
+            times: {
+              start: "7.00 AM",
+              end: "3.00 PM",
+            },
+          },
+        ],
+      },
+      {
+        date: "4 Januari 2026",
+        day: "Minggu",
+        items: [
+          {
+            id: 1,
+            name: "Ujian Tengah Semester",
+            type: "yellow",
+            times: {
+              start: "7.00 AM",
+              end: "3.00 PM",
+            },
+          },
+        ],
+      },
+      {
+        date: "5 Januari 2026",
+        day: "Senin",
         items: [
           {
             id: 1,
@@ -77,8 +77,8 @@ export const eventService = {
         ],
       },
       {
-        date: "8 September 2025",
-        day: "Senin",
+        date: "8 Januari 2026",
+        day: "Kamis",
         items: [
           {
             id: 1,

@@ -51,6 +51,30 @@ const Calendar = () => {
     setDateClick(date);
   };
 
+  const monthMap: Record<number, string> = {
+    1: "Januari",
+    2: "Februari",
+    3: "Maret",
+    4: "April",
+    5: "Mei",
+    6: "Juni",
+    7: "Juli",
+    8: "Agustus",
+    9: "September",
+    10: "Oktober",
+    11: "November",
+    12: "Desember",
+  };
+
+
+  const selectedDateString = dateClick
+    ? `${dateClick.day} ${monthMap[dateClick.month]} ${dateClick.year}`
+    : null;
+
+  const filteredEvents = selectedDateString
+    ? events.filter((ev) => ev.date === selectedDateString)
+    : events;
+
   return (
     <div className="grid grid-cols-3 w-full gap-4">
       {/* Calendar section */}
@@ -64,11 +88,8 @@ const Calendar = () => {
         className="w-full shadow-lg p-8 bg-white rounded-md overflow-scroll"
         style={{ height }}
       >
-        <div>
-          {dateClick?.year} - {dateClick?.month} - {dateClick?.day}
-        </div>
         <div className="text-xs flex flex-col gap-4">
-          {events.map((ev) => (
+          {filteredEvents.map((ev) => (
             <div key={ev.date}>
               <p className="font-medium">
                 {ev.day}, {ev.date}
