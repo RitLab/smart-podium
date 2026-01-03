@@ -1,5 +1,5 @@
 import { baseURL, handler } from ".";
-import type { EventGroup } from "@/types/event";
+import type { EventGroup, EventListPayload, EventListResponse } from "@/types/event";
 
 export const eventService = {
   getEvents: async (): Promise<EventGroup[]> => {
@@ -10,7 +10,7 @@ export const eventService = {
         day: "Kamis",
         items: [
           {
-            id: 1,
+            id: '1',
             name: "Ujian Tengah Semester",
             type: "yellow",
             times: {
@@ -25,7 +25,7 @@ export const eventService = {
         day: "Jumat",
         items: [
           {
-            id: 1,
+            id: '1',
             name: "Ujian Tengah Semester",
             type: "yellow",
             times: {
@@ -40,7 +40,7 @@ export const eventService = {
         day: "Sabtu",
         items: [
           {
-            id: 1,
+            id: '1',
             name: "Ujian Tengah Semester",
             type: "yellow",
             times: {
@@ -55,7 +55,7 @@ export const eventService = {
         day: "Minggu",
         items: [
           {
-            id: 1,
+            id: '1',
             name: "Ujian Tengah Semester",
             type: "yellow",
             times: {
@@ -70,7 +70,7 @@ export const eventService = {
         day: "Senin",
         items: [
           {
-            id: 1,
+            id: '1',
             name: "Cuti Bersama Maulid Nabi Muhammad",
             type: "red",
           },
@@ -81,7 +81,7 @@ export const eventService = {
         day: "Kamis",
         items: [
           {
-            id: 1,
+            id: '1',
             name: "Ujian Tengah Semester",
             type: "yellow",
             times: {
@@ -93,4 +93,8 @@ export const eventService = {
       },
     ];
   },
+  getEventList: async (payload: EventListPayload): Promise<EventListResponse> => {
+    const url = `${baseURL}/portal/event`;
+    return await handler.get<EventListResponse>(url, payload);
+  }
 };

@@ -1,5 +1,6 @@
 // import { authURL, handler } from ".";
-import type { Class, TokenPayload, TokenResponse, User } from "@/types/auth";
+import type { Class, LoginPayload, LoginResponse, TokenPayload, TokenResponse, User } from "@/types/auth";
+import { baseURL, handler } from ".";
 
 export const authService = {
   // USE MOCK
@@ -33,4 +34,9 @@ export const authService = {
       photo: "https://i.pravatar.cc/300",
     };
   },
+
+  login: async (payload: LoginPayload): Promise<LoginResponse> => {
+    const url = `${baseURL}/user/login`;
+    return await handler.post<LoginResponse>(url, payload);
+  }
 };

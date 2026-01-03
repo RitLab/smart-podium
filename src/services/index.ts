@@ -4,12 +4,13 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 
-const bypassToken = ["/login", "/forgot-password"];
+const bypassToken = ["/login", "/forgot-password", "/user/login"];
 
 axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   let token = localStorage.getItem("token");
-  if (token && !bypassToken.some((item) => config.url?.includes(item))) {
-    config.headers.Authorization = `Bearer ${token}`;
+  console.log(config.url)
+  if (token && config.url && !bypassToken.some((item) => config.url?.includes(item))) {
+    config.headers.Authorization = `${token}`;
   }
   return config;
 });
