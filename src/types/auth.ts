@@ -1,3 +1,5 @@
+import { BaseResponse } from ".";
+
 export interface TokenResponse {
   token: string;
 }
@@ -19,4 +21,20 @@ export interface User {
   email: string;
   class: string;
   photo: string;
+}
+
+export interface Auth {
+  app_name: string;
+  access_token: string;
+  refresh_token: string;
+}
+
+export interface LoginPayload {
+  app_name: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse extends BaseResponse {
+  data: Auth;
 }

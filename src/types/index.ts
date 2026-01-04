@@ -9,3 +9,12 @@ export interface PaginationParams {
   page?: number;
   per_page?: number;
 }
+
+export interface BaseResponse {
+  status: number;
+  message: string;
+}
+
+export interface EmptyResponse extends BaseResponse {
+  data: {} | null;
+}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import CalendarComponents from "@/components/Calendar";
 import type { AppDispatch, RootState } from "@/stores";
-import { fetchEvents } from "@/stores/calendar";
+import { fetchEvents, fetchEventList } from "@/stores/calendar";
 import type { DateClick } from "@/types/event";
 
 const Calendar = () => {
@@ -34,8 +34,15 @@ const Calendar = () => {
   }, []);
 
   // fetch data event
+  // useEffect(() => {
+  //   dispatch(fetchEvents());
+  // }, [dispatch]);
+
   useEffect(() => {
-    dispatch(fetchEvents());
+    dispatch(fetchEventList({
+      month: 1,
+      year: 2026
+    }));
   }, [dispatch]);
 
   if (loading) return <p>Loading...</p>;
@@ -45,6 +52,7 @@ const Calendar = () => {
     red: "bg-red-200 text-red-800",
     blue: "bg-blue-200 text-blue-800",
     yellow: "bg-yellow-200 text-yellow-800",
+    black: "bg-blue-200 text-blue-800"
   };
 
   const onDateClick = (date: DateClick) => {
