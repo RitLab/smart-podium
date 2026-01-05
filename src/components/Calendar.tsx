@@ -190,6 +190,8 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
                             ? "bg-red-200 text-red-800"
                             : item.type === "yellow"
                             ? "bg-yellow-200 text-yellow-800"
+                            : item.type === "grey"
+                            ? "bg-gray-300 text-black"
                             : "bg-blue-200 text-blue-800"
                         }`}
                       >

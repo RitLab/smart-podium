@@ -38,7 +38,7 @@ const groupEventsByDate = (events: EventList[]): EventGroup[] => {
     map.get(date)!.items.push({
       id: event.id,
       name: event.course_name,
-      type: event.color,
+      type: event.color || "grey",
       times: {
         start: event.start_time,
         end: event.end_time

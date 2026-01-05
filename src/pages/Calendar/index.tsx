@@ -52,7 +52,8 @@ const Calendar = () => {
     red: "bg-red-200 text-red-800",
     blue: "bg-blue-200 text-blue-800",
     yellow: "bg-yellow-200 text-yellow-800",
-    black: "bg-blue-200 text-blue-800"
+    black: "bg-blue-200 text-blue-800",
+    grey: "bg-gray-300 text-black"
   };
 
   const onDateClick = (date: DateClick) => {
