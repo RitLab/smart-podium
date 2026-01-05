@@ -101,6 +101,7 @@ export const fetchEventList = createAsyncThunk<
       }
     });
   } catch (error: any) {
+    console.log('error: ', error)
     return rejectWithValue(
       error?.message || "Failed to fetch event list"
     );
