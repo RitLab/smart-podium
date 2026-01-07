@@ -4,19 +4,27 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 import { eventService } from "@/services/event";
-import type { EventGroup, EventListPayload, EventListResponse, EventList } from "@/types/event";
+import type {
+  EventGroup,
+  EventListPayload,
+  EventListResponse,
+  EventList,
+  EventListByDatePayload,
+} from "@/types/event";
 import { authService } from "@/services/auth";
 
 type CalendarState = {
   events: EventGroup[];
   loading: boolean;
   error: string | null;
+  eventList: EventList | null;
 };
 
 const initialState: CalendarState = {
   events: [],
   loading: true,
   error: null,
+  eventList: null,
 };
 
 const groupEventsByDate = (events: EventList[]): EventGroup[] => {
@@ -41,8 +49,8 @@ const groupEventsByDate = (events: EventList[]): EventGroup[] => {
       type: event.color || "grey",
       times: {
         start: event.start_time,
-        end: event.end_time
-      }
+        end: event.end_time,
+      },
     });
   });
 
@@ -64,49 +72,78 @@ export const fetchEvents = createAsyncThunk<EventGroup[]>(
   }
 );
 
-export const fetchEventList = createAsyncThunk<
-  EventList[],
-  EventListPayload
->("calendar/fetchEventList", async (payload, { rejectWithValue }) => {
-  try {
-    if(!localStorage.getItem('token')) {
-      const loginResponse = await authService.login({
-        app_name: "SLMS",
-        email: import.meta.env.VITE_LOGIN_EMAIL,
-        password: import.meta.env.VITE_LOGIN_PASSWORD,
+export const fetchEventList = createAsyncThunk<EventList[], EventListPayload>(
+  "calendar/fetchEventList",
+  async (payload, { rejectWithValue }) => {
+    try {
+      // if(!localStorage.getItem('token')) {
+      //   const loginResponse = await authService.login({
+      //     app_name: "SLMS",
+      //     email: import.meta.env.VITE_LOGIN_EMAIL,
+      //     password: import.meta.env.VITE_LOGIN_PASSWORD,
+      //   });
+
+      //   const accessToken = loginResponse.data.access_token;
+      //   console.log('accessToken: ', accessToken);
+      //   localStorage.setItem("token", accessToken)
+      // }
+
+      const response: EventListResponse = await eventService.getEventList(
+        payload
+      );
+
+      console.log("response: ", response.data);
+      return response.data.events.map((event) => {
+        const date = new Date(event.event_date);
+
+        const formattedDate = date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+
+        return {
+          ...event,
+          event_date: formattedDate,
+        };
       });
-  
-      
-      const accessToken = loginResponse.data.access_token;
-      console.log('accessToken: ', accessToken);
-      localStorage.setItem("token", accessToken)
+    } catch (error: any) {
+      console.log("error: ", error);
+      return rejectWithValue(error?.message || "Failed to fetch event list");
     }
-
-    const response: EventListResponse =
-      await eventService.getEventList(payload);
-
-    console.log('response: ', response.data)
-    return response.data.events.map((event) => {
-      const date = new Date(event.event_date);
-
-      const formattedDate = date.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      })
-
-      return {
-        ...event,
-        event_date: formattedDate
-      }
-    });
-  } catch (error: any) {
-    console.log('error: ', error)
-    return rejectWithValue(
-      error?.message || "Failed to fetch event list"
-    );
   }
-});
+);
+
+export const fetchEventByClassroomDate = createAsyncThunk<
+  EventList | null,
+  EventListByDatePayload
+>(
+  "calendar/fetchEventByClassroomDate",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response: EventListResponse = await eventService.getEventList(
+        payload
+      );
+
+      const CLASSROOM_ID = "cda08ef8-d61d-42a6-a3ac-f94bc9d6d96c";
+
+      console.log("response.data.events: ", response.data.events);
+
+      const filteredByClassroomId = response.data.events.find(
+        (ev) => ev.class_room_id === CLASSROOM_ID
+      );
+      console.log("filteredByClassroomId: ", filteredByClassroomId);
+
+      if (!filteredByClassroomId) return null;
+
+      return filteredByClassroomId;
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.message || "Failed to fetch event list by classroom date"
+      );
+    }
+  }
+);
 
 // const calendarSlice = createSlice({
 //   name: "calendar",
@@ -151,9 +188,22 @@ const calendarSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+
+    builder
+      .addCase(fetchEventByClassroomDate.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEventByClassroomDate.fulfilled, (state, action) => {
+        state.loading = false;
+        state.eventList = action.payload;
+      })
+      .addCase(fetchEventByClassroomDate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
-
 
 // export const { setEvents } = calendarSlice.actions;
 export default calendarSlice.reducer;

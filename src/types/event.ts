@@ -45,6 +45,10 @@ export interface EventListPayload {
   year: number;
 }
 
+export interface EventListByDatePayload extends EventListPayload {
+  day: number;
+}
+
 export interface EventListResponse extends BaseResponse {
   data: {
     events: EventList[]

@@ -25,9 +25,13 @@ const Calendar = () => {
   // }, [dispatch]);
 
   useEffect(() => {
+    const today = new Date();
+    const month = today.getMonth() + 1;
+    const year = today.getFullYear();
+
     dispatch(fetchEventList({
-      month: 1,
-      year: 2026
+      month,
+      year
     }));
   }, [dispatch]);
 

@@ -107,6 +107,7 @@ const ToastProvider = ({ children }: { children: React.ReactNode }) => {
 const Navbar = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { eventList } = useSelector((state: RootState) => state.calendar)
   const [time, setTime] = useState(new Date());
   const [studySeconds, setStudySeconds] = useState(0);
 
@@ -128,10 +129,10 @@ const Navbar = () => {
 
       <div className="flex items-center gap-6">
         <div className="flex items-center bg-white shadow-md rounded-md p-4 w-auto">
-          <Image src={user?.photo} alt={user?.name} className="h-14 w-14" />
+          <Image src={eventList?.teacher_image} alt={eventList?.teacher_name} className="h-14 w-14" />
           <div className="mx-3">
-            <h3 className="font-semibold text-gray-900">{user?.name}</h3>
-            <p className="text-sm text-gray-600">{user?.class}</p>
+            <h3 className="font-semibold text-gray-900">{eventList?.teacher_name}</h3>
+            <p className="text-sm text-gray-600">{eventList?.class_room_name}</p>
           </div>
         </div>
 

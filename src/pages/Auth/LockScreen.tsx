@@ -5,9 +5,17 @@ import { useNavigate } from "react-router";
 import LogoWhite from "@/assets/images/logo-white.png";
 import { formattedDate, formattedTime } from "@/utils";
 import { Image } from "@/components/Image";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/stores";
+import { fetchEventByClassroomDate } from "@/stores/calendar";
 
 const LockScreen = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { loading, error, eventList } = useSelector(
+    (state: RootState) => state.calendar
+  )
 
   const [time, setTime] = useState(new Date());
 
@@ -15,6 +23,24 @@ const LockScreen = () => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const today = new Date();
+    const day = today.getDate();
+    const month = today.getMonth() + 1;
+    const year = today.getFullYear();
+
+    dispatch(
+      fetchEventByClassroomDate({
+        day,
+        month,
+        year,
+      })
+    );
+  }, [dispatch]);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <>
@@ -37,11 +63,11 @@ const LockScreen = () => {
           </div>
 
           <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white/20">
-            <Image src={""} alt={"user?.name"} className="h-16 w-16" />
+            <Image src={eventList?.teacher_image} alt={eventList?.teacher_name} className="h-16 w-16" />
 
             <div className="flex flex-col gap-1 text-white">
-              <h3 className="text-2xl">{"Bastian Sinaga"}</h3>
-              <p className="text-sm">{"Pelatihan Penanggulangan Terorisme"}</p>
+              <h3 className="text-2xl">{eventList?.teacher_name}</h3>
+              <p className="text-sm">{eventList?.class_name}</p>
             </div>
           </div>
         </div>
