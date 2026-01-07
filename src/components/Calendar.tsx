@@ -124,7 +124,7 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
   };
 
   return (
-    <div className="w-full text-white bg-white rounded-md border-0">
+    <div className="w-full text-white bg-white rounded-md border-0 h-full">
       {/* header */}
       <div className="flex bg-blue-800 gap-4 justify-center py-4 font-semibold text-sm rounded-t-md items-center">
         <button
@@ -163,7 +163,7 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
               idx === 35 ? "rounded-bl-md" : ""
             } ${
               idx === 41 ? "rounded-br-md" : ""
-            } bg-white h-20 border cursor-pointer border-gray-100 text-sm relative p-1 hover:bg-blue-300 hover:text-white hover:border-blue-600`}
+            } bg-white min-h-20 border cursor-pointer border-gray-100 text-sm relative p-1 hover:bg-blue-300 hover:text-white hover:border-blue-600`}
             key={idx}
             onClick={() => {
               if (cell.currentMonth && monthData.year && monthData.month) {
@@ -180,7 +180,7 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
                 <div className="font-semibold">{cell.day}</div>
                 {cell.currentMonth && monthData.year && monthData.month && (
                   <>
-                    {eventMap[
+                    {/* {eventMap[
                       `${monthData.year}-${monthData.month}-${cell.day}`
                     ]?.map((item) => (
                       <div
@@ -197,7 +197,44 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
                       >
                         {item.name}
                       </div>
-                    ))}
+                    ))} */}
+                    {(() => {
+                      const items =
+                        eventMap[
+                          `${monthData.year}-${monthData.month}-${cell.day}`
+                        ] || [];
+
+                      const MAX_VISIBLE = 2;
+                      const visibleItems = items.slice(0, MAX_VISIBLE);
+                      const remainingCount = items.length - MAX_VISIBLE;
+
+                      return (
+                        <>
+                          {visibleItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className={`mt-1 text-xs rounded px-1 block ${
+                                item.type === "red"
+                                  ? "bg-red-200 text-red-800"
+                                  : item.type === "yellow"
+                                  ? "bg-yellow-200 text-yellow-800"
+                                  : item.type === "grey"
+                                  ? "bg-gray-300 text-black"
+                                  : "bg-blue-200 text-blue-800"
+                              }`}
+                            >
+                              {item.name}
+                            </div>
+                          ))}
+
+                          {remainingCount > 0 && (
+                            <div className="mt-1 text-[10px] text-blue-500 font-semibold">
+                              +{remainingCount} data lainnya
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </>
                 )}
               </>

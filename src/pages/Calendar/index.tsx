@@ -12,26 +12,12 @@ const Calendar = () => {
   );
 
   const calendarRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number>();
+  // const [height, setHeight] = useState<number>();
   const [dateClick, setDateClick] = useState<{
     year: number;
     month: number;
     day: number;
   }>();
-
-  // set calendar height for event list section height
-  useEffect(() => {
-    const updateHeight = () => {
-      if (calendarRef.current) {
-        setHeight(calendarRef.current.offsetHeight);
-      }
-    };
-
-    updateHeight(); // panggil pertama kali
-    window.addEventListener("resize", updateHeight);
-
-    return () => window.removeEventListener("resize", updateHeight);
-  }, []);
 
   // fetch data event
   // useEffect(() => {
@@ -87,15 +73,14 @@ const Calendar = () => {
   return (
     <div className="grid grid-cols-3 w-full gap-4">
       {/* Calendar section */}
-      <div className="col-span-2" ref={calendarRef}>
+      <div className="col-span-2">
         <CalendarComponents events={events} onDateClick={onDateClick} />
       </div>
 
       {/* Event list section */}
       <div
         id="calendarEvent"
-        className="w-full shadow-lg p-8 bg-white rounded-md overflow-scroll"
-        style={{ height }}
+        className="w-full shadow-lg p-8 bg-white rounded-md overflow-scroll h-[642px]"
       >
         <div className="text-xs flex flex-col gap-4">
           {filteredEvents.map((ev) => (
