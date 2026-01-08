@@ -84,6 +84,7 @@ const Student = () => {
               student={item}
               setStudent={(value) => handelSetStudent(value)}
               handleStatus={handleStatus}
+              selectedStudent={student}
             />
           ))}
         </div>

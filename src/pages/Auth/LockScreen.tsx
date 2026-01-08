@@ -78,7 +78,7 @@ const LockScreen = () => {
 
             <div className="flex flex-col gap-1 text-white">
               <h3 className="text-2xl">{eventList?.teacher_name}</h3>
-              <p className="text-sm">{eventList?.class_name}</p>
+              <p className="text-sm">{eventList?.course_name}</p>
             </div>
           </div>
         </div>

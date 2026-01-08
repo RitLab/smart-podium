@@ -132,7 +132,7 @@ const Navbar = () => {
           <Image src={eventList?.teacher_image} alt={eventList?.teacher_name} className="h-14 w-14" />
           <div className="mx-3">
             <h3 className="font-semibold text-gray-900">{eventList?.teacher_name}</h3>
-            <p className="text-sm text-gray-600">{eventList?.class_room_name}</p>
+            <p className="text-sm text-gray-600">{eventList?.course_name}</p>
           </div>
         </div>
 

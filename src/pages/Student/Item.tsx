@@ -7,16 +7,18 @@ type ItemStudentProps = {
   student: Student;
   setStudent: (params: Student) => void;
   handleStatus: (status: Status) => HandlingStatus;
+  selectedStudent: Student;
 };
 
 const ItemStudent = ({
   student,
   setStudent,
   handleStatus,
+  selectedStudent,
 }: ItemStudentProps) => {
   return (
     <Card
-      className="border hover:shadow-lg transition-shadow hover:bg-gray-50 cursor-pointer"
+      className={`border cursor-pointer transition-shadow hover:shadow-lg ${selectedStudent?.id == student.id ? "!bg-blue-200 !hover:bg-blue-200" : "bg-white hover:bg-gray-50"}`}
       onClick={() => setStudent(student)}
     >
       <div className="flex flex-col items-center justify-center text-center py-12 px-2">
