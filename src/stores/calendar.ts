@@ -76,17 +76,17 @@ export const fetchEventList = createAsyncThunk<EventList[], EventListPayload>(
   "calendar/fetchEventList",
   async (payload, { rejectWithValue }) => {
     try {
-      // if(!localStorage.getItem('token')) {
-      //   const loginResponse = await authService.login({
-      //     app_name: "SLMS",
-      //     email: import.meta.env.VITE_LOGIN_EMAIL,
-      //     password: import.meta.env.VITE_LOGIN_PASSWORD,
-      //   });
+      if(!localStorage.getItem('token')) {
+        const loginResponse = await authService.login({
+          app_name: "SLMS",
+          email: import.meta.env.VITE_LOGIN_EMAIL,
+          password: import.meta.env.VITE_LOGIN_PASSWORD,
+        });
 
-      //   const accessToken = loginResponse.data.access_token;
-      //   console.log('accessToken: ', accessToken);
-      //   localStorage.setItem("token", accessToken)
-      // }
+        const accessToken = loginResponse.data.access_token;
+        console.log('accessToken: ', accessToken);
+        localStorage.setItem("token", accessToken)
+      }
 
       const response: EventListResponse = await eventService.getEventList(
         payload
@@ -121,6 +121,18 @@ export const fetchEventByClassroomDate = createAsyncThunk<
   "calendar/fetchEventByClassroomDate",
   async (payload, { rejectWithValue }) => {
     try {
+      if(!localStorage.getItem('token')) {
+        const loginResponse = await authService.login({
+          app_name: "SLMS",
+          email: import.meta.env.VITE_LOGIN_EMAIL,
+          password: import.meta.env.VITE_LOGIN_PASSWORD,
+        });
+
+        const accessToken = loginResponse.data.access_token;
+        console.log('accessToken: ', accessToken);
+        localStorage.setItem("token", accessToken)
+      }
+
       const response: EventListResponse = await eventService.getEventList(
         payload
       );

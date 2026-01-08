@@ -15,7 +15,7 @@ const LockScreen = () => {
 
   const { loading, error, eventList } = useSelector(
     (state: RootState) => state.calendar
-  )
+  );
 
   const [time, setTime] = useState(new Date());
 
@@ -40,7 +40,14 @@ const LockScreen = () => {
   }, [dispatch]);
 
   if (loading) return <p>Loading...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (error) return (
+    <>
+    <div className="flex flex-col gap-2 justify-center items-center">
+      <p className="text-red-500">{error}</p>
+      <button onClick={() => window.location.reload()} className="bg-white px-2 py-1 text-black border border-gray-200 rounded-md">Reload</button>
+    </div>
+    </>
+  );
 
   return (
     <>
@@ -63,7 +70,11 @@ const LockScreen = () => {
           </div>
 
           <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white/20">
-            <Image src={eventList?.teacher_image} alt={eventList?.teacher_name} className="h-16 w-16" />
+            <Image
+              src={eventList?.teacher_image}
+              alt={eventList?.teacher_name}
+              className="h-16 w-16"
+            />
 
             <div className="flex flex-col gap-1 text-white">
               <h3 className="text-2xl">{eventList?.teacher_name}</h3>
