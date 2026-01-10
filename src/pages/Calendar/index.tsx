@@ -12,26 +12,12 @@ const Calendar = () => {
   );
 
   const calendarRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number>();
+  // const [height, setHeight] = useState<number>();
   const [dateClick, setDateClick] = useState<{
     year: number;
     month: number;
     day: number;
   }>();
-
-  // set calendar height for event list section height
-  useEffect(() => {
-    const updateHeight = () => {
-      if (calendarRef.current) {
-        setHeight(calendarRef.current.offsetHeight);
-      }
-    };
-
-    updateHeight(); // panggil pertama kali
-    window.addEventListener("resize", updateHeight);
-
-    return () => window.removeEventListener("resize", updateHeight);
-  }, []);
 
   // fetch data event
   // useEffect(() => {
@@ -39,10 +25,16 @@ const Calendar = () => {
   // }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchEventList({
-      month: 1,
-      year: 2026
-    }));
+    const today = new Date();
+    const month = today.getMonth() + 1;
+    const year = today.getFullYear();
+
+    dispatch(
+      fetchEventList({
+        month,
+        year,
+      })
+    );
   }, [dispatch]);
 
   if (loading) return <p>Loading...</p>;
@@ -52,7 +44,8 @@ const Calendar = () => {
     red: "bg-red-200 text-red-800",
     blue: "bg-blue-200 text-blue-800",
     yellow: "bg-yellow-200 text-yellow-800",
-    black: "bg-blue-200 text-blue-800"
+    black: "bg-blue-200 text-blue-800",
+    grey: "bg-gray-300 text-black",
   };
 
   const onDateClick = (date: DateClick) => {
@@ -74,7 +67,6 @@ const Calendar = () => {
     12: "Desember",
   };
 
-
   const selectedDateString = dateClick
     ? `${dateClick.day} ${monthMap[dateClick.month]} ${dateClick.year}`
     : null;
@@ -84,17 +76,16 @@ const Calendar = () => {
     : events;
 
   return (
-    <div className="grid grid-cols-3 w-full gap-4">
+    <div className="grid grid-cols-3 w-full h-[780px] gap-4 box-border">
       {/* Calendar section */}
-      <div className="col-span-2" ref={calendarRef}>
+      <div className="col-span-2 shadow-lg h-full">
         <CalendarComponents events={events} onDateClick={onDateClick} />
       </div>
 
       {/* Event list section */}
       <div
         id="calendarEvent"
-        className="w-full shadow-lg p-8 bg-white rounded-md overflow-scroll"
-        style={{ height }}
+        className="w-full shadow-lg px-6 py-6 bg-white rounded-md h-full overflow-y-auto"
       >
         <div className="text-xs flex flex-col gap-4">
           {filteredEvents.map((ev) => (

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, session } from "electron";
+import { app, BrowserWindow, shell, ipcMain, session, Menu } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -95,7 +95,10 @@ async function createWindow() {
   update(win);
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
+  createWindow()
+});
 
 app.on("window-all-closed", () => {
   win = null;

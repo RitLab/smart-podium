@@ -1,6 +1,6 @@
 {
   "name": "smart-podium",
-  "version": "0.0.0-beta1",
+  "version": "0.0.1",
   "main": "dist-electron/main/index.js",
   "description": "Smart Podium",
   "author": "Muhammad Abdul Karim",
@@ -10,6 +10,11 @@
     "env": {
       "VITE_DEV_SERVER_URL": "http://127.0.0.1:7777/"
     }
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "RitLab",
+    "repo": "smart-podium"
   },
   "type": "module",
   "scripts": {
