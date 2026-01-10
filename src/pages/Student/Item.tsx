@@ -25,9 +25,7 @@ const ItemStudent = ({
         <Image
           src={student.image}
           alt={student.name}
-          className={`w-24 h-24 mb-4 ${
-            student.status !== "present" ? "" : "grayscale"
-          }`}
+          className={`w-24 h-24 mb-4`}
         />
 
         <h3 className="text-md font-medium mb-4">{student.name}</h3>
