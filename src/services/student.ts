@@ -12,7 +12,7 @@ export const studentService = {
       students: [
         {
           id: 1,
-          name: "Tanto Sunoto 1",
+          name: "Tanto Sunoto 1.1",
           image: "https://i.pravatar.cc/300?img=1",
           status: "present",
         },
