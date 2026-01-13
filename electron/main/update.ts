@@ -20,30 +20,44 @@ export function update(win: Electron.BrowserWindow) {
     autoUpdater.quitAndInstall(false, true)
   })
 
-  // start check
-  autoUpdater.on('checking-for-update', function () { })
-  // update available
-  autoUpdater.on('update-available', (arg: UpdateInfo) => {
-    win.webContents.send('update-can-available', { update: true, version: app.getVersion(), newVersion: arg?.version })
-  })
-  // update not available
-  autoUpdater.on('update-not-available', (arg: UpdateInfo) => {
-    win.webContents.send('update-can-available', { update: false, version: app.getVersion(), newVersion: arg?.version })
-  })
+  autoUpdater.on('checking-for-update', () => console.log('Sedang mengecek update ke GitHub...'))
+  autoUpdater.on('update-available', () => console.log('Update ditemukan! Memulai download...'))
+  autoUpdater.on('update-not-available', () => console.log('Tidak ada update. Aplikasi sudah versi terbaru.'))
+  autoUpdater.on('error', (err: any) => console.error('Error saat update:', err))
+
+  // // start check
+  // autoUpdater.on('checking-for-update', function () { })
+  // // update available
+  // autoUpdater.on('update-available', (arg: UpdateInfo) => {
+  //   win.webContents.send('update-can-available', { update: true, version: app.getVersion(), newVersion: arg?.version })
+  // })
+  // // update not available
+  // autoUpdater.on('update-not-available', (arg: UpdateInfo) => {
+  //   win.webContents.send('update-can-available', { update: false, version: app.getVersion(), newVersion: arg?.version })
+  // })
 
   // Checking for updates
-  ipcMain.handle('check-update', async () => {
-    if (!app.isPackaged) {
-      const error = new Error('The update feature is only available after the package.')
-      return { message: error.message, error }
-    }
+  // ipcMain.handle('check-update', async () => {
+  //   if (!app.isPackaged) {
+  //     const error = new Error('The update feature is only available after the package.')
+  //     return { message: error.message, error }
+  //   }
 
-    try {
-      return await autoUpdater.checkForUpdatesAndNotify()
-    } catch (error) {
-      return { message: 'Network error', error }
-    }
-  })
+  //   try {
+  //     return await autoUpdater.checkForUpdatesAndNotify()
+  //   } catch (error) {
+  //     return { message: 'Network error', error }
+  //   }
+  // })
+
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdatesAndNotify();
+    
+    // Opsional: Cek ulang setiap 1 jam
+    setInterval(() => {
+      autoUpdater.checkForUpdatesAndNotify();
+    }, 60 * 60 * 1000);
+  }
 
   // Start downloading and feedback on progress
   ipcMain.handle('start-download', (event: Electron.IpcMainInvokeEvent) => {
