@@ -48,7 +48,7 @@ export const studentService = {
         },
         {
           id: 7,
-          name: "Tanto Sunoto",
+          name: "Abdurrahman",
           image: "https://i.pravatar.cc/300?img=7",
           status: "present",
         },
@@ -56,7 +56,7 @@ export const studentService = {
           id: 8,
           name: "Tatiana Mango",
           image: "https://i.pravatar.cc/300?img=8",
-          status: "",
+          status: "present",
         },
         {
           id: 9,
@@ -68,7 +68,7 @@ export const studentService = {
           id: 10,
           name: "Angel Lubin",
           image: "https://i.pravatar.cc/300?img=10",
-          status: "",
+          status: "absent",
         },
         {
           id: 11,
