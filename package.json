@@ -1,0 +1,55 @@
+{
+  "name": "smart-podium",
+  "version": "0.0.7",
+  "main": "dist-electron/main/index.js",
+  "description": "Smart Podium",
+  "author": "Muhammad Abdul Karim",
+  "license": "MIT",
+  "private": true,
+  "debug": {
+    "env": {
+      "VITE_DEV_SERVER_URL": "http://127.0.0.1:7777/"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "preview": "vite preview",
+    "pretest": "vite build --mode=test",
+    "mock": "npx json-server src/mock/db.json",
+    "release": "tsc && vite build && electron-builder --publish always"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.88.17",
+    "@react-three/fiber": "^8.15.19",
+    "@reduxjs/toolkit": "^2.11.2",
+    "axios": "^1.13.2",
+    "clsx": "^2.1.1",
+    "electron-updater": "^6.3.9",
+    "lucide-react": "^0.561.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-pdf": "^10.2.0",
+    "react-player": "^3.4.0",
+    "react-redux": "^9.2.0",
+    "react-router": "^7.10.1",
+    "three": "^0.182.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.2.0",
+    "electron-builder": "^24.13.3",
+    "json-server": "^1.0.0-beta.3",
+    "postcss": "^8.4.49",
+    "postcss-import": "^16.1.0",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.4.2",
+    "vite": "^5.4.11",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6"
+  }
+}

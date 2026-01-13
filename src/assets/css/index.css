@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Body */
+html,
+body,
+#root {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+}
+
+@font-face {
+    font-family: 'Avenir Next Cyr';
+    src: url('../fonts/AvenirNextCyr-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Avenir Next Cyr';
+    src: url('../fonts/AvenirNextCyr-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Avenir Next Cyr';
+    src: url('../fonts/AvenirNextCyr-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+}
+
+#calendarEvent::-webkit-scrollbar {
+    @apply w-2;
+}
+
+#calendarEvent::-webkit-scrollbar-thumb {
+    @apply bg-blue-800 rounded-full;
+}
