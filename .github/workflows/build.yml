@@ -1,13 +1,26 @@
-name: Build & Release
+name: Build
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [master]
+    paths-ignore:
+      - "**.md"
+      - "**.spec.js"
+      - ".idea"
+      - ".vscode"
+      - ".dockerignore"
+      - "Dockerfile"
+      - ".gitignore"
+      - ".github/**"
+      - "!.github/workflows/build.yml"
 
 jobs:
-  release:
-    runs-on: windows-latest
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout Code
@@ -21,7 +34,14 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build & Publish
-        run: npx electron-builder --publish always
+      - name: Build Release Files
+        run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_on_${{ matrix. os }}
+          path: release/
+          retention-days: 5
