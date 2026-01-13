@@ -12,7 +12,7 @@ export const studentService = {
       students: [
         {
           id: 1,
-          name: "Tanto Sunoto 1.1",
+          name: "Tanto Sunoto",
           image: "https://i.pravatar.cc/300?img=1",
           status: "present",
         },
@@ -48,7 +48,7 @@ export const studentService = {
         },
         {
           id: 7,
-          name: "Tanto Sunoto 2",
+          name: "Tanto Sunoto",
           image: "https://i.pravatar.cc/300?img=7",
           status: "present",
         },
