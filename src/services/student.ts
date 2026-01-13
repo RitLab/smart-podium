@@ -14,13 +14,13 @@ export const studentService = {
           id: 1,
           name: "Tanto Sunoto",
           image: "https://i.pravatar.cc/300?img=1",
-          status: "",
+          status: "present",
         },
         {
           id: 2,
           name: "Tatiana Mango",
           image: "https://i.pravatar.cc/300?img=2",
-          status: "",
+          status: "present",
         },
         {
           id: 3,
