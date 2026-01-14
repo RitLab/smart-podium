@@ -14,7 +14,7 @@ export const studentService = {
           id: 1,
           name: "Tanto Sunoto",
           image: "https://i.pravatar.cc/300?img=1",
-          status: "",
+          status: "absent",
         },
         {
           id: 2,
