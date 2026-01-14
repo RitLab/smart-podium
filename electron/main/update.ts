@@ -21,7 +21,7 @@ export function update(win: Electron.BrowserWindow) {
 
   autoUpdater.on('update-downloaded', () => {
     // Parameter: (isSilent, isForceRunAfter)
-    autoUpdater.quitAndInstall(false, true)
+    autoUpdater.quitAndInstall(true, true)
   })
 
   autoUpdater.on('checking-for-update', () => console.log('Sedang mengecek update ke GitHub...'))
