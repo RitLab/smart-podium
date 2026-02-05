@@ -14,6 +14,9 @@ export default defineConfig(({ command }) => {
   const sourcemap = isServe || !!process.env.VSCODE_DEBUG;
 
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+    },
     resolve: {
       alias: {
         "@": path.join(__dirname, "src"),
@@ -28,7 +31,7 @@ export default defineConfig(({ command }) => {
           onstart(args) {
             if (process.env.VSCODE_DEBUG) {
               console.log(
-                /* For `.vscode/.debug.script.mjs` */ "[startup] Electron App"
+                /* For `.vscode/.debug.script.mjs` */ "[startup] Electron App",
               );
             } else {
               args.startup();
@@ -41,7 +44,7 @@ export default defineConfig(({ command }) => {
               outDir: "dist-electron/main",
               rollupOptions: {
                 external: Object.keys(
-                  "dependencies" in pkg ? pkg.dependencies : {}
+                  "dependencies" in pkg ? pkg.dependencies : {},
                 ),
               },
             },
@@ -58,7 +61,7 @@ export default defineConfig(({ command }) => {
               outDir: "dist-electron/preload",
               rollupOptions: {
                 external: Object.keys(
-                  "dependencies" in pkg ? pkg.dependencies : {}
+                  "dependencies" in pkg ? pkg.dependencies : {},
                 ),
               },
             },

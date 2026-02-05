@@ -56,7 +56,7 @@ const Home = () => {
   useEffect(() => {
     if (!eventList?.start_time) return;
 
-    const startTime = getStartTimeToday(eventList?.start_time)
+    const startTime = getStartTimeToday(eventList?.start_time);
 
     console.log(startTime);
 
@@ -75,8 +75,8 @@ const Home = () => {
         setCountdown(
           `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
             2,
-            "0"
-          )}`
+            "0",
+          )}`,
         );
       }
     }, 1000);
@@ -119,56 +119,59 @@ const Home = () => {
 
   return (
     <div className="h-full flex flex-col items-center justify-between py-24">
-      <div className="flex flex-col gap-16">
-        <img
-          src={Logo}
-          alt="Logo"
-          className="h-18 w-96 object-contain"
-          onClick={handleClick}
-        />
-
-        <div className="text-center">
-          <h1 className="text-7xl font-bold text-gray-800">
-            {formattedTime(time)}
-          </h1>
-          <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>
-        </div>
-
-        <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
-          <Image
-            src={eventList?.teacher_image}
-            alt={eventList?.teacher_name}
-            className="h-16 w-16"
+      <div>
+        <p className="text-xs text-gray-400 text-center mb-2">Smart Podium v{__APP_VERSION__}</p>
+        <div className="flex flex-col gap-16">
+          <img
+            src={Logo}
+            alt="Logo"
+            className="h-18 w-96 object-contain"
+            onClick={handleClick}
           />
 
-          <div className="flex flex-col gap-1">
-            <h3 className="text-2xl text-gray-800">
-              {eventList?.teacher_name}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {eventList?.class_room_name}
-            </p>
+          <div className="text-center">
+            <h1 className="text-7xl font-bold text-gray-800">
+              {formattedTime(time)}
+            </h1>
+            <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>
           </div>
 
-          {isStarted ? (
-            <button
-              className="flex flex-col items-center gap-1 bg-gradient-to-b from-emerald-500 to-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-800 transition"
-              onClick={handleStart}
-            >
-              <LogOut size={18} />
-              <div>Mulai</div>
-            </button>
-          ) : (
-            <button
-              className="flex flex-col items-center gap-1 bg-gradient-to-b from-[#FFC35C] to-[#FCA106] text-white px-4 py-2 rounded-lg font-medium text-sm opacity-80 cursor-not-allowed"
-              disabled
-            >
-              <div className="text-sm">Mulai Dalam</div>
-              <div className="text-xl font-semibold">
-                {countdown ?? "--:--"}
-              </div>
-            </button>
-          )}
+          <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
+            <Image
+              src={eventList?.teacher_image}
+              alt={eventList?.teacher_name}
+              className="h-16 w-16"
+            />
+
+            <div className="flex flex-col gap-1">
+              <h3 className="text-2xl text-gray-800">
+                {eventList?.teacher_name}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {eventList?.class_room_name}
+              </p>
+            </div>
+
+            {isStarted ? (
+              <button
+                className="flex flex-col items-center gap-1 bg-gradient-to-b from-emerald-500 to-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-800 transition"
+                onClick={handleStart}
+              >
+                <LogOut size={18} />
+                <div>Mulai</div>
+              </button>
+            ) : (
+              <button
+                className="flex flex-col items-center gap-1 bg-gradient-to-b from-[#FFC35C] to-[#FCA106] text-white px-4 py-2 rounded-lg font-medium text-sm opacity-80 cursor-not-allowed"
+                disabled
+              >
+                <div className="text-sm">Mulai Dalam</div>
+                <div className="text-xl font-semibold">
+                  {countdown ?? "--:--"}
+                </div>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
