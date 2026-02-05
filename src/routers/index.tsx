@@ -15,6 +15,7 @@ import ImageViewer from "@/pages/Module/ImageViewer";
 import VideoPlayer from "@/pages/Module/VideoPlayer";
 import ThreeDimensionViewer from "@/pages/Module/ThreeDimensionViewer";
 import Student from "@/pages/Student";
+import Viewer from "@/pages/Module/Viewer";
 
 export default () => {
   return (
@@ -31,6 +32,7 @@ export default () => {
         <Route path="video" element={<VideoPlayer />} />
         <Route path="image" element={<ImageViewer />} />
         <Route path="3d" element={<ThreeDimensionViewer />} />
+        <Route path="viewer" element={<Viewer />} />
         <Route path="/" element={<MainLayout />}>
           <Route path="home" element={<Home />} />
           <Route path="calendar" element={<Calendar />} />

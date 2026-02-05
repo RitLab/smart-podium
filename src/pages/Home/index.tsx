@@ -10,6 +10,7 @@ import { Image } from "@/components/Image";
 import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
+import { startRecord } from "@/stores/record";
 
 const menus = [
   {
@@ -97,6 +98,7 @@ const Home = () => {
     e.preventDefault();
     try {
       navigate("/module");
+      await dispatch(startRecord()).unwrap();
     } catch (err) {
       console.error(err);
     }

@@ -19,6 +19,7 @@ import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { Toast, ToastContextType, ToastType } from "@/types/ui";
 import ToastComponent from "@/components/Toast";
+import RecorderComponents from "@/components/Recorder";
 
 const menus = [
   {
@@ -107,7 +108,7 @@ const ToastProvider = ({ children }: { children: React.ReactNode }) => {
 const Navbar = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { eventList } = useSelector((state: RootState) => state.calendar)
+  const { eventList } = useSelector((state: RootState) => state.calendar);
   const [time, setTime] = useState(new Date());
   const [studySeconds, setStudySeconds] = useState(0);
 
@@ -124,14 +125,19 @@ const Navbar = () => {
   }, []);
 
   return (
-    <header className="flex items-center justify-between">
+    <header className="flex items-center justify-between relative">
       <img src={Logo} alt="Logo" className="h-28 w-96 object-contain" />
-
       <div className="flex items-center gap-6">
         <div className="flex items-center bg-white shadow-md rounded-md p-4 w-auto">
-          <Image src={eventList?.teacher_image} alt={eventList?.teacher_name} className="h-14 w-14" />
+          <Image
+            src={eventList?.teacher_image}
+            alt={eventList?.teacher_name}
+            className="h-14 w-14"
+          />
           <div className="mx-3">
-            <h3 className="font-semibold text-gray-900">{eventList?.teacher_name}</h3>
+            <h3 className="font-semibold text-gray-900">
+              {eventList?.teacher_name}
+            </h3>
             <p className="text-sm text-gray-600">{eventList?.course_name}</p>
           </div>
         </div>
@@ -232,6 +238,9 @@ const MainLayout = () => {
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
+        {/* <div className="absolute top-4 left-24">
+          <RecorderComponents />
+        </div> */}
         <Outlet />
 
         {loading && <Loading />}
@@ -242,9 +251,12 @@ const MainLayout = () => {
   return (
     <ToastProvider>
       <div
-        className="min-h-screen w-full bg-cover bg-center flex"
+        className="relative min-h-screen w-full bg-cover bg-center flex"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
+        {/* <div className="absolute top-4 left-24">
+          <RecorderComponents />
+        </div> */}
         <div
           className={`flex-1 flex flex-col ${
             !isInternet ? "pt-12 pl-24 pr-12" : "p-8"
