@@ -1,9 +1,9 @@
-import { baseSLMSUrl, handler } from ".";
+import { baseWhisperUrl, handler } from ".";
 import type { EventGroup, EventListPayload, EventListResponse } from "@/types/event";
 
 export const eventService = {
   getEvents: async (): Promise<EventGroup[]> => {
-    // return await handler.get<EventGroup[]>(`${baseSLMSUrl}/events`);
+    // return await handler.get<EventGroup[]>(`${baseWhisperUrl}/events`);
     return [
       {
         date: "1 Januari 2026",
@@ -94,7 +94,7 @@ export const eventService = {
     ];
   },
   getEventList: async (payload: EventListPayload): Promise<EventListResponse> => {
-    const url = `${baseSLMSUrl}/portal/event`;
+    const url = `${baseWhisperUrl}/portal/event`;
     return await handler.get<EventListResponse>(url, payload);
   }
 };

@@ -104,6 +104,8 @@ export const baseURL = import.meta.env.VITE_API_URL || "";
 
 export const baseSLMSUrl = import.meta.env.VITE_API_SLMS_URL || "";
 
+export const baseWhisperUrl = import.meta.env.VITE_API_WHISPER_URL || "";
+
 export const authURL = import.meta.env.VITE_API_AUTH_URL || "";
 
 export const responseBody = <T>(response: AxiosResponse<T>) => response.data;
