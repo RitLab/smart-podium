@@ -1,247 +1,198 @@
-import { Box, FileText, Image, Mic, Video } from "lucide-react";
-import React, { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import { Card } from "@/components/Card";
+import type { AppDispatch, RootState } from "@/stores";
+import {
+  fetchReferensi,
+  fetchBahanAjarList,
+  fetchBahanAjarDetail,
+} from "@/stores/module";
 
-interface MaterialItem {
-  id: number;
-  title: string;
-  thumbnail: string;
-  description: string;
-  fileUrl: string;
-  type: string;
-}
+/* ================= PAGE ================= */
 
-interface FileIconProps {
-  type: string;
-}
-
-const FileIcon: React.FC<FileIconProps> = ({ type }) => {
-  switch (type) {
-    case "pdf":
-      return <FileText className="w-4 h-4 text-red-500" />;
-    case "video":
-      return <Video className="w-4 h-4 text-red-500" />;
-    case "3d":
-      return <Box className="w-4 h-4 text-orange-500" />;
-    case "audio":
-      return <Mic className="w-4 h-4 text-purple-500" />;
-    default:
-      return <Image className="w-4 h-4 text-red-500" />;
-  }
-};
-
-const Materi: React.FC = () => {
+const Module = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<number>(0);
-  const [selectedItem, setSelectedItem] = useState<MaterialItem | null>(null);
+  const { referensi, list, detail, loading, error } = useSelector(
+    (state: RootState) => state.module,
+  );
 
-  const listBab = [
-    "BAB I",
-    "BAB II",
-    "BAB III",
-    "BAB IV",
-    "BAB V",
-    "BAB VI",
-    "BAB VII",
-  ];
+  /* ===== LOCAL STATE ===== */
+  const [activeBabIndex, setActiveBabIndex] = useState(0);
+  const [activeSubIndex, setActiveSubIndex] = useState(0);
+  const [showBabDropdown, setShowBabDropdown] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  // ----- SAMPLE DATA -----
-  const materials: MaterialItem[] = [
-    {
-      id: 1,
-      title: "Pengantar Pemberantasan Terorisme",
-      thumbnail:
-        "https://images.unsplash.com/photo-1763713382836-e2263bff42b3?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      description:
-        "Materi ini memberikan pengantar mengenai konsep dasar terorisme, akar penyebabnya, serta strategi awal penanggulangan terorisme.",
-      fileUrl:
-        "https://images.unsplash.com/photo-1763713382836-e2263bff42b3?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      type: "image",
-    },
-    {
-      id: 2,
-      title: "Etika dan Hak Asasi",
-      thumbnail:
-        "https://images.unsplash.com/photo-1763908161084-6be74390daf2?q=80&w=726&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      description:
-        "Pembahasan mengenai etika dan HAM dalam konteks penindakan terorisme.",
-      fileUrl:
-        "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf",
-      type: "pdf",
-    },
-    {
-      id: 3,
-      title: "Proses Radikalisasi",
-      thumbnail:
-        "https://images.unsplash.com/photo-1763396519853-28ca56230bda?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      description: "Mengenal proses radikalisasi dan faktor penyebabnya.",
-      fileUrl: "https://www.youtube.com/watch?v=Stl_I7U53wA",
-      type: "video",
-    },
-    {
-      id: 4,
-      title: "Simulasi Objek 3D",
-      thumbnail: "https://images.unsplash.com/photo-1763396519853-28ca56230bda?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      description: "Model 3D untuk simulasi dan pembelajaran interaktif.",
-      fileUrl: "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
-      type: "3d",
-    }
+  /* ================= FETCH REFERENSI ================= */
+  useEffect(() => {
+    dispatch(fetchReferensi());
+  }, [dispatch]);
 
-  ];
+  const activeBab = referensi[activeBabIndex];
+  const activeSub = activeBab?.sub?.[activeSubIndex];
 
-  // ===== HANDLE SELECT FILE (update right panel only) =====
-  const handleSelectMaterial = (item: MaterialItem) => {
-    setSelectedItem(item);
-  };
+  /* ================= FETCH LIST ================= */
+  useEffect(() => {
+    if (!activeBab || !activeSub) return;
+
+    dispatch(
+      fetchBahanAjarList({
+        page: 1,
+        limit: 12,
+        category: activeBab.value,
+        sub_category: activeSub.value,
+      }),
+    );
+  }, [dispatch, activeBab, activeSub]);
+
+  /* ================= STATE UI ================= */
+  if (loading) return <p className="p-6">Loading...</p>;
+  if (error) return <p className="p-6 text-red-500">{error}</p>;
+
+  /* ================= RENDER ================= */
 
   return (
-    <div className="grid grid-cols-12 gap-4 p-4">
-      {/* LEFT CONTENT */}
-      <Card
-        className={`${
-          selectedItem ? "col-span-8" : "col-span-12"
-        } space-y-4 p-6`}
-      >
-        {/* TABS */}
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {listBab.map((bab, idx) => (
+    <div className="grid grid-cols-12 gap-6 p-6">
+      {/* ================= LEFT ================= */}
+      <Card className="col-span-8 p-6 space-y-6">
+        {/* ===== HEADER BAB ===== */}
+        <div className="flex items-center justify-between">
+          <div className="relative">
             <button
-              key={idx}
+              onClick={() => setShowBabDropdown((v) => !v)}
+              className="flex items-center gap-2 font-bold text-lg"
+            >
+              <ChevronDown className="w-5 h-5" />
+              {activeBab?.label ?? "Pilih Bidang Studi"}
+            </button>
+
+            {showBabDropdown && (
+              <div className="absolute z-20 mt-2 bg-white border rounded-lg shadow">
+                {referensi.map((bab, idx) => (
+                  <button
+                    key={bab.value}
+                    onClick={() => {
+                      setActiveBabIndex(idx);
+                      setActiveSubIndex(0);
+                      setShowBabDropdown(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    {bab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ===== PILLS BAB ===== */}
+        <div className="flex gap-3 flex-wrap">
+          {referensi.map((bab, idx) => (
+            <button
+              key={bab.value}
               onClick={() => {
-                setActiveTab(idx);
-                setSelectedItem(null); // reset ketika pindah BAB
+                setActiveBabIndex(idx);
+                setActiveSubIndex(0);
               }}
-              className={`px-6 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
-                activeTab === idx
-                  ? "bg-gray-900 text-white shadow"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              className={`px-4 py-1.5 rounded-full text-sm ${
+                idx === activeBabIndex
+                  ? "bg-black text-white"
+                  : "bg-gray-100 text-gray-600"
               }`}
             >
-              {bab}
+              {bab.label}
             </button>
           ))}
         </div>
 
-        <h2 className="text-lg font-bold mb-4">
-          {listBab[activeTab]} - Pengantar Pemberantasan Terorisme
+        {/* ===== TITLE ===== */}
+        <h2 className="text-lg font-bold">
+          {activeBab?.label}
         </h2>
 
-        {/* GRID MATERI */}
-        <div className="grid grid-cols-3 gap-4">
-          {materials.map((item) => (
+        {/* ===== GRID MATERI ===== */}
+        <div className="grid grid-cols-4 gap-4">
+          {list.map((item) => (
             <div
               key={item.id}
-              className={`${
-                selectedItem?.id === item.id
-                  ? "bg-blue-500/20 border-blue-500"
-                  : "bg-gray-100 border-transparent"
-              } rounded-xl p-4 cursor-pointer hover:shadow transition`}
-              onClick={() => handleSelectMaterial(item)}
+              onClick={() => {
+                setSelectedId(item.id);
+                dispatch(fetchBahanAjarDetail(item.id));
+              }}
+              className={`cursor-pointer rounded-xl border p-3 transition ${
+                selectedId === item.id
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:shadow"
+              }`}
             >
-              <div className="flex gap-2 items-center mb-3">
-                <div className="ml-1">
-                  <FileIcon type={item.type} />
-                </div>
-                <div className="text-sm truncate font-semibold">
-                  {item.title}
-                </div>
-              </div>
               <img
-                src={item.thumbnail}
-                className={`w-full ${
-                  selectedItem ? "h-32" : "h-48"
-                } object-cover rounded-lg`}
+                src={item.image}
+                alt={item.title}
+                className="w-full h-28 object-cover rounded-lg mb-2"
               />
+
+              <p className="text-sm font-semibold line-clamp-2">
+                {item.title}
+              </p>
             </div>
           ))}
         </div>
+
+        {/* ===== PAGINATION (STATIC UI) ===== */}
+        <div className="flex justify-center gap-2 pt-4">
+          <button className="px-3 py-1 border rounded text-sm">Prev</button>
+          <button className="px-3 py-1 border rounded bg-blue-600 text-white text-sm">
+            1
+          </button>
+          <button className="px-3 py-1 border rounded text-sm">2</button>
+          <button className="px-3 py-1 border rounded text-sm">3</button>
+          <button className="px-3 py-1 border rounded text-sm">Next</button>
+        </div>
       </Card>
 
-      {/* RIGHT PANEL */}
-      {selectedItem && (
-        <Card className="col-span-4 p-4">
-          <div className="flex gap-4 items-center mb-4">
-            <img
-              src={selectedItem.thumbnail}
-              className="w-32 h-40 object-cover rounded-lg"
-            />
+      {/* ================= RIGHT PANEL ================= */}
+      {detail && (
+        <Card className="col-span-4 p-5 space-y-4 sticky top-6 h-fit">
+          <img
+            src={detail.header.image}
+            className="w-full h-40 object-cover rounded-lg"
+          />
 
-            <h3 className="text-xl font-bold">{selectedItem.title}</h3>
-          </div>
-
-          <div className="mt-2 mb-4">Module Specifications</div>
-
-          <div className="p-4 rounded-lg border mb-4">
-            <p className="text-gray-600 leading-relaxed">
-              {selectedItem.description}
+          <div>
+            <h3 className="font-bold text-lg">
+              {detail.header.title}
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {detail.header.description}
             </p>
           </div>
 
-          {selectedItem.type == "image" && (
-            <button
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
-              onClick={() =>
-                navigate(
-                  `/image?url=${encodeURIComponent(
-                    selectedItem.fileUrl
-                  )}&title=${encodeURIComponent(selectedItem.title)}`
-                )
-              }
-            >
-              Open Image
-            </button>
-          )}
+          {/* <div className="text-sm text-gray-700">
+            <p>👨‍🏫 Pengajar: {detail.pengajar.length}</p>
+            <p>📘 Jumlah Sesi: {detail.sesi.length}</p>
+            <p>📝 Evaluasi: {detail.header.jumlah_evaluasi}</p>
+          </div> */}
 
-          {selectedItem.type == "pdf" && (
-            <button
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
-              onClick={() =>
-                navigate(
-                  `/file?url=${encodeURIComponent(
-                    selectedItem.fileUrl
-                  )}&title=${encodeURIComponent(selectedItem.title)}`
-                )
-              }
-            >
-              Open File
-            </button>
-          )}
-
-          {selectedItem.type == "video" && (
-            <button
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
-              onClick={() =>
-                navigate(
-                  `/video?url=${encodeURIComponent(
-                    selectedItem.fileUrl
-                  )}&title=${encodeURIComponent(selectedItem.title)}`
-                )
-              }
-            >
-              Play Video
-            </button>
-          )}
-
-          {selectedItem.type == "3d" && (
-            <button
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
-              onClick={() =>
-                navigate(
-                  `/3d?url=${encodeURIComponent(
-                    selectedItem.fileUrl
-                  )}&title=${encodeURIComponent(selectedItem.title)}`
-                )
-              }
-            >
-              Open 3D Model
-            </button>
-          )}
+          <button
+            onClick={() =>
+              navigate(
+                `/viewer?url=${encodeURIComponent(
+                  detail.header.file_url,
+                )}&title=${encodeURIComponent(detail.header.title)}`,
+              )
+            }
+            className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
+          >
+            Open File
+          </button>
         </Card>
       )}
     </div>
   );
 };
 
-export default Materi;
+export default Module;

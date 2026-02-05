@@ -8,8 +8,12 @@ const bypassToken = ["/login", "/forgot-password", "/user/login"];
 
 axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   let token = localStorage.getItem("token");
-  console.log(config.url)
-  if (token && config.url && !bypassToken.some((item) => config.url?.includes(item))) {
+  console.log(config.url);
+  if (
+    token &&
+    config.url &&
+    !bypassToken.some((item) => config.url?.includes(item))
+  ) {
     config.headers.Authorization = `${token}`;
   }
   return config;
@@ -30,14 +34,11 @@ axios.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const loginResponse = await axios.post(
-          `${authURL}/login`,
-          {
-            app_name: "SLMS",
-            email: import.meta.env.VITE_LOGIN_EMAIL,
-            password: import.meta.env.VITE_LOGIN_PASSWORD,
-          }
-        );
+        const loginResponse = await axios.post(`${authURL}/login`, {
+          app_name: "SLMS",
+          email: import.meta.env.VITE_LOGIN_EMAIL,
+          password: import.meta.env.VITE_LOGIN_PASSWORD,
+        });
 
         const newToken = loginResponse.data.access_token;
 
@@ -67,9 +68,8 @@ axios.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
-
 
 // axios.interceptors.response.use(
 //   (res: AxiosResponse) => res,
@@ -101,6 +101,8 @@ axios.interceptors.response.use(
 // );
 
 export const baseURL = import.meta.env.VITE_API_URL || "";
+
+export const baseSLMSUrl = import.meta.env.VITE_API_SLMS_URL || "";
 
 export const authURL = import.meta.env.VITE_API_AUTH_URL || "";
 
