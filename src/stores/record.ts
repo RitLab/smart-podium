@@ -1,9 +1,11 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+// src/stores/record.ts
+
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { recordApi } from "@/services/record";
 
 type RecordState = {
   isRecording: boolean;
-  recordId: number | null;
+  session_id: string | null;
   startTime: number | null; // timestamp (ms)
   duration: number; // detik
   loading: boolean;
@@ -12,7 +14,7 @@ type RecordState = {
 
 const initialState: RecordState = {
   isRecording: false,
-  recordId: null,
+  session_id: null,
   startTime: null,
   duration: 0,
   loading: false,
@@ -20,17 +22,39 @@ const initialState: RecordState = {
 };
 
 /**
- * API start recording
+ * START RECORDING
+ * GET /portal/video/{event_id}/start
  */
 export const startRecord = createAsyncThunk<
-  { record_id: number; started_at: string },
-  { module_id?: number } | void
+  { session_id: string },
+  { id: string },
+  { rejectValue: string }
 >("record/start", async (payload, { rejectWithValue }) => {
   try {
-    const res = await recordApi.start(payload || {});
+    const res = await recordApi.start(payload.id);
     return res.data;
   } catch (err: any) {
-    return rejectWithValue(err?.message || "Gagal memulai recording");
+    return rejectWithValue(
+      err?.response?.data?.message || "Gagal memulai recording",
+    );
+  }
+});
+
+/**
+ * STOP RECORDING
+ * POST /portal/video/stop
+ */
+export const stopRecord = createAsyncThunk<
+  void,
+  { session_id: string; event_id: string },
+  { rejectValue: string }
+>("record/stop", async (payload, { rejectWithValue }) => {
+  try {
+    await recordApi.stop(payload);
+  } catch (err: any) {
+    return rejectWithValue(
+      err?.response?.data?.message || "Gagal menghentikan recording",
+    );
   }
 });
 
@@ -40,9 +64,11 @@ const recordSlice = createSlice({
   reducers: {
     resetRecord(state) {
       state.isRecording = false;
-      state.recordId = null;
+      state.session_id = null;
       state.startTime = null;
       state.duration = 0;
+      state.loading = false;
+      state.error = null;
     },
 
     /**
@@ -50,34 +76,49 @@ const recordSlice = createSlice({
      */
     tick(state) {
       if (state.isRecording && state.startTime) {
-        state.duration = Math.floor(
-          (Date.now() - state.startTime) / 1000
-        );
+        state.duration = Math.floor((Date.now() - state.startTime) / 1000);
       }
     },
   },
   extraReducers: (builder) => {
     builder
+
+      // =====================
+      // START
+      // =====================
       .addCase(startRecord.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-
       .addCase(startRecord.fulfilled, (state, action) => {
         state.loading = false;
         state.isRecording = true;
-
-        state.recordId = action.payload.record_id;
-
-        // ⬅️ INI PENTING
-        // waktu dikunci di store, bukan di component
+        state.session_id = action.payload.session_id;
         state.startTime = Date.now();
         state.duration = 0;
       })
-
       .addCase(startRecord.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.payload ?? "Start recording gagal";
+      })
+
+      // =====================
+      // STOP
+      // =====================
+      .addCase(stopRecord.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(stopRecord.fulfilled, (state) => {
+        state.loading = false;
+        state.isRecording = false;
+        state.session_id = null;
+        state.startTime = null;
+        state.duration = 0;
+      })
+      .addCase(stopRecord.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload ?? "Stop recording gagal";
       });
   },
 });

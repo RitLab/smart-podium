@@ -238,9 +238,9 @@ const MainLayout = () => {
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        {/* <div className="absolute top-4 left-24">
+        <div className="absolute top-4 left-24">
           <RecorderComponents />
-        </div> */}
+        </div>
         <Outlet />
 
         {loading && <Loading />}
@@ -254,9 +254,9 @@ const MainLayout = () => {
         className="relative min-h-screen w-full bg-cover bg-center flex"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        {/* <div className="absolute top-4 left-24">
+        <div className="absolute top-4 left-24">
           <RecorderComponents />
-        </div> */}
+        </div>
         <div
           className={`flex-1 flex flex-col ${
             !isInternet ? "pt-12 pl-24 pr-12" : "p-8"

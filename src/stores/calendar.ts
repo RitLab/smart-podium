@@ -209,6 +209,7 @@ const calendarSlice = createSlice({
       .addCase(fetchEventByClassroomDate.fulfilled, (state, action) => {
         state.loading = false;
         state.eventList = action.payload;
+        console.log('eL: ', state.eventList)
       })
       .addCase(fetchEventByClassroomDate.rejected, (state, action) => {
         state.loading = false;

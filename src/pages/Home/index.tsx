@@ -10,59 +10,62 @@ import { Image } from "@/components/Image";
 import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
-import { startRecord } from "@/stores/record";
+import { startRecord, stopRecord } from "@/stores/record";
 
 const menus = [
-  {
-    path: "/calendar",
-    label: "Kalender Akademik",
-    icon: CalendarIcon,
-    color: "blue",
-  },
-  {
-    path: "/student",
-    label: "Manajemen Peserta Didik",
-    icon: UsersIcon,
-    color: "green",
-  },
-  {
-    path: "/module",
-    label: "Materi Pelajaran",
-    icon: BookIcon,
-    color: "yellow",
-  },
+  { path: "/calendar", label: "Kalender Akademik", icon: CalendarIcon, color: "blue" },
+  { path: "/student", label: "Manajemen Peserta Didik", icon: UsersIcon, color: "green" },
+  { path: "/module", label: "Materi Pelajaran", icon: BookIcon, color: "yellow" },
   { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
-];
+] as const;
+
+/**
+ * ⛔ Tailwind tidak support dynamic class string
+ * Jadi kita mapping manual seperti ini
+ */
+const colorMap = {
+  blue: "from-blue-500 to-blue-600 hover:from-blue-700 hover:to-blue-800",
+  green: "from-green-500 to-green-600 hover:from-green-700 hover:to-green-800",
+  yellow: "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
+  red: "from-red-500 to-red-600 hover:from-red-700 hover:to-red-800",
+};
 
 const Home = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
 
   const { eventList } = useSelector((state: RootState) => state.calendar);
+  const { isRecording, session_id } = useSelector(
+    (state: RootState) => state.record
+  );
 
   const [time, setTime] = useState(new Date());
   const [countdown, setCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
 
+  /**
+   * Hitung waktu mulai hari ini
+   */
   const getStartTimeToday = (startTime: string) => {
     const [hours, minutes] = startTime.split(":").map(Number);
-
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
-
     return date.getTime();
   };
 
+  /**
+   * Countdown event
+   */
   useEffect(() => {
-    if (!eventList?.start_time) return;
+    if (!eventList?.start_time) {
+      setIsStarted(false);
+      return;
+    }
 
-    const startTime = getStartTimeToday(eventList?.start_time);
-
-    console.log(startTime);
+    const startTime = getStartTimeToday(eventList.start_time);
 
     const interval = setInterval(() => {
-      const now = new Date().getTime();
+      const now = Date.now();
       const diff = startTime - now;
 
       if (diff <= 0) {
@@ -74,37 +77,64 @@ const Home = () => {
         const seconds = Math.floor((diff / 1000) % 60);
 
         setCountdown(
-          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
-            2,
-            "0",
-          )}`,
+          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
         );
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [eventList?.start_time]);
+  }, [eventList]);
 
+  /**
+   * Clock realtime
+   */
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
+  /**
+   * Fetch user
+   */
   useEffect(() => {
     dispatch(fetchUser());
   }, [dispatch]);
 
-  const handleStart = async (e: any) => {
+  /**
+   * Toggle Record
+   */
+  const handleRecordToggle = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
     e.preventDefault();
+
+    if (!eventList) return;
+
     try {
-      navigate("/module");
-      await dispatch(startRecord()).unwrap();
+      if (!isRecording) {
+        await dispatch(
+          startRecord({ id: String(eventList.id) })
+        ).unwrap();
+
+        navigate("/module");
+      } else {
+        if (!session_id) return;
+
+        await dispatch(
+          stopRecord({
+            session_id,
+            event_id: String(eventList.id),
+          })
+        ).unwrap();
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
-  // debug lockscreen page
+  /**
+   * Debug 5x click logo
+   */
   const clickCountRef = useRef(0);
   const handleClick = () => {
     clickCountRef.current += 1;
@@ -122,7 +152,10 @@ const Home = () => {
   return (
     <div className="h-full flex flex-col items-center justify-between py-24">
       <div>
-        <p className="text-xs text-gray-400 text-center mb-2">Smart Podium v{__APP_VERSION__}</p>
+        <p className="text-xs text-gray-400 text-center mb-2">
+          Smart Podium v{__APP_VERSION__}
+        </p>
+
         <div className="flex flex-col gap-16">
           <img
             src={Logo}
@@ -135,9 +168,12 @@ const Home = () => {
             <h1 className="text-7xl font-bold text-gray-800">
               {formattedTime(time)}
             </h1>
-            <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>
+            <p className="text-2xl text-gray-600 mt-4">
+              {formattedDate(time)}
+            </p>
           </div>
 
+          {/* CARD EVENT */}
           <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
             <Image
               src={eventList?.teacher_image}
@@ -156,16 +192,20 @@ const Home = () => {
 
             {isStarted ? (
               <button
-                className="flex flex-col items-center gap-1 bg-gradient-to-b from-emerald-500 to-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm hover:from-emerald-600 hover:to-emerald-800 transition"
-                onClick={handleStart}
+                onClick={handleRecordToggle}
+                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white ${
+                  isRecording
+                    ? "bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
+                    : "bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800"
+                }`}
               >
                 <LogOut size={18} />
-                <div>Mulai</div>
+                <div>{isRecording ? "Stop" : "Mulai"}</div>
               </button>
             ) : (
               <button
-                className="flex flex-col items-center gap-1 bg-gradient-to-b from-[#FFC35C] to-[#FCA106] text-white px-4 py-2 rounded-lg font-medium text-sm opacity-80 cursor-not-allowed"
                 disabled
+                className="flex flex-col items-center gap-1 bg-gradient-to-b from-[#FFC35C] to-[#FCA106] text-white px-4 py-2 rounded-lg font-medium text-sm opacity-80 cursor-not-allowed"
               >
                 <div className="text-sm">Mulai Dalam</div>
                 <div className="text-xl font-semibold">
@@ -177,6 +217,7 @@ const Home = () => {
         </div>
       </div>
 
+      {/* MENU */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
         {menus.map((menu) => {
           const Icon = menu.icon;
@@ -185,11 +226,15 @@ const Home = () => {
               <NavLink to={menu.path}>
                 <div className="flex flex-col items-center hover:scale-105">
                   <div
-                    className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b from-${menu.color}-500 to-${menu.color}-600 hover:from-${menu.color}-700 hover:to-${menu.color}-800`}
+                    className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${
+                      colorMap[menu.color]
+                    }`}
                   >
                     <Icon width={58} height={58} className="text-white" />
                   </div>
-                  <p className="mt-4 text-gray-700 font-medium">{menu.label}</p>
+                  <p className="mt-4 text-gray-700 font-medium">
+                    {menu.label}
+                  </p>
                 </div>
               </NavLink>
             </div>

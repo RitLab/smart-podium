@@ -1,4 +1,4 @@
-import { slmsHandler } from "./slms";
+import { baseWhisperUrl, handler } from ".";
 
 export type StartRecordPayload = {
   module_id?: number;
@@ -6,41 +6,39 @@ export type StartRecordPayload = {
 };
 
 export type StopRecordPayload = {
-  record_id: number;
-  duration: number; // dalam detik
+  session_id: string;
+  event_id: string;
 };
 
 export const recordApi = {
   /**
    * Start recording session
    */
-  start: (body: StartRecordPayload) =>
-    slmsHandler.post<{
-      success: boolean;
+  start: (id: string) =>
+    handler.post<{
+      message: string;
       data: {
-        record_id: number;
-        started_at: string;
+        session_id: string;
       };
-    }>("/portal/recording/start", body),
+      status: number;
+    }>(`${baseWhisperUrl}/portal/video/${id}/start`),
 
   /**
    * Stop recording session
    */
   stop: (body: StopRecordPayload) =>
-    slmsHandler.post<{
-      success: boolean;
-      data: {
-        record_id: number;
-        duration: number;
-      };
-    }>("/portal/recording/stop", body),
+    handler.post<{
+      message: string;
+      data: {};
+      status: number;
+    }>(`${baseWhisperUrl}/portal/video/stop`, body),
 
   /**
    * Optional: heartbeat / keep-alive
    * supaya backend tahu recording masih jalan
    */
   heartbeat: (record_id: number) =>
-    slmsHandler.post<{
+    handler.post<{
       success: boolean;
     }>("/portal/recording/heartbeat", { record_id }),
 };
