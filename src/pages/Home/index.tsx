@@ -4,13 +4,24 @@ import { NavLink, useNavigate } from "react-router";
 import { LogOut } from "lucide-react";
 
 import Logo from "@/assets/images/logo.png";
-import { BookIcon, CalendarIcon, UsersIcon, WebIcon } from "@/components/Icon";
+import {
+  BookIcon,
+  CalendarIcon,
+  UsersIcon,
+  WebIcon,
+} from "@/components/Icon";
 import { Image } from "@/components/Image";
 
 import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
-import { startRecord, stopRecord } from "@/stores/record";
+import {
+  startRecord,
+  stopRecord,
+  clearError,
+} from "@/stores/record";
+
+import { useToast } from "@/layouts/MainLayout";
 
 const menus = [
   { path: "/calendar", label: "Kalender Akademik", icon: CalendarIcon, color: "blue" },
@@ -19,10 +30,6 @@ const menus = [
   { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
 ] as const;
 
-/**
- * ⛔ Tailwind tidak support dynamic class string
- * Jadi kita mapping manual seperti ini
- */
 const colorMap = {
   blue: "from-blue-500 to-blue-600 hover:from-blue-700 hover:to-blue-800",
   green: "from-green-500 to-green-600 hover:from-green-700 hover:to-green-800",
@@ -33,9 +40,10 @@ const colorMap = {
 const Home = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const { showToast } = useToast();
 
   const { eventList } = useSelector((state: RootState) => state.calendar);
-  const { isRecording, session_id } = useSelector(
+  const { isRecording, session_id, error } = useSelector(
     (state: RootState) => state.record
   );
 
@@ -43,9 +51,19 @@ const Home = () => {
   const [countdown, setCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
 
-  /**
-   * Hitung waktu mulai hari ini
-   */
+  /* =====================================================
+     HANDLE RECORD ERROR → TOAST
+  ===================================================== */
+  useEffect(() => {
+    if (error) {
+      showToast(error, "error");
+      dispatch(clearError());
+    }
+  }, [error, dispatch, showToast]);
+
+  /* =====================================================
+     GET START TIME TODAY
+  ===================================================== */
   const getStartTimeToday = (startTime: string) => {
     const [hours, minutes] = startTime.split(":").map(Number);
     const date = new Date();
@@ -53,9 +71,9 @@ const Home = () => {
     return date.getTime();
   };
 
-  /**
-   * Countdown event
-   */
+  /* =====================================================
+     COUNTDOWN EVENT
+  ===================================================== */
   useEffect(() => {
     if (!eventList?.start_time) {
       setIsStarted(false);
@@ -77,7 +95,10 @@ const Home = () => {
         const seconds = Math.floor((diff / 1000) % 60);
 
         setCountdown(
-          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+            2,
+            "0"
+          )}`
         );
       }
     }, 1000);
@@ -85,24 +106,24 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [eventList]);
 
-  /**
-   * Clock realtime
-   */
+  /* =====================================================
+     REALTIME CLOCK
+  ===================================================== */
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  /**
-   * Fetch user
-   */
+  /* =====================================================
+     FETCH USER
+  ===================================================== */
   useEffect(() => {
     dispatch(fetchUser());
   }, [dispatch]);
 
-  /**
-   * Toggle Record
-   */
+  /* =====================================================
+     START / STOP RECORD
+  ===================================================== */
   const handleRecordToggle = async (
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -128,14 +149,16 @@ const Home = () => {
         ).unwrap();
       }
     } catch (err) {
-      console.error(err);
+      // Error sudah ditangani di Redux → Toast
+      console.error("Record error:", err);
     }
   };
 
-  /**
-   * Debug 5x click logo
-   */
+  /* =====================================================
+     DEBUG 5x CLICK LOGO
+  ===================================================== */
   const clickCountRef = useRef(0);
+
   const handleClick = () => {
     clickCountRef.current += 1;
 
@@ -149,6 +172,9 @@ const Home = () => {
     }, 2000);
   };
 
+  /* =====================================================
+     RENDER
+  ===================================================== */
   return (
     <div className="h-full flex flex-col items-center justify-between py-24">
       <div>
@@ -164,6 +190,7 @@ const Home = () => {
             onClick={handleClick}
           />
 
+          {/* CLOCK */}
           <div className="text-center">
             <h1 className="text-7xl font-bold text-gray-800">
               {formattedTime(time)}
@@ -173,7 +200,7 @@ const Home = () => {
             </p>
           </div>
 
-          {/* CARD EVENT */}
+          {/* EVENT CARD */}
           <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
             <Image
               src={eventList?.teacher_image}
