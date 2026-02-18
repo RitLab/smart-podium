@@ -4,43 +4,36 @@ import { NavLink, useNavigate } from "react-router";
 import { LogOut } from "lucide-react";
 
 import Logo from "@/assets/images/logo.png";
-import { BookIcon, CalendarIcon, UsersIcon, WebIcon } from "@/components/Icon";
+import {
+  BookIcon,
+  CalendarIcon,
+  UsersIcon,
+  WebIcon,
+} from "@/components/Icon";
 import { Image } from "@/components/Image";
 
 import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
-import { startRecord, stopRecord, clearError } from "@/stores/record";
+import {
+  startRecord,
+  stopRecord,
+  clearError,
+} from "@/stores/record";
 
 import { useToast } from "@/layouts/MainLayout";
 
 const menus = [
-  {
-    path: "/calendar",
-    label: "Kalender Akademik",
-    icon: CalendarIcon,
-    color: "blue",
-  },
-  {
-    path: "/student",
-    label: "Manajemen Peserta Didik",
-    icon: UsersIcon,
-    color: "green",
-  },
-  {
-    path: "/module",
-    label: "Materi Pelajaran",
-    icon: BookIcon,
-    color: "yellow",
-  },
+  { path: "/calendar", label: "Kalender Akademik", icon: CalendarIcon, color: "blue" },
+  { path: "/student", label: "Manajemen Peserta Didik", icon: UsersIcon, color: "green" },
+  { path: "/module", label: "Materi Pelajaran", icon: BookIcon, color: "yellow" },
   { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
 ] as const;
 
 const colorMap = {
   blue: "from-blue-500 to-blue-600 hover:from-blue-700 hover:to-blue-800",
   green: "from-green-500 to-green-600 hover:from-green-700 hover:to-green-800",
-  yellow:
-    "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
+  yellow: "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
   red: "from-red-500 to-red-600 hover:from-red-700 hover:to-red-800",
 };
 
@@ -51,7 +44,7 @@ const Home = () => {
 
   const { eventList } = useSelector((state: RootState) => state.calendar);
   const { isRecording, session_id, error } = useSelector(
-    (state: RootState) => state.record,
+    (state: RootState) => state.record
   );
 
   const [time, setTime] = useState(new Date());
@@ -104,8 +97,8 @@ const Home = () => {
         setCountdown(
           `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
             2,
-            "0",
-          )}`,
+            "0"
+          )}`
         );
       }
     }, 1000);
@@ -131,14 +124,18 @@ const Home = () => {
   /* =====================================================
      START / STOP RECORD
   ===================================================== */
-  const handleRecordToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleRecordToggle = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
     e.preventDefault();
 
     if (!eventList) return;
 
     try {
       if (!isRecording) {
-        await dispatch(startRecord({ id: String(eventList.id) })).unwrap();
+        await dispatch(
+          startRecord({ id: String(eventList.id) })
+        ).unwrap();
 
         navigate("/module");
       } else {
@@ -148,7 +145,7 @@ const Home = () => {
           stopRecord({
             session_id,
             event_id: String(eventList.id),
-          }),
+          })
         ).unwrap();
       }
     } catch (err) {
@@ -164,11 +161,6 @@ const Home = () => {
 
   const handleClick = () => {
     clickCountRef.current += 1;
-    console.log('session_id: ', session_id)
-    console.log('!isRecording: ', !isRecording)
-    console.log('isStarted: ', isStarted)
-    console.log('hasFinishedRecording: ', !isRecording && session_id === null && isStarted)
-    console.log('shouldShowEventCard: ', !(!isRecording && session_id === null && isStarted))
 
     if (clickCountRef.current === 5) {
       clickCountRef.current = 0;
@@ -179,10 +171,6 @@ const Home = () => {
       clickCountRef.current = 0;
     }, 2000);
   };
-
-  const hasFinishedRecording = !isRecording && session_id === null && isStarted;
-
-  const shouldShowEventCard = !hasFinishedRecording;
 
   /* =====================================================
      RENDER
@@ -207,52 +195,52 @@ const Home = () => {
             <h1 className="text-7xl font-bold text-gray-800">
               {formattedTime(time)}
             </h1>
-            <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>
+            <p className="text-2xl text-gray-600 mt-4">
+              {formattedDate(time)}
+            </p>
           </div>
 
           {/* EVENT CARD */}
-          {shouldShowEventCard && (
-            <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
-              <Image
-                src={eventList?.teacher_image}
-                alt={eventList?.teacher_name}
-                className="h-16 w-16"
-              />
+          <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
+            <Image
+              src={eventList?.teacher_image}
+              alt={eventList?.teacher_name}
+              className="h-16 w-16"
+            />
 
-              <div className="flex flex-col gap-1">
-                <h3 className="text-2xl text-gray-800">
-                  {eventList?.teacher_name}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {eventList?.class_room_name}
-                </p>
-              </div>
-
-              {isStarted ? (
-                <button
-                  onClick={handleRecordToggle}
-                  className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white ${
-                    isRecording
-                      ? "bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
-                      : "bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800"
-                  }`}
-                >
-                  <LogOut size={18} />
-                  <div>{isRecording ? "Stop" : "Mulai"}</div>
-                </button>
-              ) : (
-                <button
-                  disabled
-                  className="flex flex-col items-center gap-1 bg-gradient-to-b from-[#FFC35C] to-[#FCA106] text-white px-4 py-2 rounded-lg font-medium text-sm opacity-80 cursor-not-allowed"
-                >
-                  <div className="text-sm">Mulai Dalam</div>
-                  <div className="text-xl font-semibold">
-                    {countdown ?? "--:--"}
-                  </div>
-                </button>
-              )}
+            <div className="flex flex-col gap-1">
+              <h3 className="text-2xl text-gray-800">
+                {eventList?.teacher_name}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {eventList?.class_room_name}
+              </p>
             </div>
-          )}
+
+            {isStarted ? (
+              <button
+                onClick={handleRecordToggle}
+                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white ${
+                  isRecording
+                    ? "bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
+                    : "bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800"
+                }`}
+              >
+                <LogOut size={18} />
+                <div>{isRecording ? "Stop" : "Mulai"}</div>
+              </button>
+            ) : (
+              <button
+                disabled
+                className="flex flex-col items-center gap-1 bg-gradient-to-b from-[#FFC35C] to-[#FCA106] text-white px-4 py-2 rounded-lg font-medium text-sm opacity-80 cursor-not-allowed"
+              >
+                <div className="text-sm">Mulai Dalam</div>
+                <div className="text-xl font-semibold">
+                  {countdown ?? "--:--"}
+                </div>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -271,7 +259,9 @@ const Home = () => {
                   >
                     <Icon width={58} height={58} className="text-white" />
                   </div>
-                  <p className="mt-4 text-gray-700 font-medium">{menu.label}</p>
+                  <p className="mt-4 text-gray-700 font-medium">
+                    {menu.label}
+                  </p>
                 </div>
               </NavLink>
             </div>
