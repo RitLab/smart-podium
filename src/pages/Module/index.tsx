@@ -10,6 +10,17 @@ import {
   fetchBahanAjarDetail,
 } from "@/stores/module";
 
+/* ================= TYPES ================= */
+
+type ReferensiItem = {
+  id: number;
+  file_url: string;
+  file_name: string;
+  description?: string;
+  ext?: string;
+  mime_type?: string;
+};
+
 /* ================= PAGE ================= */
 
 const Module = () => {
@@ -20,37 +31,62 @@ const Module = () => {
     (state: RootState) => state.module,
   );
 
-  /* ===== LOCAL STATE ===== */
+  /* ================= LOCAL STATE ================= */
+
   const [activeBabIndex, setActiveBabIndex] = useState(0);
-  const [activeSubIndex, setActiveSubIndex] = useState(0);
   const [showBabDropdown, setShowBabDropdown] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [activeSubId, setActiveSubId] = useState<number | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ReferensiItem | null>(null);
 
   /* ================= FETCH REFERENSI ================= */
+
   useEffect(() => {
     dispatch(fetchReferensi());
   }, [dispatch]);
 
-  const activeBab = referensi[activeBabIndex];
-  const activeSub = activeBab?.sub?.[activeSubIndex];
+  const activeBab = referensi?.[activeBabIndex];
 
   /* ================= FETCH LIST ================= */
+
   useEffect(() => {
-    if (!activeBab || !activeSub) return;
+    if (!activeBab) return;
 
     dispatch(
       fetchBahanAjarList({
         page: 1,
         limit: 12,
-        category: activeBab.value,
-        sub_category: activeSub.value,
+        category: null,
+        sub_category: null,
       }),
     );
-  }, [dispatch, activeBab, activeSub]);
+  }, [dispatch, activeBab]);
 
-  /* ================= STATE UI ================= */
+  /* ================= UI STATE ================= */
+
   if (loading) return <p className="p-6">Loading...</p>;
   if (error) return <p className="p-6 text-red-500">{error}</p>;
+
+  // get route by file type
+  const getRouteByFileType = (item: ReferensiItem) => {
+    const mime = item.mime_type ?? "";
+    const ext = item.ext?.toLowerCase();
+
+    if (mime.startsWith("video/")) return "video";
+
+    if (mime.startsWith("image/")) return "image";
+
+    if (
+      mime === "application/pdf" ||
+      ext === "pdf" ||
+      ext === "doc" ||
+      ext === "docx"
+    )
+      return "file";
+
+    if (ext === "glb" || ext === "gltf" || ext === "obj") return "3d";
+
+    return "file"; // default fallback
+  };
 
   /* ================= RENDER ================= */
 
@@ -58,7 +94,7 @@ const Module = () => {
     <div className="grid grid-cols-12 gap-6 p-6">
       {/* ================= LEFT PANEL ================= */}
       <Card className="col-span-8 h-[780px] p-0 flex flex-col">
-        {/* ===== HEADER & FILTER (FIX) ===== */}
+        {/* ===== HEADER ===== */}
         <div className="p-6 space-y-4 border-b">
           <div className="flex items-center justify-between">
             <div className="relative">
@@ -69,119 +105,105 @@ const Module = () => {
                 <ChevronDown className="w-5 h-5" />
                 {activeBab?.label ?? "Pilih Bidang Studi"}
               </button>
-
-              {showBabDropdown && (
-                <div className="absolute z-20 mt-2 bg-white border rounded-lg shadow">
-                  {referensi.map((bab, idx) => (
-                    <button
-                      key={bab.value}
-                      onClick={() => {
-                        setActiveBabIndex(idx);
-                        setActiveSubIndex(0);
-                        setShowBabDropdown(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
-                      {bab.label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
+          {/* ===== TAB LIST ===== */}
           <div className="flex gap-2 flex-wrap">
-            {referensi.map((bab, idx) => (
+            {list.map((item) => (
               <button
-                key={bab.value}
+                key={item.id}
                 onClick={() => {
-                  setActiveBabIndex(idx);
-                  setActiveSubIndex(0);
+                  setActiveSubId(item.id);
+                  setSelectedItem(null); // reset right panel
+                  dispatch(fetchBahanAjarDetail(item.id));
                 }}
-                className={`px-4 py-1.5 rounded-full text-sm ${
-                  idx === activeBabIndex
+                className={`px-4 py-1.5 rounded-full text-sm transition ${
+                  item.id === activeSubId
                     ? "bg-black text-white"
-                    : "bg-gray-100 text-gray-600"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                {bab.label}
+                {item.title}
               </button>
             ))}
           </div>
-
-          <h2 className="text-lg font-bold">
-            {activeBab?.label}
-          </h2>
         </div>
 
-        {/* ===== CONTENT (SCROLLABLE) ===== */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-3 gap-4">
-            {list.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => {
-                  setSelectedId(item.id);
-                  dispatch(fetchBahanAjarDetail(item.id));
-                }}
-                className={`cursor-pointer rounded-xl border p-3 transition ${
-                  selectedId === item.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:shadow"
-                }`}
-              >
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-28 object-cover rounded-lg mb-2"
-                />
+        {/* ===== CONTENT GRID ===== */}
+        {detail && detail?.referensi?.length > 0 && (
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid grid-cols-3 gap-4">
+              {detail.referensi.map((item: ReferensiItem) => (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedItem(item)}
+                  className={`cursor-pointer rounded-xl border p-3 transition ${
+                    selectedItem?.id === item.id
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:shadow"
+                  }`}
+                >
+                  <img
+                    src={item.file_url}
+                    alt={item.file_name}
+                    className="w-full h-28 object-cover rounded-lg mb-2"
+                  />
 
-                <p className="text-sm font-semibold line-clamp-2">
-                  {item.title}
-                </p>
-              </div>
-            ))}
+                  <p className="text-sm font-semibold line-clamp-2">
+                    {item.file_name}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       {/* ================= RIGHT PANEL ================= */}
-      {detail && (
-        <Card className="col-span-4 h-[780px] p-0 flex flex-col sticky top-6">
-          <img
-            src={detail.header.image}
-            className="w-full h-40 object-cover rounded-t-xl"
-          />
+      <Card className="col-span-4 h-[780px] p-0 flex flex-col sticky top-6">
+        {selectedItem ? (
+          <>
+            <img
+              src={selectedItem.file_url}
+              className="w-full h-40 object-cover rounded-t-xl"
+            />
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            <div>
-              <h3 className="font-bold text-lg">
-                {detail.header.title}
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                {detail.header.description}
-              </p>
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div>
+                <h3 className="font-bold text-lg">{selectedItem.file_name}</h3>
+
+                <p className="text-sm text-gray-600 mt-2">
+                  {selectedItem.description ?? "Tidak ada deskripsi tersedia"}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="p-5 border-t">
-            <button
-              onClick={() =>
-                navigate(
-                  `/viewer?url=${encodeURIComponent(
-                    detail.header.file_url,
-                  )}&title=${encodeURIComponent(
-                    detail.header.title,
-                  )}`,
-                )
-              }
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold"
-            >
-              Open File
-            </button>
+            <div className="p-5 border-t">
+              <button
+                onClick={() => {
+                  if (!selectedItem) return;
+
+                  const route = getRouteByFileType(selectedItem);
+
+                  navigate(
+                    `/${route}?url=${encodeURIComponent(
+                      selectedItem.file_url,
+                    )}&title=${encodeURIComponent(selectedItem.file_name)}`,
+                  );
+                }}
+                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition"
+              >
+                Open File
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-full text-gray-400 text-center p-6">
+            Pilih referensi di sebelah kiri untuk melihat detail
           </div>
-        </Card>
-      )}
+        )}
+      </Card>
     </div>
   );
 };

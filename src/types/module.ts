@@ -45,11 +45,26 @@ export interface Sesi {
   title: string;
 }
 
+export interface Referensi {
+  bahan_ajar_id: number;
+  description: string;
+  ext: string;
+  file_name: string;
+  file_url: string;
+  id: number;
+  is_bookmarked: null;
+  kategory: string;
+  media_file_id: number;
+  mime_type: string;
+  sesi_id: number;
+  size: number;
+}
+
 export interface BahanAjarDetail {
   header: BahanAjarItem;
   pengajar: Pengajar[];
   sesi: Sesi[];
   evaluasi: any;
-  referensi: any;
-  konten_interaktif: any;
+  referensi: Referensi[];
+  konten_interaktif: [];
 }

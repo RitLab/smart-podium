@@ -25,6 +25,7 @@ export const fetchReferensi = createAsyncThunk<
 >("module/fetchReferensi", async () => {
   try {
     const res = await moduleApi.getReferensi();
+    console.log('referensi: ', res.data)
     return res.data;
   } catch (error: any) {
     return error?.message;
@@ -37,6 +38,7 @@ export const fetchBahanAjarList = createAsyncThunk<
 >("module/fetchBahanAjarList", async (payload, { rejectWithValue }) => {
   try {
     const res = await moduleApi.getList(payload);
+    console.log('list bahan ajar: ', res.data)
     return res.data;
   } catch (error: any) {
     return rejectWithValue(error?.message || "Gagal mengambil list bahan ajar");
@@ -48,6 +50,7 @@ export const fetchBahanAjarDetail = createAsyncThunk<BahanAjarDetail, number>(
   async (id, { rejectWithValue }) => {
     try {
       const res = await moduleApi.getDetail(id);
+      console.log('detail: ', res.data)
       return res.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -85,7 +88,6 @@ const moduleSlice = createSlice({
       .addCase(fetchBahanAjarList.fulfilled, (state, action) => {
         state.loading = false;
         state.list = action.payload.rows;
-        console.log(state.list)
         state.total = action.payload.total;
       })
       .addCase(fetchBahanAjarList.rejected, (state, action) => {
