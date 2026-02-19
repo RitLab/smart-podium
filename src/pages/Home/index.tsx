@@ -51,9 +51,9 @@ const Home = () => {
   const [countdown, setCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
 
-  /* =====================================================
-     HANDLE RECORD ERROR → TOAST
-  ===================================================== */
+  const hasAutoStoppedRef = useRef(false);
+
+  /* ================= ERROR TOAST ================= */
   useEffect(() => {
     if (error) {
       showToast(error, "error");
@@ -61,26 +61,22 @@ const Home = () => {
     }
   }, [error, dispatch, showToast]);
 
-  /* =====================================================
-     GET START TIME TODAY
-  ===================================================== */
-  const getStartTimeToday = (startTime: string) => {
-    const [hours, minutes] = startTime.split(":").map(Number);
+  /* ================= HELPER TIME ================= */
+  const getTimeToday = (timeStr: string) => {
+    const [hours, minutes] = timeStr.split(":").map(Number);
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
     return date.getTime();
   };
 
-  /* =====================================================
-     COUNTDOWN EVENT
-  ===================================================== */
+  /* ================= COUNTDOWN START ================= */
   useEffect(() => {
     if (!eventList?.start_time) {
       setIsStarted(false);
       return;
     }
 
-    const startTime = getStartTimeToday(eventList.start_time);
+    const startTime = getTimeToday(eventList.start_time);
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -95,10 +91,7 @@ const Home = () => {
         const seconds = Math.floor((diff / 1000) % 60);
 
         setCountdown(
-          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
-            2,
-            "0"
-          )}`
+          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
         );
       }
     }, 1000);
@@ -106,24 +99,52 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [eventList]);
 
-  /* =====================================================
-     REALTIME CLOCK
-  ===================================================== */
+  /* ================= AUTO STOP RECORD ================= */
+  useEffect(() => {
+    if (!eventList?.end_time) return;
+    if (!isRecording) return;
+    if (!session_id) return;
+
+    const endTime = getTimeToday(eventList.end_time);
+
+    const interval = setInterval(async () => {
+      const now = Date.now();
+
+      if (now >= endTime && !hasAutoStoppedRef.current) {
+        hasAutoStoppedRef.current = true;
+
+        try {
+          await dispatch(
+            stopRecord({
+              session_id,
+              event_id: String(eventList.id),
+            })
+          ).unwrap();
+
+          console.log("Recording auto stopped (end time reached)");
+        } catch (err) {
+          console.error("Auto stop failed:", err);
+        }
+
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [eventList, isRecording, session_id, dispatch]);
+
+  /* ================= REALTIME CLOCK ================= */
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  /* =====================================================
-     FETCH USER
-  ===================================================== */
+  /* ================= FETCH USER ================= */
   useEffect(() => {
     dispatch(fetchUser());
   }, [dispatch]);
 
-  /* =====================================================
-     START / STOP RECORD
-  ===================================================== */
+  /* ================= START / STOP RECORD ================= */
   const handleRecordToggle = async (
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -133,6 +154,8 @@ const Home = () => {
 
     try {
       if (!isRecording) {
+        hasAutoStoppedRef.current = false;
+
         await dispatch(
           startRecord({ id: String(eventList.id) })
         ).unwrap();
@@ -149,14 +172,11 @@ const Home = () => {
         ).unwrap();
       }
     } catch (err) {
-      // Error sudah ditangani di Redux → Toast
       console.error("Record error:", err);
     }
   };
 
-  /* =====================================================
-     DEBUG 5x CLICK LOGO
-  ===================================================== */
+  /* ================= DEBUG LOGO 5x ================= */
   const clickCountRef = useRef(0);
 
   const handleClick = () => {
@@ -172,9 +192,7 @@ const Home = () => {
     }, 2000);
   };
 
-  /* =====================================================
-     RENDER
-  ===================================================== */
+  /* ================= RENDER ================= */
   return (
     <div className="h-full flex flex-col items-center justify-between py-24">
       <div>
@@ -190,7 +208,6 @@ const Home = () => {
             onClick={handleClick}
           />
 
-          {/* CLOCK */}
           <div className="text-center">
             <h1 className="text-7xl font-bold text-gray-800">
               {formattedTime(time)}
@@ -200,7 +217,6 @@ const Home = () => {
             </p>
           </div>
 
-          {/* EVENT CARD */}
           <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
             <Image
               src={eventList?.teacher_image}
@@ -244,7 +260,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* MENU */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
         {menus.map((menu) => {
           const Icon = menu.icon;
