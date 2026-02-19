@@ -1,12 +1,11 @@
 import { ChevronDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import { Card } from "@/components/Card";
 import type { AppDispatch, RootState } from "@/stores";
 import {
   fetchReferensi,
-  fetchBahanAjarList,
   fetchBahanAjarDetail,
 } from "@/stores/module";
 
@@ -14,11 +13,17 @@ import {
 
 type ReferensiItem = {
   id: number;
+  sesi_id: number;
   file_url: string;
   file_name: string;
   description?: string;
   ext?: string;
   mime_type?: string;
+};
+
+type SesiItem = {
+  id: number;
+  title: string;
 };
 
 /* ================= PAGE ================= */
@@ -27,7 +32,7 @@ const Module = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const { referensi, list, detail, loading, error } = useSelector(
+  const { referensi, detail, loading, error } = useSelector(
     (state: RootState) => state.module,
   );
 
@@ -35,7 +40,7 @@ const Module = () => {
 
   const [activeBabIndex, setActiveBabIndex] = useState(0);
   const [showBabDropdown, setShowBabDropdown] = useState(false);
-  const [activeSubId, setActiveSubId] = useState<number | null>(null);
+  const [activeSesiId, setActiveSesiId] = useState<number | null>(null);
   const [selectedItem, setSelectedItem] = useState<ReferensiItem | null>(null);
 
   /* ================= FETCH REFERENSI ================= */
@@ -46,33 +51,44 @@ const Module = () => {
 
   const activeBab = referensi?.[activeBabIndex];
 
-  /* ================= FETCH LIST ================= */
+  /* ================= FETCH DETAIL ================= */
 
   useEffect(() => {
     if (!activeBab) return;
-
-    dispatch(
-      fetchBahanAjarList({
-        page: 1,
-        limit: 12,
-        category: null,
-        sub_category: null,
-      }),
-    );
+    dispatch(fetchBahanAjarDetail(1));
   }, [dispatch, activeBab]);
+
+  /* ================= AUTO SELECT FIRST SESI ================= */
+
+  useEffect(() => {
+    if (detail?.sesi?.length) {
+      setActiveSesiId(detail.sesi[0].id);
+    }
+  }, [detail]);
+
+  /* ================= FILTER REFERENSI ================= */
+
+  const filteredReferensi = useMemo(() => {
+    if (!detail?.referensi) return [];
+    if (!activeSesiId) return detail.referensi;
+
+    return detail.referensi.filter(
+      (item: ReferensiItem) => item.sesi_id === activeSesiId
+    );
+  }, [detail, activeSesiId]);
 
   /* ================= UI STATE ================= */
 
   if (loading) return <p className="p-6">Loading...</p>;
   if (error) return <p className="p-6 text-red-500">{error}</p>;
 
-  // get route by file type
+  /* ================= ROUTE HELPER ================= */
+
   const getRouteByFileType = (item: ReferensiItem) => {
     const mime = item.mime_type ?? "";
     const ext = item.ext?.toLowerCase();
 
     if (mime.startsWith("video/")) return "video";
-
     if (mime.startsWith("image/")) return "image";
 
     if (
@@ -85,7 +101,7 @@ const Module = () => {
 
     if (ext === "glb" || ext === "gltf" || ext === "obj") return "3d";
 
-    return "file"; // default fallback
+    return "file";
   };
 
   /* ================= RENDER ================= */
@@ -94,7 +110,7 @@ const Module = () => {
     <div className="grid grid-cols-12 gap-6 p-6">
       {/* ================= LEFT PANEL ================= */}
       <Card className="col-span-8 h-[780px] p-0 flex flex-col">
-        {/* ===== HEADER ===== */}
+        {/* HEADER */}
         <div className="p-6 space-y-4 border-b">
           <div className="flex items-center justify-between">
             <div className="relative">
@@ -108,18 +124,17 @@ const Module = () => {
             </div>
           </div>
 
-          {/* ===== TAB LIST ===== */}
+          {/* TAB SESI */}
           <div className="flex gap-2 flex-wrap">
-            {list.map((item) => (
+            {detail?.sesi?.map((item: SesiItem) => (
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveSubId(item.id);
-                  setSelectedItem(null); // reset right panel
-                  dispatch(fetchBahanAjarDetail(item.id));
+                  setActiveSesiId(item.id);
+                  setSelectedItem(null);
                 }}
                 className={`px-4 py-1.5 rounded-full text-sm transition ${
-                  item.id === activeSubId
+                  item.id === activeSesiId
                     ? "bg-black text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
@@ -130,11 +145,11 @@ const Module = () => {
           </div>
         </div>
 
-        {/* ===== CONTENT GRID ===== */}
-        {detail && detail?.referensi?.length > 0 && (
+        {/* CONTENT GRID */}
+        {filteredReferensi.length > 0 && (
           <div className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-3 gap-4">
-              {detail.referensi.map((item: ReferensiItem) => (
+              {filteredReferensi.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => setSelectedItem(item)}
@@ -158,6 +173,12 @@ const Module = () => {
             </div>
           </div>
         )}
+
+        {filteredReferensi.length === 0 && (
+          <div className="flex-1 flex items-center justify-center text-gray-400">
+            Tidak ada referensi pada sesi ini
+          </div>
+        )}
       </Card>
 
       {/* ================= RIGHT PANEL ================= */}
@@ -171,10 +192,13 @@ const Module = () => {
 
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <div>
-                <h3 className="font-bold text-lg">{selectedItem.file_name}</h3>
+                <h3 className="font-bold text-lg">
+                  {selectedItem.file_name}
+                </h3>
 
                 <p className="text-sm text-gray-600 mt-2">
-                  {selectedItem.description ?? "Tidak ada deskripsi tersedia"}
+                  {selectedItem.description ??
+                    "Tidak ada deskripsi tersedia"}
                 </p>
               </div>
             </div>
@@ -182,14 +206,14 @@ const Module = () => {
             <div className="p-5 border-t">
               <button
                 onClick={() => {
-                  if (!selectedItem) return;
-
                   const route = getRouteByFileType(selectedItem);
 
                   navigate(
                     `/${route}?url=${encodeURIComponent(
                       selectedItem.file_url,
-                    )}&title=${encodeURIComponent(selectedItem.file_name)}`,
+                    )}&title=${encodeURIComponent(
+                      selectedItem.file_name,
+                    )}`,
                   );
                 }}
                 className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition"
