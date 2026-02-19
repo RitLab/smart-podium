@@ -5,107 +5,105 @@ import {
 } from "@reduxjs/toolkit";
 
 import type {
-  Student,
-  StudentList,
-  UpdateStatusPayload,
+  Attendance,
+  AttendancePayload,
+  AttendanceResponse,
+  UpdateAttendance,
 } from "@/types/student";
-import type { Pagination, PaginationParams } from "@/types";
 import { studentService } from "@/services/student";
 import { setError, setLoading } from "./ui";
 import type { RootState } from ".";
+import { EmptyResponse } from "@/types";
 
 type TotalType = {
   total_present: number;
   total_absent: number;
-  total_loa: number;
 };
 
 type StudentState = {
-  studentList: Student[];
-  pagination: Pagination;
+  attendanceList: Attendance[];
   total: TotalType;
 };
 
 const initialState: StudentState = {
-  studentList: [],
-  pagination: { page: 1, page_count: 1, per_page: 10, total_count: 0 },
+  attendanceList: [],
   total: {
     total_present: 0,
     total_absent: 0,
-    total_loa: 0,
   },
 };
 
-export const fetchStudents = createAsyncThunk<StudentList, PaginationParams>(
-  "student/fetchStudents",
+export const fetchAttendance = createAsyncThunk<
+  AttendanceResponse,
+  AttendancePayload
+>("student/fetchAttendance", async (payload, { dispatch, rejectWithValue }) => {
+  try {
+    dispatch(setLoading(true));
+    dispatch(setError(""));
+
+    const data = await studentService.getAttendance(payload);
+    return data;
+  } catch (error: any) {
+    dispatch(setError(error.message || "Failed to fetch attendance list"));
+    return rejectWithValue(error.message || "Failed to fetch attendance list");
+  } finally {
+    dispatch(setLoading(false));
+  }
+});
+
+export const updateAttendance = createAsyncThunk<
+  EmptyResponse,
+  UpdateAttendance,
+  { state: RootState }
+>(
+  "student/updateAttendance",
   async (payload, { dispatch, rejectWithValue }) => {
     try {
       dispatch(setLoading(true));
       dispatch(setError(""));
 
-      const data = await studentService.getStudents(payload);
+      const data = await studentService.updateAttendance(payload);
       return data;
     } catch (error: any) {
-      dispatch(setError(error.message || "Failed to fetch student list"));
+      // dispatch(setError(error.message || "Failed to fetch student list"));
       return rejectWithValue(error.message || "Failed to fetch student list");
     } finally {
       dispatch(setLoading(false));
     }
-  }
-);
-
-export const updateStatusStudent = createAsyncThunk<
-  any,
-  UpdateStatusPayload,
-  { state: RootState }
->(
-  "student/updateStatusStudent",
-  async (payload, { dispatch, rejectWithValue, getState }) => {
-    try {
-      dispatch(setLoading(true));
-      dispatch(setError(""));
-
-      const data = await studentService.updateStatusStudent(payload);
-      const { page, per_page } = getState().student.pagination;
-      if (data) {
-        dispatch(fetchStudents({ page, per_page }));
-      }
-      return data;
-    } catch (error: any) {
-      dispatch(setError(error.message || "Failed to fetch student list"));
-      return rejectWithValue(error.message || "Failed to fetch student list");
-    } finally {
-      dispatch(setLoading(false));
-    }
-  }
+  },
 );
 
 const studentSlice = createSlice({
   name: "student",
   initialState,
   reducers: {
-    setStudentList: (state, action: PayloadAction<Student[]>) => {
-      state.studentList = action.payload;
-    },
-    setPagination: (state, action: PayloadAction<Pagination>) => {
-      state.pagination = action.payload;
+    setAttendanceList: (state, action: PayloadAction<Attendance[]>) => {
+      state.attendanceList = action.payload;
     },
     setTotal: (state, action: PayloadAction<TotalType>) => {
       state.total = action.payload;
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(fetchStudents.fulfilled, (state, action) => {
-      state.studentList = action.payload.students;
-      state.pagination = action.payload.pagination;
-      state.total = {
-        total_absent: action.payload.total_absent,
-        total_loa: action.payload.total_loa,
-        total_present: action.payload.total_present,
-      };
+    builder.addCase(fetchAttendance.fulfilled, (state, action) => {
+      let total_present = 0;
+      let total_absent = 0;
+      const attendances = action.payload.data.attendances;
+
+      state.attendanceList = attendances;
+
+      attendances.map((item) => {
+        if (item.attendance_status > 1) {
+          total_absent += 1;
+        } else {
+          total_present += 1;
+        }
+      });
+
+      state.total = { total_absent, total_present };
     });
   },
 });
 
-export const { setStudentList, setTotal, setPagination } = studentSlice.actions;
+export const { setAttendanceList, setTotal } = studentSlice.actions;
 export default studentSlice.reducer;
