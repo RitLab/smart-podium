@@ -210,6 +210,7 @@ const calendarSlice = createSlice({
         state.loading = false;
         state.eventList = action.payload;
         console.log('eL: ', state.eventList)
+        console.log('end time: ', state.eventList?.end_time)
       })
       .addCase(fetchEventByClassroomDate.rejected, (state, action) => {
         state.loading = false;

@@ -25,9 +25,7 @@ import RecorderComponents from "@/components/Recorder";
    TOAST CONTEXT
 ===================================================== */
 
-const ToastContext = createContext<ToastContextType | undefined>(
-  undefined
-);
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const useToast = () => {
   const context = useContext(ToastContext);
@@ -37,24 +35,15 @@ export const useToast = () => {
   return context;
 };
 
-export const ToastProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = (
-    message: string,
-    type: ToastType = "info"
-  ) => {
+  const showToast = (message: string, type: ToastType = "info") => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
 
     setTimeout(() => {
-      setToasts((prev) =>
-        prev.filter((toast) => toast.id !== id)
-      );
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
     }, 3000);
   };
 
@@ -85,14 +74,17 @@ const colorMap = {
     iconInactive: "text-blue-600",
   },
   green: {
-    active: "from-green-500 to-green-600 hover:from-green-700 hover:to-green-800",
+    active:
+      "from-green-500 to-green-600 hover:from-green-700 hover:to-green-800",
     inactive: "from-gray-50 to-gray-100 hover:from-green-50 hover:to-green-100",
     iconActive: "text-white",
     iconInactive: "text-green-600",
   },
   yellow: {
-    active: "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
-    inactive: "from-gray-50 to-gray-100 hover:from-yellow-50 hover:to-yellow-100",
+    active:
+      "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
+    inactive:
+      "from-gray-50 to-gray-100 hover:from-yellow-50 hover:to-yellow-100",
     iconActive: "text-white",
     iconInactive: "text-yellow-600",
   },
@@ -107,28 +99,53 @@ const colorMap = {
 /* =====================================================
    NAVBAR
 ===================================================== */
-
 const Navbar = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { eventList } = useSelector(
-    (state: RootState) => state.calendar
-  );
+  const { eventList } = useSelector((state: RootState) => state.calendar);
 
   const [time, setTime] = useState(new Date());
-  const [studySeconds, setStudySeconds] = useState(0);
+  const [countdown, setCountdown] = useState("00:00:00");
 
   useEffect(() => {
     dispatch(fetchUser());
   }, [dispatch]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date());
-      setStudySeconds((prev) => prev + 1);
+    const interval = setInterval(() => {
+      const now = new Date();
+      setTime(now);
+
+      if (!eventList?.event_date || !eventList?.end_time) return;
+
+      // Gabungkan tanggal + end_time
+      const endDateTime = new Date(
+        `${eventList.event_date}T${eventList.end_time}`,
+      );
+
+      const diff = endDateTime.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setCountdown("00:00:00");
+        return;
+      }
+
+      const hours = Math.floor(
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setCountdown(
+        `${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
+      );
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearInterval(interval);
+  }, [eventList]);
 
   return (
     <header className="flex items-center justify-between relative">
@@ -145,9 +162,7 @@ const Navbar = () => {
             <h3 className="font-semibold text-gray-900">
               {eventList?.teacher_name}
             </h3>
-            <p className="text-sm text-gray-600">
-              {eventList?.course_name}
-            </p>
+            <p className="text-sm text-gray-600">{eventList?.course_name}</p>
           </div>
         </div>
 
@@ -156,19 +171,15 @@ const Navbar = () => {
             <p className="text-sm">{formattedDate(time)}</p>
             <div className="flex items-center gap-2 mt-1">
               <Clock9 size={16} />
-              <span className="text-lg font-bold">
-                {formattedTime(time)}
-              </span>
+              <span className="text-lg font-bold">{formattedTime(time)}</span>
             </div>
           </div>
 
           <div className="p-4">
-            <p className="text-sm">Waktu Belajar</p>
+            <p className="text-sm">Sisa Waktu</p>
             <div className="flex items-center gap-2 mt-1">
               <Timer size={16} />
-              <span className="text-lg font-bold">
-                {formatDuration(studySeconds)}
-              </span>
+              <span className="text-lg font-bold">{countdown}</span>
             </div>
           </div>
         </div>
@@ -176,6 +187,75 @@ const Navbar = () => {
     </header>
   );
 };
+
+// const Navbar = () => {
+//   const dispatch = useDispatch<AppDispatch>();
+//   const { eventList } = useSelector(
+//     (state: RootState) => state.calendar
+//   );
+
+//   const [time, setTime] = useState(new Date());
+//   const [studySeconds, setStudySeconds] = useState(0);
+
+//   useEffect(() => {
+//     dispatch(fetchUser());
+//   }, [dispatch]);
+
+//   useEffect(() => {
+//     const timer = setInterval(() => {
+//       setTime(new Date());
+//       setStudySeconds((prev) => prev + 1);
+//     }, 1000);
+
+//     return () => clearInterval(timer);
+//   }, []);
+
+//   return (
+//     <header className="flex items-center justify-between relative">
+//       <img src={Logo} alt="Logo" className="h-28 w-96 object-contain" />
+
+//       <div className="flex items-center gap-6">
+//         <div className="flex items-center bg-white shadow-md rounded-md p-4">
+//           <Image
+//             src={eventList?.teacher_image}
+//             alt={eventList?.teacher_name}
+//             className="h-14 w-14"
+//           />
+//           <div className="mx-3">
+//             <h3 className="font-semibold text-gray-900">
+//               {eventList?.teacher_name}
+//             </h3>
+//             <p className="text-sm text-gray-600">
+//               {eventList?.course_name}
+//             </p>
+//           </div>
+//         </div>
+
+//         <div className="flex bg-gradient-to-r from-blue-900 to-blue-700 text-white rounded-md shadow-md">
+//           <div className="p-4 border-r border-white/30">
+//             <p className="text-sm">{formattedDate(time)}</p>
+//             <div className="flex items-center gap-2 mt-1">
+//               <Clock9 size={16} />
+//               <span className="text-lg font-bold">
+//                 {formattedTime(time)}
+//               </span>
+//             </div>
+//           </div>
+
+//           <div className="p-4">
+//             <p className="text-sm">Waktu Belajar</p>
+//             <div className="flex items-center gap-2 mt-1">
+//               <Timer size={16} />
+//               <span className="text-lg font-bold">
+//                 {formatDuration(studySeconds)}
+//               </span>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </header>
+//   );
+// };
 
 /* =====================================================
    SIDEBAR
@@ -190,8 +270,7 @@ const Sidebar = () => {
         {menus.map((menu) => {
           const Icon = menu.icon;
           const isActive = location.pathname === menu.path;
-          const color =
-            colorMap[menu.color as keyof typeof colorMap];
+          const color = colorMap[menu.color as keyof typeof colorMap];
 
           return (
             <NavLink key={menu.path} to={menu.path}>
@@ -203,11 +282,7 @@ const Sidebar = () => {
                 <Icon
                   width={24}
                   height={24}
-                  className={
-                    isActive
-                      ? color.iconActive
-                      : color.iconInactive
-                  }
+                  className={isActive ? color.iconActive : color.iconInactive}
                 />
               </div>
             </NavLink>
@@ -216,11 +291,7 @@ const Sidebar = () => {
 
         <div className="mt-20">
           <NavLink to="/home">
-            <HomeIcon
-              width={24}
-              height={24}
-              className="text-orange-600"
-            />
+            <HomeIcon width={24} height={24} className="text-orange-600" />
           </NavLink>
         </div>
       </div>
@@ -235,9 +306,7 @@ const Sidebar = () => {
 const MainLayoutContent = () => {
   const location = useLocation();
   const { showToast } = useToast();
-  const { error, loading } = useSelector(
-    (state: RootState) => state.ui
-  );
+  const { error, loading } = useSelector((state: RootState) => state.ui);
 
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
