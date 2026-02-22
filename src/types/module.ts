@@ -46,6 +46,7 @@ export interface Sesi {
 }
 
 export interface Referensi {
+  file_thumb: string | undefined;
   bahan_ajar_id: number;
   description: string;
   ext: string;
