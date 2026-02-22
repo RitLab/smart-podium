@@ -4,28 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import { Card } from "@/components/Card";
 import type { AppDispatch, RootState } from "@/stores";
-import {
-  fetchReferensi,
-  fetchBahanAjarDetail,
-} from "@/stores/module";
-
-/* ================= TYPES ================= */
-
-type ReferensiItem = {
-  file_thumb: string | undefined;
-  id: number;
-  sesi_id: number;
-  file_url: string;
-  file_name: string;
-  description?: string;
-  ext?: string;
-  mime_type?: string;
-};
-
-type SesiItem = {
-  id: number;
-  title: string;
-};
+import { fetchReferensi, fetchBahanAjarDetail } from "@/stores/module";
 
 /* ================= PAGE ================= */
 
@@ -37,14 +16,11 @@ const Module = () => {
     (state: RootState) => state.module,
   );
 
-  /* ================= LOCAL STATE ================= */
+  const [activeBabIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<number | "header" | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  const [activeBabIndex, setActiveBabIndex] = useState(0);
-  const [showBabDropdown, setShowBabDropdown] = useState(false);
-  const [activeSesiId, setActiveSesiId] = useState<number | null>(null);
-  const [selectedItem, setSelectedItem] = useState<ReferensiItem | null>(null);
-
-  /* ================= FETCH REFERENSI ================= */
+  /* ================= FETCH ================= */
 
   useEffect(() => {
     dispatch(fetchReferensi());
@@ -52,92 +28,162 @@ const Module = () => {
 
   const activeBab = referensi?.[activeBabIndex];
 
-  /* ================= FETCH DETAIL ================= */
-
   useEffect(() => {
     if (!activeBab) return;
     dispatch(fetchBahanAjarDetail(1));
   }, [dispatch, activeBab]);
 
-  /* ================= AUTO SELECT FIRST SESI ================= */
-
   useEffect(() => {
     if (detail?.sesi?.length) {
-      setActiveSesiId(detail.sesi[0].id);
+      setActiveTab(detail.sesi[0].id);
     }
   }, [detail]);
 
-  /* ================= FILTER REFERENSI ================= */
+  /* ================= FILTER LOGIC ================= */
 
-  const filteredReferensi = useMemo(() => {
-    if (!detail?.referensi) return [];
-    if (!activeSesiId) return detail.referensi;
+  const combinedItems = useMemo(() => {
+    if (!detail) return [];
 
-    return detail.referensi.filter(
-      (item: ReferensiItem) => item.sesi_id === activeSesiId
+    // HEADER TAB
+    if (activeTab === "header" && detail.header) {
+      return [
+        {
+          ...detail.header,
+          type: "header",
+          file_name: detail.header.title,
+          file_thumb: detail.header.file_thumb,
+          file_url: detail.header.file_url,
+        },
+      ];
+    }
+
+    if (!activeTab) return [];
+
+    const referensiItems =
+      detail.referensi?.filter((item: any) => item.sesi_id === activeTab) ?? [];
+
+    const interaktifItems =
+      detail.konten_interaktif?.filter(
+        (item: any) => item.sesi_id === activeTab,
+      ) ?? [];
+
+    return [
+      ...interaktifItems.map((item: any) => ({
+        ...item,
+        type: "konten_interaktif",
+        file_name: item.title,
+      })),
+      ...referensiItems.map((item: any) => ({
+        ...item,
+        type: "referensi",
+      })),
+    ];
+  }, [detail, activeTab]);
+
+  /* ================= ROUTE HANDLER ================= */
+
+  const openItem = (item: any) => {
+    const ext = item.ext?.toLowerCase();
+
+    // ================= KONTEN INTERAKTIF =================
+    if (item.type === "konten_interaktif") {
+      navigate(
+        `/interactive?url=${encodeURIComponent(
+          item.file_url,
+        )}&title=${encodeURIComponent(item.file_name)}`,
+      );
+      return;
+    }
+
+    // ================= HEADER =================
+    if (item.type === "header") {
+      navigate(
+        `/file?url=${encodeURIComponent(
+          item.file_url,
+        )}&title=${encodeURIComponent(item.file_name)}`,
+      );
+      return;
+    }
+
+    // ================= REFERENSI =================
+    if (item.type === "referensi") {
+      if (ext === "pdf") {
+        navigate(
+          `/file?url=${encodeURIComponent(
+            item.file_url,
+          )}&title=${encodeURIComponent(item.file_name)}`,
+        );
+        return;
+      }
+
+      if (ext === "mp4") {
+        navigate(
+          `/video?url=${encodeURIComponent(
+            item.file_url,
+          )}&title=${encodeURIComponent(item.file_name)}`,
+        );
+        return;
+      }
+
+      if (ext === "png" || ext === "jpg" || ext === "jpeg") {
+        navigate(
+          `/image?url=${encodeURIComponent(
+            item.file_url,
+          )}&title=${encodeURIComponent(item.file_name)}`,
+        );
+        return;
+      }
+    }
+
+    // ================= DEFAULT FALLBACK =================
+    navigate(
+      `/file?url=${encodeURIComponent(
+        item.file_url,
+      )}&title=${encodeURIComponent(item.file_name)}`,
     );
-  }, [detail, activeSesiId]);
+  };
 
-  /* ================= UI STATE ================= */
+  /* ================= UI ================= */
 
   if (loading) return <p className="p-6">Loading...</p>;
   if (error) return <p className="p-6 text-red-500">{error}</p>;
 
-  /* ================= ROUTE HELPER ================= */
-
-  const getRouteByFileType = (item: ReferensiItem) => {
-    const mime = item.mime_type ?? "";
-    const ext = item.ext?.toLowerCase();
-
-    if (mime.startsWith("video/")) return "video";
-    if (mime.startsWith("image/")) return "image";
-
-    if (
-      mime === "application/pdf" ||
-      ext === "pdf" ||
-      ext === "doc" ||
-      ext === "docx"
-    )
-      return "file";
-
-    if (ext === "glb" || ext === "gltf" || ext === "obj") return "3d";
-
-    return "file";
-  };
-
-  /* ================= RENDER ================= */
-
   return (
     <div className="grid grid-cols-12 gap-6 p-6">
-      {/* ================= LEFT PANEL ================= */}
+      {/* LEFT PANEL */}
       <Card className="col-span-8 h-[780px] p-0 flex flex-col">
-        {/* HEADER */}
         <div className="p-6 space-y-4 border-b">
-          <div className="flex items-center justify-between">
-            <div className="relative">
-              <button
-                onClick={() => setShowBabDropdown((v) => !v)}
-                className="flex items-center gap-2 font-bold text-lg"
-              >
-                <ChevronDown className="w-5 h-5" />
-                {activeBab?.label ?? "Pilih Bidang Studi"}
-              </button>
-            </div>
-          </div>
+          <button className="flex items-center gap-2 font-bold text-lg">
+            <ChevronDown className="w-5 h-5" />
+            {activeBab?.label ?? "Pilih Bidang Studi"}
+          </button>
 
-          {/* TAB SESI */}
+          {/* HEADER TAB */}
+          {detail?.header && (
+            <button
+              onClick={() => {
+                setActiveTab("header");
+                setSelectedItem(null);
+              }}
+              className={`px-4 py-1.5 rounded-full text-sm ${
+                activeTab === "header" ? "bg-black text-white" : "bg-gray-100"
+              }`}
+            >
+              {detail.header.title}
+            </button>
+          )}
+
+          {/* SESI TAB */}
           <div className="flex gap-2 flex-wrap">
-            {detail?.sesi?.map((item: SesiItem) => (
+            {detail?.sesi?.map((item: any) => (
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveSesiId(item.id);
+                  setActiveTab(item.id);
                   setSelectedItem(null);
                 }}
-                className={`px-4 py-1.5 rounded-full text-sm transition ${
-                  item.id === activeSesiId
-                    ? "bg-black text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                className={`px-4 py-1.5 rounded-full text-sm ${
+                  item.id === activeTab ? "bg-black text-white" : "bg-gray-100"
                 }`}
               >
                 {item.title}
@@ -146,15 +192,15 @@ const Module = () => {
           </div>
         </div>
 
-        {/* CONTENT GRID */}
-        {filteredReferensi.length > 0 && (
+        {/* GRID */}
+        {combinedItems.length > 0 ? (
           <div className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-3 gap-4">
-              {filteredReferensi.map((item) => (
+              {combinedItems.map((item: any, index: number) => (
                 <div
-                  key={item.id}
+                  key={`${item.type}-${item.id}-${index}`}
                   onClick={() => setSelectedItem(item)}
-                  className={`cursor-pointer rounded-xl border p-3 transition ${
+                  className={`cursor-pointer border p-3 rounded-xl ${
                     selectedItem?.id === item.id
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-200 hover:shadow"
@@ -162,10 +208,8 @@ const Module = () => {
                 >
                   <img
                     src={item.file_thumb}
-                    alt={item.file_name}
-                    className="w-full h-28 object-cover rounded-lg mb-2"
+                    className="w-full h-28 object-cover object-top rounded-lg mb-2"
                   />
-
                   <p className="text-sm font-semibold line-clamp-2">
                     {item.file_name}
                   </p>
@@ -173,59 +217,41 @@ const Module = () => {
               ))}
             </div>
           </div>
-        )}
-
-        {filteredReferensi.length === 0 && (
+        ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400">
-            Tidak ada referensi pada sesi ini
+            Tidak ada konten pada sesi ini
           </div>
         )}
       </Card>
 
-      {/* ================= RIGHT PANEL ================= */}
+      {/* RIGHT PANEL */}
       <Card className="col-span-4 h-[780px] p-0 flex flex-col sticky top-6">
         {selectedItem ? (
           <>
-            <img
-              src={selectedItem.file_thumb}
-              className="w-full h-40 object-cover rounded-t-xl"
-            />
+            <div className="flex-1 p-5 space-y-4">
+              <img
+                src={selectedItem.file_thumb}
+                className="w-full h-40 object-cover object-top rounded-t-xl"
+              />
+              <h3 className="font-bold text-lg">{selectedItem.file_name}</h3>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              <div>
-                <h3 className="font-bold text-lg">
-                  {selectedItem.file_name}
-                </h3>
-
-                <p className="text-sm text-gray-600 mt-2">
-                  {selectedItem.description ??
-                    "Tidak ada deskripsi tersedia"}
-                </p>
-              </div>
+              <p className="text-sm text-gray-600">
+                {selectedItem.description ?? "Tidak ada deskripsi tersedia"}
+              </p>
             </div>
 
             <div className="p-5 border-t">
               <button
-                onClick={() => {
-                  const route = getRouteByFileType(selectedItem);
-
-                  navigate(
-                    `/${route}?url=${encodeURIComponent(
-                      selectedItem.file_url,
-                    )}&title=${encodeURIComponent(
-                      selectedItem.file_name,
-                    )}`,
-                  );
-                }}
-                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition"
+                onClick={() => openItem(selectedItem)}
+                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700"
               >
-                Open File
+                Open
               </button>
             </div>
           </>
         ) : (
           <div className="flex items-center justify-center h-full text-gray-400 text-center p-6">
-            Pilih referensi di sebelah kiri untuk melihat detail
+            Pilih konten di sebelah kiri
           </div>
         )}
       </Card>

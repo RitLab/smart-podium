@@ -12,6 +12,7 @@ export interface ReferensiItem {
 }
 
 export interface BahanAjarItem {
+  file_thumb: any;
   bidang_studi_id: number;
   created_at: string;
   created_by: string;
