@@ -12,6 +12,7 @@ import {
 /* ================= TYPES ================= */
 
 type ReferensiItem = {
+  file_thumb: string | undefined;
   id: number;
   sesi_id: number;
   file_url: string;
@@ -160,7 +161,7 @@ const Module = () => {
                   }`}
                 >
                   <img
-                    src={item.file_url}
+                    src={item.file_thumb}
                     alt={item.file_name}
                     className="w-full h-28 object-cover rounded-lg mb-2"
                   />
@@ -186,7 +187,7 @@ const Module = () => {
         {selectedItem ? (
           <>
             <img
-              src={selectedItem.file_url}
+              src={selectedItem.file_thumb}
               className="w-full h-40 object-cover rounded-t-xl"
             />
 
