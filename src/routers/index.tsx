@@ -6,6 +6,7 @@ import MainLayout from "@/layouts/MainLayout";
 import InputPIN from "@/pages/Auth/InputPIN";
 import LockScreen from "@/pages/Auth/LockScreen";
 import SettingPIN from "@/pages/Auth/SettingPIN";
+import LicenseKey from "@/pages/Auth/LicenseKey";
 import Calendar from "@/pages/Calendar";
 import Home from "@/pages/Home";
 import Internet from "@/pages/Internet";
@@ -24,6 +25,7 @@ export default () => {
         <Route path="/lock-screen" element={<LockScreen />} />
         <Route path="/input-pin" element={<InputPIN />} />
         <Route path="/setting-pin" element={<SettingPIN />} />
+        <Route path="/license" element={<LicenseKey />} />
       </Route>
 
       <Route path="/">
