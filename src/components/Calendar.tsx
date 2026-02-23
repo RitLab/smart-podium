@@ -215,13 +215,17 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
                               <div
                                 key={item.id}
                                 className={`mt-1 text-xs rounded px-1 block ${
-                                  item.type === "red"
+                                  item.type === "blue"
+                                    ? "bg-blue-200 text-blue-800"
+                                    : item.type === "green"
+                                    ? "bg-green-200 text-green-800"
+                                    : item.type === "orange"
+                                    ? "bg-orange-200 text-orange-800"
+                                    : item.type === "purple"
+                                    ? "bg-purple-200 text-purple-800"
+                                    : item.type === "red"
                                     ? "bg-red-200 text-red-800"
-                                    : item.type === "yellow"
-                                    ? "bg-yellow-200 text-yellow-800"
-                                    : item.type === "grey"
-                                    ? "bg-gray-300 text-black"
-                                    : "bg-blue-200 text-blue-800"
+                                    : "bg-gray-300 text-black"
                                 }`}
                               >
                                 {item.name}
