@@ -1,4 +1,4 @@
-import { baseWhisperUrl, handler } from ".";
+import { baseWhisperUrl, handler } from "./hash";
 import type { EventGroup, EventListPayload, EventListResponse } from "@/types/event";
 
 export const eventService = {

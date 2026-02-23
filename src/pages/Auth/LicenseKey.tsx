@@ -24,7 +24,7 @@ const LicenseKey = () => {
 
       // sementara kita anggap valid
       localStorage.setItem("license_key", licenseKey);
-      localStorage.setItem('class_id', '9237a4be-ba1c-4daa-9a90-f9018a83c38d')
+      localStorage.setItem('class_id', 'cda08ef8-d61d-42a6-a3ac-f94bc9d6d96c')
 
       navigate("/setting-pin");
     } catch (err) {

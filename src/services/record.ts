@@ -1,4 +1,4 @@
-import { baseWhisperUrl, handler } from ".";
+import { baseWhisperUrl, handler } from "./hash";
 
 export type StartRecordPayload = {
   module_id?: number;
@@ -32,13 +32,4 @@ export const recordApi = {
       data: {};
       status: number;
     }>(`${baseWhisperUrl}/portal/video/stop`, body),
-
-  /**
-   * Optional: heartbeat / keep-alive
-   * supaya backend tahu recording masih jalan
-   */
-  heartbeat: (record_id: number) =>
-    handler.post<{
-      success: boolean;
-    }>("/portal/recording/heartbeat", { record_id }),
 };
