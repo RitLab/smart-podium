@@ -1,44 +1,44 @@
 import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import { Image } from "@/components/Image";
-import type { HandlingStatus, Status, Student } from "@/types/student";
+import type { HandlingStatus, Attendance } from "@/types/student";
 
-type ItemStudentProps = {
-  student: Student;
-  setStudent: (params: Student) => void;
-  handleStatus: (status: Status) => HandlingStatus;
-  selectedStudent: Student;
+type ItemProps = {
+  attendance: Attendance;
+  setAttendance: (params: Attendance) => void;
+  handleStatus: (status: number) => HandlingStatus;
+  selectedAttendance: Attendance;
 };
 
-const ItemStudent = ({
-  student,
-  setStudent,
+const Item = ({
+  attendance,
+  setAttendance,
   handleStatus,
-  selectedStudent,
-}: ItemStudentProps) => {
+  selectedAttendance,
+}: ItemProps) => {
   return (
     <Card
-      className={`border cursor-pointer transition-shadow hover:shadow-lg ${selectedStudent?.id == student.id ? "!bg-blue-200 !hover:bg-blue-200" : "bg-white hover:bg-gray-50"}`}
-      onClick={() => setStudent(student)}
+      className={`border cursor-pointer transition-shadow hover:shadow-lg ${selectedAttendance?.user_id == attendance.user_id ? "!bg-blue-200 !hover:bg-blue-200" : "bg-white hover:bg-gray-50"}`}
+      onClick={() => setAttendance(attendance)}
     >
       <div className="flex flex-col items-center justify-center text-center py-12 px-2">
         <Image
-          src={student.image}
-          alt={student.name}
+          src={attendance.student_image_profile}
+          alt={attendance.student_name}
           className={`w-24 h-24 mb-4`}
         />
 
-        <h3 className="text-md font-medium mb-4">{student.name}</h3>
+        <h3 className="text-md font-medium mb-4">{attendance.student_name}</h3>
         <Badge
           size="sm"
-          variant={handleStatus(student.status).variant}
+          variant={handleStatus(attendance.attendance_status).variant}
           isStatus
         >
-          {handleStatus(student.status).label}
+          {handleStatus(attendance.attendance_status).label}
         </Badge>
       </div>
     </Card>
   );
 };
 
-export default ItemStudent;
+export default Item;
