@@ -3,27 +3,33 @@ import React, { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { useNavigate, useSearchParams } from "react-router";
 
+// Worker react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.mjs`;
+
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 2.0;
 
 const File: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  const pdfUrl = searchParams.get("url") || "";
-  const pdfTitle = searchParams.get("title") || "Dokumen";
 
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
+
   const [fileData, setFileData] = useState<Blob | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  const [searchParams] = useSearchParams();
+  const pdfUrl = searchParams.get("url") || "";
+  const pdfTitle = searchParams.get("title") || "Dokumen";
+
   /* ================= PINCH STATE ================= */
 
   const pinchStartDistance = useRef<number | null>(null);
   const pinchStartScale = useRef<number>(1);
+  const rafRef = useRef<number | null>(null);
 
   const getDistance = (touches: TouchList) => {
     const [t1, t2] = [touches[0], touches[1]];
@@ -38,14 +44,13 @@ const File: React.FC = () => {
     if (!pdfUrl) return;
 
     setFileData(null);
-
     fetch(pdfUrl)
-      .then((res) => res.blob())
+      .then((response) => response.blob())
       .then((blob) => setFileData(blob))
       .catch((err) => console.error("Gagal mengambil file PDF:", err));
   }, [pdfUrl]);
 
-  function onDocumentLoadSuccess(doc: any) {
+  function onDocumentLoadSuccess(doc: any): void {
     setNumPages(doc.numPages);
     pageRefs.current = Array(doc.numPages).fill(null);
   }
@@ -72,10 +77,13 @@ const File: React.FC = () => {
           currentDistance / pinchStartDistance.current;
 
         let newScale = pinchStartScale.current * scaleFactor;
+        newScale = Math.min(Math.max(newScale, MIN_SCALE), MAX_SCALE);
 
-        newScale = Math.min(Math.max(newScale, 0.5), 3);
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
-        setScale(newScale);
+        rafRef.current = requestAnimationFrame(() => {
+          setScale(newScale);
+        });
       }
     };
 
@@ -98,22 +106,19 @@ const File: React.FC = () => {
     };
   }, [scale]);
 
-  /* ================= ZOOM BUTTON ================= */
+  /* ================= ZOOM CONTROL ================= */
 
   const handleZoomIn = () =>
-    setScale((prev) => Math.min(prev + 0.1, 3));
+    setScale((prev) => Math.min(prev + 0.1, MAX_SCALE));
 
   const handleZoomOut = () =>
-    setScale((prev) => Math.max(prev - 0.1, 0.5));
+    setScale((prev) => Math.max(prev - 0.1, MIN_SCALE));
 
   /* ================= PAGE INPUT ================= */
 
-  const handlePageChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handlePageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const page = parseInt(e.target.value, 10);
     if (!numPages) return;
-
     if (page > 0 && page <= numPages) {
       setPageNumber(page);
       pageRefs.current[page - 1]?.scrollIntoView({
@@ -132,9 +137,7 @@ const File: React.FC = () => {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const pageIndex = Number(
-              entry.target.getAttribute("data-page"),
-            );
+            const pageIndex = Number(entry.target.getAttribute("data-page"));
             if (pageIndex && pageIndex !== pageNumber) {
               setPageNumber(pageIndex);
             }
@@ -143,8 +146,8 @@ const File: React.FC = () => {
       },
       {
         root: containerRef.current,
-        threshold: 0.5,
-      },
+        threshold: [0.5],
+      }
     );
 
     pageRefs.current.forEach((ref) => {
@@ -154,39 +157,23 @@ const File: React.FC = () => {
     return () => observer.disconnect();
   }, [numPages, pageNumber]);
 
-  /* ================= DOWNLOAD ================= */
-
-  const handleDownload = () => {
-    if (!fileData) return;
-
-    const url = URL.createObjectURL(fileData);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = pdfTitle + ".pdf";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   /* ================= UI ================= */
 
   return (
     <div className="flex flex-col h-screen bg-gray-300 font-sans text-gray-800">
       {/* HEADER */}
-      <div className="flex justify-between items-center px-4 py-3 bg-white border-b shadow-sm">
-        <h1 className="text-lg font-bold">
-          Tampilan Dokumen
-        </h1>
-
+      <div className="flex justify-between items-center px-4 py-3 bg-white border-b border-gray-300 shadow-sm z-10">
+        <h1 className="text-lg font-bold text-gray-800">Tampilan Dokumen</h1>
         <button
+          className="p-1 hover:bg-gray-100 rounded-full transition"
           onClick={() => navigate(-1)}
-          className="p-1 hover:bg-gray-100 rounded-full"
         >
           <X className="w-6 h-6 text-gray-600" />
         </button>
       </div>
 
       {/* TOOLBAR */}
-      <div className="flex items-center justify-between bg-gray-50 px-4 py-2 border-b text-sm">
+      <div className="flex items-center justify-between bg-gray-50 px-4 py-2 border-b border-gray-300 text-sm">
         <div className="flex items-center gap-2 w-1/2">
           <p className="text-gray-500">Nama Dokumen:</p>
           <div className="bg-white border px-2 py-1 rounded w-full truncate">
@@ -196,60 +183,69 @@ const File: React.FC = () => {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span>Halaman:</span>
+            <span className="text-gray-500">Halaman:</span>
+
             <input
               type="number"
               value={pageNumber}
               onChange={handlePageChange}
-              className="w-12 text-center border rounded p-1"
+              className="w-12 text-center border border-gray-300 rounded p-1"
             />
-            <span>dari {numPages || "--"}</span>
+
+            <span className="text-gray-500">dari {numPages || "--"}</span>
           </div>
         </div>
       </div>
 
-      {/* PDF AREA */}
+      {/* MAIN CONTENT */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto flex justify-center bg-gray-300/80 p-8 touch-none"
+        className="flex-1 relative overflow-auto flex justify-center bg-gray-300/80 p-8"
+        style={{ touchAction: "pan-y" }}
       >
         <div className="shadow-2xl">
           {fileData ? (
             <Document
               file={fileData}
               onLoadSuccess={onDocumentLoadSuccess}
+              loading={<div className="text-center">Memproses PDF...</div>}
+              error={<div className="text-red-500">Gagal memuat PDF</div>}
             >
               {numPages &&
-                Array.from(
-                  new Array(numPages),
-                  (_, index) => (
-                    <div
-                      key={index}
-                      data-page={index + 1}
-                      ref={(el) =>
-                        (pageRefs.current[index] = el)
-                      }
-                    >
-                      <Page
-                        pageNumber={index + 1}
-                        scale={scale}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                        className="bg-white shadow-lg mb-8"
-                      />
-                    </div>
-                  ),
-                )}
+                Array.from(new Array(numPages), (_, index) => (
+                  <div
+                    key={index}
+                    data-page={index + 1}
+                    ref={(el) => {
+                      pageRefs.current[index] = el;
+                    }}
+                  >
+                    <Page
+                      pageNumber={index + 1}
+                      scale={scale}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="bg-white shadow-lg mb-8"
+                    />
+                  </div>
+                ))}
             </Document>
           ) : (
-            <div className="text-center mt-10">
+            <div className="text-center mt-10 text-gray-600">
               Mengunduh Dokumen...
             </div>
           )}
         </div>
 
-        {/* FLOATING ZOOM */}
-        <div className="fixed right-6 top-1/2 -translate-y-1/2 bg-gray-800/80 backdrop-blur rounded-full py-4 px-2 flex flex-col items-center gap-4 shadow-xl">
+        {/* ZOOM FLOATING */}
+        <div className="fixed right-6 top-1/2 transform -translate-y-1/2 bg-gray-800/80 backdrop-blur-sm rounded-full py-4 px-2 flex flex-col items-center gap-4 shadow-xl z-50">
+          <div className="relative h-32 w-2 bg-gray-500 rounded-full">
+            <div
+              className="absolute w-4 h-4 bg-orange-400 rounded-full -left-1 shadow border border-white"
+              style={{ bottom: `${((scale - 0.5) / 1.5) * 100}%` }}
+            />
+          </div>
+
           <div className="text-white text-xs font-bold">
             {Math.round(scale * 100)}%
           </div>

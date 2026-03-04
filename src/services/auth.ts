@@ -1,6 +1,6 @@
 // import { authURL, handler } from ".";
-import type { Class, LoginPayload, LoginResponse, TokenPayload, TokenResponse, User } from "@/types/auth";
-import { baseURL, handler } from ".";
+import type { Class, ClassListResponse, LoginPayload, LoginResponse, TokenPayload, TokenResponse, User } from "@/types/auth";
+import { baseURL, handler } from "./hash";
 
 export const authService = {
   // USE MOCK
@@ -38,5 +38,10 @@ export const authService = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
     const url = `${baseURL}/user/login`;
     return await handler.post<LoginResponse>(url, payload);
+  },
+
+  getClassList: async (): Promise<ClassListResponse> => {
+    const url = `${baseURL}/portal/class`
+    return await handler.get<any>(url, []);
   }
 };
