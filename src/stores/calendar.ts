@@ -54,8 +54,6 @@ const groupEventsByDate = (events: EventList[]): EventGroup[] => {
   });
 
   const data = Array.from(map.values());
-  console.log("EventByDate: ", data);
-
   return data;
 };
 
@@ -82,7 +80,7 @@ export const fetchEventList = createAsyncThunk<
     const CLASSROOM_ID = localStorage.getItem("class_id");
 
     const filtered = response.data.events.filter(
-      (ev) => ev.class_room_id === CLASSROOM_ID
+      (ev) => ev.class_id === CLASSROOM_ID
     );
 
     return filtered.map((event) => {
@@ -116,12 +114,9 @@ export const fetchEventByClassroomDate = createAsyncThunk<
 
       const CLASSROOM_ID = localStorage.getItem('class_id');
 
-      console.log("response.data.events: ", response.data.events);
-
       const filteredByClassroomId = response.data.events.find(
-        (ev) => ev.class_room_id === CLASSROOM_ID,
+        (ev) => ev.class_id === CLASSROOM_ID,
       );
-      console.log("filteredByClassroomId: ", filteredByClassroomId);
 
       if (!filteredByClassroomId) return null;
 
@@ -186,8 +181,6 @@ const calendarSlice = createSlice({
       .addCase(fetchEventByClassroomDate.fulfilled, (state, action) => {
         state.loading = false;
         state.eventList = action.payload;
-        console.log("eL: ", state.eventList);
-        console.log("end time: ", state.eventList?.end_time);
       })
       .addCase(fetchEventByClassroomDate.rejected, (state, action) => {
         state.loading = false;
