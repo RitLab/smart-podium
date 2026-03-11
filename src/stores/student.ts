@@ -41,14 +41,14 @@ const initialState: StudentState = {
 
 export const fetchAttendance = createAsyncThunk<
   AttendanceResponse,
-  AttendancePayload,
+  AttendancePayload | null,
   { rejectValue: string }
 >("student/fetchAttendance", async (payload, { dispatch, rejectWithValue }) => {
   try {
     dispatch(setLoading(true));
     dispatch(setError(""));
 
-    const data = await studentService.getAttendance(payload);
+    const data = await studentService.getAttendance(payload ?? undefined);
     return data;
   } catch (error: any) {
     const message =
