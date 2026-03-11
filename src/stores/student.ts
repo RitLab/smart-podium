@@ -8,6 +8,7 @@ import type {
   Attendance,
   AttendancePayload,
   AttendanceResponse,
+  TeacherType,
   UpdateAttendance,
 } from "@/types/student";
 import { studentService } from "@/services/student";
@@ -23,6 +24,7 @@ type TotalType = {
 type StudentState = {
   attendanceList: Attendance[];
   total: TotalType;
+  teacher: TeacherType
 };
 
 const initialState: StudentState = {
@@ -31,6 +33,10 @@ const initialState: StudentState = {
     total_present: 0,
     total_absent: 0,
   },
+  teacher: {
+    teacher_name: '',
+    teacher_id: ''
+  }
 };
 
 export const fetchAttendance = createAsyncThunk<
@@ -91,6 +97,10 @@ const studentSlice = createSlice({
       const attendances = action.payload.data.attendances;
 
       state.attendanceList = attendances;
+      state.teacher = {
+        teacher_name: action.payload.data.teacher_name,
+        teacher_id: action.payload.data.teacher_id
+      }
 
       attendances.map((item) => {
         if (item.attendance_status > 1) {

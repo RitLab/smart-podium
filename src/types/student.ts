@@ -11,6 +11,11 @@ export interface AttendancePayload {
   event_id: string;
 }
 
+export interface TeacherType {
+  teacher_name: string;
+  teacher_id: string;
+}
+
 export interface Attendance {
   user_id: string;
   student_unique_id: string;

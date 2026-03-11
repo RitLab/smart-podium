@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { Card } from "@/components/Card";
 import { Image } from "@/components/Image";
-import type { Attendance, HandlingStatus } from "@/types/student";
+import type { Attendance, HandlingStatus, TeacherType } from "@/types/student";
 import { Button } from "@/components/Button";
 import type { AppDispatch, RootState } from "@/stores";
 import { formattedDate } from "@/utils";
@@ -12,10 +12,11 @@ import { updateAttendance } from "@/stores/student";
 type DetailProps = {
   attendance: Attendance;
   attendanceOptions: HandlingStatus[];
+  teacher: TeacherType;
   handleDone: (param?: any) => void;
 };
 
-const Detail = ({ attendance, attendanceOptions, handleDone }: DetailProps) => {
+const Detail = ({ attendance, attendanceOptions, teacher, handleDone }: DetailProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { total } = useSelector((state: RootState) => state.student);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -60,7 +61,7 @@ const Detail = ({ attendance, attendanceOptions, handleDone }: DetailProps) => {
             {attendance.student_name}
           </h2>
           <div className="text-sm text-gray-600 mb-1 font-bold">Instructor</div>
-          <div className="text-sm text-gray-600 mb-2">{user?.name}</div>
+          <div className="text-sm text-gray-600 mb-2">{teacher.teacher_name}</div>
           <div className="text-sm text-gray-600 mb-1 font-bold">Date</div>
           <div className="text-sm text-gray-600 mb-2">
             {formattedDate(time)}

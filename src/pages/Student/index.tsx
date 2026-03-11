@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import Pagination from "@/components/Pagination";
-import type { Attendance, HandlingStatus } from "@/types/student";
+import type { Attendance, HandlingStatus, TeacherType } from "@/types/student";
 import { fetchAttendance } from "@/stores/student";
 import type { AppDispatch, RootState } from "@/stores";
 import ItemStudent from "./Item";
@@ -16,7 +16,7 @@ const attendanceOptions: HandlingStatus[] = [
 
 const Student = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { attendanceList } = useSelector((state: RootState) => state.student);
+  const { attendanceList, teacher } = useSelector((state: RootState) => state.student);
   const [attendance, setAttendance] = useState<Attendance>({} as Attendance);
 
   const [perPage, setPerPage] = useState(10);
@@ -30,6 +30,8 @@ const Student = () => {
 
   const fetchData = async (event_id: string) => {
     await dispatch(fetchAttendance({ event_id })).unwrap();
+
+    console.log('attendanceList: ', attendanceList)
 
     if (attendanceList && attendanceList.length > 0) {
       setAttendance(attendanceList[0]);
@@ -104,6 +106,7 @@ const Student = () => {
         <Detail
           attendance={attendance}
           attendanceOptions={attendanceOptions}
+          teacher={teacher}
           handleDone={() => fetchData("b686d699-73f4-4b05-99fd-b9ef723e66ec")} // hardcoded
         />
       </div>
