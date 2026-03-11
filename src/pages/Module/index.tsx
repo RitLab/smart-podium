@@ -6,7 +6,16 @@ import { Card } from "@/components/Card";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchReferensi, fetchBahanAjarDetail } from "@/stores/module";
 
-/* ================= PAGE ================= */
+// icon
+import iconPdf from "@/assets/images/icon/icon-pdf.png";
+import iconMp4 from "@/assets/images/icon/icon-mp4.png";
+import iconPng from "@/assets/images/icon/icon-png.png";
+import iconJpg from "@/assets/images/icon/icon-jpg.png";
+import iconDoc from "@/assets/images/icon/icon-doc.png";
+import iconXls from "@/assets/images/icon/icon-xls.png";
+import iconPpt from "@/assets/images/icon/icon-ppt.png";
+import icon3d from "@/assets/images/icon/icon-3d.png";
+import iconFolder from "@/assets/images/icon/icon-folder.png";
 
 const Module = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -44,7 +53,6 @@ const Module = () => {
   const combinedItems = useMemo(() => {
     if (!detail) return [];
 
-    // HEADER TAB
     if (activeTab === "header" && detail.header) {
       return [
         {
@@ -85,7 +93,6 @@ const Module = () => {
   const openItem = (item: any) => {
     const ext = item.ext?.toLowerCase();
 
-    // ================= KONTEN INTERAKTIF =================
     if (item.type === "konten_interaktif") {
       navigate(
         `/interactive?url=${encodeURIComponent(
@@ -95,7 +102,6 @@ const Module = () => {
       return;
     }
 
-    // ================= HEADER =================
     if (item.type === "header") {
       navigate(
         `/file?url=${encodeURIComponent(
@@ -105,7 +111,6 @@ const Module = () => {
       return;
     }
 
-    // ================= REFERENSI =================
     if (item.type === "referensi") {
       if (ext === "pdf") {
         navigate(
@@ -135,7 +140,6 @@ const Module = () => {
       }
     }
 
-    // ================= DEFAULT FALLBACK =================
     navigate(
       `/file?url=${encodeURIComponent(
         item.file_url,
@@ -143,7 +147,32 @@ const Module = () => {
     );
   };
 
-  /* ================= UI ================= */
+  /* ================= ICON FALLBACK ================= */
+
+  const getFallbackIcon = (ext?: string) => {
+    switch (ext?.toLowerCase()) {
+      case "pdf":
+        return iconPdf;
+      case "mp4":
+        return iconMp4;
+      case "png":
+        return iconPng;
+      case "jpg":
+      case "jpeg":
+        return iconJpg;
+      case "doc":
+      case "docx":
+        return iconDoc;
+      case "xls":
+      case "xlsx":
+        return iconXls;
+      case "ppt":
+      case "pptx":
+        return iconPpt;
+      default:
+        return iconFolder;
+    }
+  };
 
   if (loading) return <p className="p-6">Loading...</p>;
   if (error) return <p className="p-6 text-red-500">{error}</p>;
@@ -158,7 +187,6 @@ const Module = () => {
             {activeBab?.label ?? "Pilih Bidang Studi"}
           </button>
 
-          {/* HEADER TAB */}
           {detail?.header && (
             <button
               onClick={() => {
@@ -173,7 +201,6 @@ const Module = () => {
             </button>
           )}
 
-          {/* SESI TAB */}
           <div className="flex gap-2 flex-wrap">
             {detail?.sesi?.map((item: any) => (
               <button
@@ -196,28 +223,55 @@ const Module = () => {
         {combinedItems.length > 0 ? (
           <div className="flex-1 overflow-y-auto p-6">
             <div className="grid grid-cols-3 gap-4">
-              {combinedItems.map((item: any, index: number) => (
-                <div
-                  key={`${item.type}-${item.id}-${index}`}
-                  onClick={() => setSelectedItem(item)}
-                  className={`cursor-pointer border p-3 rounded-xl ${
-                    selectedItem?.id === item.id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:shadow"
-                  }`}
-                >
-                  <img
-                    loading="lazy"
-                    decoding="async"
-                    fetchPriority="low"
-                    src={item.file_thumb}
-                    className="w-full h-28 object-cover object-top rounded-lg mb-2"
-                  />
-                  <p className="text-sm font-semibold line-clamp-2">
-                    {item.file_name}
-                  </p>
-                </div>
-              ))}
+              {combinedItems.map((item: any, index: number) => {
+                const isFallback = !item.file_thumb;
+
+                const src =
+                  item.file_thumb ||
+                  (item.type === "konten_interaktif"
+                    ? icon3d
+                    : getFallbackIcon(item.ext));
+
+                return (
+                  <div
+                    key={`${item.type}-${item.id}-${index}`}
+                    onClick={() => setSelectedItem(item)}
+                    className={`cursor-pointer border p-3 rounded-xl ${
+                      selectedItem?.id === item.id
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:shadow"
+                    }`}
+                  >
+                    <div className="w-full h-28 bg-gray-100 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                      <img
+                        loading="lazy"
+                        decoding="async"
+                        src={src}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+
+                          if (item.type === "konten_interaktif") {
+                            target.src = icon3d;
+                          } else {
+                            target.src = getFallbackIcon(item.ext);
+                          }
+
+                          target.className = "w-24 h-24 object-contain";
+                        }}
+                        className={
+                          isFallback
+                            ? "w-24 h-24 object-contain"
+                            : "w-full h-full object-cover object-top"
+                        }
+                      />
+                    </div>
+
+                    <p className="text-sm font-semibold line-clamp-2">
+                      {item.file_name}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -232,10 +286,22 @@ const Module = () => {
         {selectedItem ? (
           <>
             <div className="flex-1 p-5 space-y-4">
-              <img
-                src={selectedItem.file_thumb}
-                className="w-full h-40 object-cover object-top rounded-t-xl"
-              />
+              <div className="w-full h-40 bg-gray-100 rounded-t-xl flex items-center justify-center overflow-hidden">
+                <img
+                  src={
+                    selectedItem.file_thumb ||
+                    (selectedItem.type === "konten_interaktif"
+                      ? icon3d
+                      : getFallbackIcon(selectedItem.ext))
+                  }
+                  className={
+                    selectedItem.file_thumb
+                      ? "w-full h-full object-cover object-top"
+                      : "w-24 h-24 object-contain"
+                  }
+                />
+              </div>
+
               <h3 className="font-bold text-lg">{selectedItem.file_name}</h3>
 
               <p className="text-sm text-gray-600">
