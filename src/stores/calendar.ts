@@ -120,6 +120,8 @@ export const fetchEventByClassroomDate = createAsyncThunk<
 
       if (!filteredByClassroomId) return null;
 
+      console.log('filteredCl: ', filteredByClassroomId) 
+
       return filteredByClassroomId;
     } catch (error: any) {
       return rejectWithValue(
@@ -167,6 +169,7 @@ const calendarSlice = createSlice({
       .addCase(fetchEventList.fulfilled, (state, action) => {
         state.loading = false;
         state.events = groupEventsByDate(action.payload);
+        console.log('pload: ', action.payload)
       })
       .addCase(fetchEventList.rejected, (state, action) => {
         state.loading = false;

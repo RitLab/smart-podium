@@ -24,7 +24,7 @@ type TotalType = {
 type StudentState = {
   attendanceList: Attendance[];
   total: TotalType;
-  teacher: TeacherType
+  teacher: TeacherType;
 };
 
 const initialState: StudentState = {
@@ -34,14 +34,15 @@ const initialState: StudentState = {
     total_absent: 0,
   },
   teacher: {
-    teacher_name: '',
-    teacher_id: ''
-  }
+    teacher_name: "",
+    teacher_id: "",
+  },
 };
 
 export const fetchAttendance = createAsyncThunk<
   AttendanceResponse,
-  AttendancePayload
+  AttendancePayload,
+  { rejectValue: string }
 >("student/fetchAttendance", async (payload, { dispatch, rejectWithValue }) => {
   try {
     dispatch(setLoading(true));
@@ -50,12 +51,35 @@ export const fetchAttendance = createAsyncThunk<
     const data = await studentService.getAttendance(payload);
     return data;
   } catch (error: any) {
-    dispatch(setError(error.message || "Failed to fetch attendance list"));
-    return rejectWithValue(error.message || "Failed to fetch attendance list");
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch attendance list";
+
+    dispatch(setError(message));
+    return rejectWithValue(message);
   } finally {
     dispatch(setLoading(false));
   }
 });
+
+// export const fetchAttendance = createAsyncThunk<
+//   AttendanceResponse,
+//   AttendancePayload
+// >("student/fetchAttendance", async (payload, { dispatch, rejectWithValue }) => {
+//   try {
+//     dispatch(setLoading(true));
+//     dispatch(setError(""));
+
+//     const data = await studentService.getAttendance(payload);
+//     return data;
+//   } catch (error: any) {
+//     dispatch(setError(error.message || "Failed to fetch attendance list"));
+//     return rejectWithValue(error.message || "Failed to fetch attendance list");
+//   } finally {
+//     dispatch(setLoading(false));
+//   }
+// });
 
 export const updateAttendance = createAsyncThunk<
   EmptyResponse,
@@ -99,8 +123,8 @@ const studentSlice = createSlice({
       state.attendanceList = attendances;
       state.teacher = {
         teacher_name: action.payload.data.teacher_name,
-        teacher_id: action.payload.data.teacher_id
-      }
+        teacher_id: action.payload.data.teacher_id,
+      };
 
       attendances.map((item) => {
         if (item.attendance_status > 1) {

@@ -16,30 +16,55 @@ const attendanceOptions: HandlingStatus[] = [
 
 const Student = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { attendanceList, teacher } = useSelector((state: RootState) => state.student);
+  const { attendanceList, teacher } = useSelector(
+    (state: RootState) => state.student,
+  );
   const [attendance, setAttendance] = useState<Attendance>({} as Attendance);
 
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [totalPage, setTotalPage] = useState(1);
 
+  const { eventList } = useSelector((state: RootState) => state.calendar);
+
   useEffect(() => {
     // Hardcoded
-    fetchData("b686d699-73f4-4b05-99fd-b9ef723e66ec");
-  }, [dispatch]);
+    fetchData(eventList ? eventList.id : null);
+  }, []);
 
-  const fetchData = async (event_id: string) => {
-    await dispatch(fetchAttendance({ event_id })).unwrap();
+  const [error, setErrorLocal] = useState<string | null>(null);
 
-    console.log('attendanceList: ', attendanceList)
+  const fetchData = async (event_id: string | null) => {
+    try {
+      setErrorLocal(null);
 
-    if (attendanceList && attendanceList.length > 0) {
-      setAttendance(attendanceList[0]);
-      setPerPage(10);
-      setPage(1);
-      setTotalPage(Math.ceil(attendanceList.length / perPage));
+      const res = await dispatch(fetchAttendance(event_id ? { event_id } : null)).unwrap();
+
+      const attendances = res.data.attendances;
+
+      if (attendances.length > 0) {
+        setAttendance(attendances[0]);
+        setPerPage(10);
+        setPage(1);
+        setTotalPage(Math.ceil(attendances.length / 10));
+      }
+    } catch (err: any) {
+      setErrorLocal(err);
     }
   };
+
+  // const fetchData = async (event_id: string) => {
+  //   await dispatch(fetchAttendance({ event_id })).unwrap();
+
+  //   console.log('attendanceList: ', attendanceList)
+
+  //   if (attendanceList && attendanceList.length > 0) {
+  //     setAttendance(attendanceList[0]);
+  //     setPerPage(10);
+  //     setPage(1);
+  //     setTotalPage(Math.ceil(attendanceList.length / perPage));
+  //   }
+  // };
 
   const filterAttendanceList = useMemo(() => {
     const startIndex = (page - 1) * perPage;
@@ -107,7 +132,7 @@ const Student = () => {
           attendance={attendance}
           attendanceOptions={attendanceOptions}
           teacher={teacher}
-          handleDone={() => fetchData("b686d699-73f4-4b05-99fd-b9ef723e66ec")} // hardcoded
+          handleDone={() => fetchData(eventList ? eventList.id : null)} // hardcoded
         />
       </div>
     </div>

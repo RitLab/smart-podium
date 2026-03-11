@@ -9,7 +9,7 @@ import type {
 
 export const studentService = {
   getAttendance: async (
-    param: AttendancePayload,
+    param?: AttendancePayload,
   ): Promise<AttendanceResponse> => {
     const url = `${baseURL}/portal/event/attendance`;
     return await handler.get<AttendanceResponse>(url, param);

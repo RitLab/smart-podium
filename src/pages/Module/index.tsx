@@ -207,6 +207,9 @@ const Module = () => {
                   }`}
                 >
                   <img
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
                     src={item.file_thumb}
                     className="w-full h-28 object-cover object-top rounded-lg mb-2"
                   />

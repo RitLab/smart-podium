@@ -311,11 +311,17 @@ const MainLayoutContent = () => {
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
 
+  // useEffect(() => {
+  //   if (error) {
+  //     showToast(error, "error");
+  //   }
+  // }, [error, showToast]);
+
   useEffect(() => {
     if (error) {
       showToast(error, "error");
     }
-  }, [error, showToast]);
+  }, [error]);
 
   if (isHome) {
     return (
