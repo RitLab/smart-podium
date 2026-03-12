@@ -102,7 +102,7 @@ const Student = () => {
           " transition-all"
         }
       >
-        <div className="grid grid-cols-5 gap-6">
+        <div className="grid grid-cols-5 grid-rows-2 gap-6">
           {filterAttendanceList?.map((item) => (
             <ItemStudent
               key={item.user_id}
