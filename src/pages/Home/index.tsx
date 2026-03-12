@@ -119,12 +119,6 @@ const Home = () => {
     window.ipcRenderer.invoke("open-whiteboard");
   };
 
-  /* ================= MINIMIZE ================= */
-
-  const minimizeApp = () => {
-    window.ipcRenderer.invoke("minimize-window");
-  };
-
   /* ================= ERROR TOAST ================= */
 
   useEffect(() => {
@@ -275,13 +269,6 @@ const Home = () => {
 
   return (
     <div className="relative h-full flex flex-col items-center justify-between py-24">
-      <button
-        type="button"
-        onClick={minimizeApp}
-        className="absolute top-4 right-4 flex items-center justify-center w-10 h-10 rounded-lg opacity-40 hover:opacity-100 bg-white shadow hover:bg-red-400 text-gray-700 hover:text-white transition"
-      >
-        <Minus size={22} />
-      </button>
       <div>
         <p className="text-xs text-gray-400 text-center mb-2">
           Smart Podium v{__APP_VERSION__}
@@ -353,16 +340,6 @@ const Home = () => {
             return (
               <div key={menu.label}>
                 <button type="button" onClick={openWhiteboard}>
-                  <MenuCard Icon={Icon} menu={menu} />
-                </button>
-              </div>
-            );
-          }
-
-          if (menu.action === "minimize") {
-            return (
-              <div key={menu.label}>
-                <button type="button" onClick={minimizeApp}>
                   <MenuCard Icon={Icon} menu={menu} />
                 </button>
               </div>

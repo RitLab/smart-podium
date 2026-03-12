@@ -180,7 +180,7 @@ const Module = () => {
   return (
     <div className="grid grid-cols-12 gap-6 p-6">
       {/* LEFT PANEL */}
-      <Card className="col-span-8 h-[780px] p-0 flex flex-col">
+      <Card className="col-span-8 p-0 flex flex-col">
         <div className="p-6 space-y-4 border-b">
           <button className="flex items-center gap-2 font-bold text-lg">
             <ChevronDown className="w-5 h-5" />
@@ -282,7 +282,7 @@ const Module = () => {
       </Card>
 
       {/* RIGHT PANEL */}
-      <Card className="col-span-4 h-[780px] p-0 flex flex-col sticky top-6">
+      <Card className="col-span-4 p-0 flex flex-col sticky top-6 overflow-hidden">
         {selectedItem ? (
           <>
             <div className="flex-1 p-5 space-y-4">

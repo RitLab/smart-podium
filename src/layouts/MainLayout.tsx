@@ -1,4 +1,4 @@
-import { Clock9, Minus, Timer } from "lucide-react";
+import { Clock9, Minimize, Timer } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
@@ -388,7 +388,7 @@ const Sidebar = () => {
             onClick={minimizeApp}
             className="flex items-center justify-center w-10 h-10 rounded-lg text-red-600 transition"
           >
-            <Minus size={24} height={24} />
+            <Minimize size={24} height={24} />
           </button>
         </div>
       </div>
@@ -407,6 +407,10 @@ const MainLayoutContent = () => {
 
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
+
+  const minimizeApp = () => {
+    window.ipcRenderer.invoke("minimize-window");
+  };
 
   // useEffect(() => {
   //   if (error) {
@@ -429,6 +433,14 @@ const MainLayoutContent = () => {
         <div className="absolute top-4 left-24">
           <RecorderComponents />
         </div>
+
+        <button
+          type="button"
+          onClick={minimizeApp}
+          className="absolute top-0 right-0 flex items-center justify-center w-12 h-12 bg-red-600 text-white transition"
+        >
+          <Minimize size={22} />
+        </button>
 
         <Outlet />
         {loading && <Loading />}
