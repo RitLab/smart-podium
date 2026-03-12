@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router";
-import { LogOut } from "lucide-react";
+import { LogOut, Minus } from "lucide-react";
 
 import Logo from "@/assets/images/logo.png";
 import {
@@ -62,12 +62,6 @@ const menus: MenuItem[] = [
     label: "Whiteboard",
     icon: WhiteboardIcon,
     color: "blue",
-  },
-  {
-    action: "minimize",
-    label: "Minimize",
-    icon: WebIcon,
-    color: "green",
   },
 ];
 
@@ -280,7 +274,14 @@ const Home = () => {
   /* ================= RENDER ================= */
 
   return (
-    <div className="h-full flex flex-col items-center justify-between py-24">
+    <div className="relative h-full flex flex-col items-center justify-between py-24">
+      <button
+        type="button"
+        onClick={minimizeApp}
+        className="absolute top-4 right-4 flex items-center justify-center w-10 h-10 rounded-lg opacity-40 hover:opacity-100 bg-white shadow hover:bg-red-400 text-gray-700 hover:text-white transition"
+      >
+        <Minus size={22} />
+      </button>
       <div>
         <p className="text-xs text-gray-400 text-center mb-2">
           Smart Podium v{__APP_VERSION__}

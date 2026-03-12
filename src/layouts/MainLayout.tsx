@@ -1,4 +1,4 @@
-import { Clock9, Timer } from "lucide-react";
+import { Clock9, Minus, Timer } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
@@ -106,12 +106,6 @@ const menus: MenuItem[] = [
     label: "Whiteboard",
     icon: WhiteboardIcon,
     color: "blue",
-  },
-  {
-    action: "minimize",
-    label: "Minimize",
-    icon: WebIcon,
-    color: "green",
   },
 ];
 
@@ -339,7 +333,11 @@ const Sidebar = () => {
                   <div
                     className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
                   >
-                    <Icon width={24} height={24} className={color.iconInactive} />
+                    <Icon
+                      width={24}
+                      height={24}
+                      className={color.iconInactive}
+                    />
                   </div>
                 </button>
               );
@@ -351,7 +349,11 @@ const Sidebar = () => {
                   <div
                     className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
                   >
-                    <Icon width={24} height={24} className={color.iconInactive} />
+                    <Icon
+                      width={24}
+                      height={24}
+                      className={color.iconInactive}
+                    />
                   </div>
                 </button>
               );
@@ -377,10 +379,17 @@ const Sidebar = () => {
           );
         })}
 
-        <div className="mt-20">
+        <div className="mt-20 flex flex-col gap-4 items-center">
           <NavLink to="/home">
             <HomeIcon width={24} height={24} className="text-orange-600" />
           </NavLink>
+          <button
+            type="button"
+            onClick={minimizeApp}
+            className="flex items-center justify-center w-10 h-10 rounded-lg text-red-600 transition"
+          >
+            <Minus size={24} height={24} />
+          </button>
         </div>
       </div>
     </aside>
