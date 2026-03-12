@@ -64,6 +64,7 @@ const menus = [
   { path: "/student", icon: UsersIcon, color: "green" },
   { path: "/module", icon: BookIcon, color: "yellow" },
   { path: "/internet", icon: WebIcon, color: "red" },
+  { path: "/internet", icon: WebIcon, color: "blue" },
 ] as const;
 
 const colorMap = {

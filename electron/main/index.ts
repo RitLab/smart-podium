@@ -3,21 +3,12 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
+import { spawn } from "child_process";
 import { update } from "./update";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// The built directory structure
-//
-// ├─┬ dist-electron
-// │ ├─┬ main
-// │ │ └── index.js    > Electron-Main
-// │ └─┬ preload
-// │   └── index.mjs   > Preload-Scripts
-// ├─┬ dist
-// │ └── index.html    > Electron-Renderer
-//
 process.env.APP_ROOT = path.join(__dirname, "../..");
 
 export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
@@ -31,7 +22,6 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 // Disable GPU Acceleration for Windows 7
 if (os.release().startsWith("6.1")) app.disableHardwareAcceleration();
 
-// Set application name for Windows 10+ notifications
 if (process.platform === "win32") app.setAppUserModelId(app.getName());
 
 if (!app.requestSingleInstanceLock()) {
@@ -40,92 +30,68 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let win: BrowserWindow | null = null;
+
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
 
-// async function createWindow() {
-//   win = new BrowserWindow({
-//     title: "Main window",
-//     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
-//     fullscreen: true,
-//     webPreferences: {
-//       preload,
-//       webviewTag: true,
-//       // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
-//       // nodeIntegration: true,
+// ===============================
+// OPEN WHITEBOARD FUNCTION
+// ===============================
+function openWhiteboard() {
+  const exePath =
+    "C:\\Program Files (x86)\\Whiteboard_6.4.12.6402\\Main\\Whiteboard.exe";
 
-//       // Consider using contextBridge.exposeInMainWorld
-//       // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
-//       // contextIsolation: false,
-//     },
-//   });
+  try {
+    spawn(exePath, [], {
+      detached: true,
+      stdio: "ignore",
+    }).unref();
+  } catch (error) {
+    console.error("Failed to open Whiteboard:", error);
+  }
+}
 
-//   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-//     // Only modify requests to YouTube domains
-//     if (
-//       details.url.includes("youtube.com") ||
-//       details.url.includes("ytimg.com")
-//     ) {
-//       details.requestHeaders["Referer"] = "www.youtube.com"; // A valid YouTube URL
-//     }
-//     callback({ requestHeaders: details.requestHeaders });
-//   });
-
-//   if (VITE_DEV_SERVER_URL) {
-//     // #298
-//     win.loadURL(VITE_DEV_SERVER_URL);
-//     // Open devTool if the app is not packaged
-//     win.webContents.openDevTools();
-//   } else {
-//     win.loadFile(indexHtml);
-//   }
-
-//   // Test actively push message to the Electron-Renderer
-//   win.webContents.on("did-finish-load", () => {
-//     win?.webContents.send("main-process-message", new Date().toLocaleString());
-//   });
-
-//   // Make all links open with the browser, not with the application
-//   win.webContents.setWindowOpenHandler(({ url }) => {
-//     if (url.startsWith("https:")) shell.openExternal(url);
-//     return { action: "deny" };
-//   });
-
-//   // Auto update
-//   update(win);
-// }
-
+// ===============================
+// CREATE WINDOW
+// ===============================
 async function createWindow() {
   win = new BrowserWindow({
     title: "Main window",
     icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
-
-    width: 1280,
-    height: 800,
-
-    show: false,
-    frame: true,
-
+    fullscreen: true,
     webPreferences: {
       preload,
       webviewTag: true,
     },
   });
 
-  win.maximize();
+  // ===============================
+  // CUSTOM MENU
+  // ===============================
+  // const template = [
+  //   {
+  //     label: "Applications",
+  //     submenu: [
+  //       {
+  //         label: "Open Whiteboard",
+  //         click() {
+  //           openWhiteboard();
+  //         },
+  //       },
+  //     ],
+  //   },
+  // ];
 
-  win.once("ready-to-show", () => {
-    win?.show();
-  });
+  // const menu = Menu.buildFromTemplate(template as any);
+  // Menu.setApplicationMenu(menu);
 
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     if (
       details.url.includes("youtube.com") ||
       details.url.includes("ytimg.com")
     ) {
-      details.requestHeaders["Referer"] = "https://www.youtube.com/";
+      details.requestHeaders["Referer"] = "https://www.youtube.com";
     }
-
     callback({ requestHeaders: details.requestHeaders });
   });
 
@@ -148,11 +114,17 @@ async function createWindow() {
   update(win);
 }
 
+// ===============================
+// APP READY
+// ===============================
 app.whenReady().then(() => {
-  Menu.setApplicationMenu(null);
+  Menu.setApplicationMenu(null)
   createWindow();
 });
 
+// ===============================
+// APP EVENTS
+// ===============================
 app.on("window-all-closed", () => {
   win = null;
   if (process.platform !== "darwin") app.quit();
@@ -160,7 +132,6 @@ app.on("window-all-closed", () => {
 
 app.on("second-instance", () => {
   if (win) {
-    // Focus on the main window if the user tried to open another
     if (win.isMinimized()) win.restore();
     win.focus();
   }
@@ -168,6 +139,7 @@ app.on("second-instance", () => {
 
 app.on("activate", () => {
   const allWindows = BrowserWindow.getAllWindows();
+
   if (allWindows.length) {
     allWindows[0].focus();
   } else {
@@ -175,7 +147,13 @@ app.on("activate", () => {
   }
 });
 
-// New window example arg: new windows url
+// ===============================
+// IPC
+// ===============================
+ipcMain.handle("open-whiteboard", () => {
+  openWhiteboard();
+});
+
 ipcMain.handle("open-win", (_, arg) => {
   const childWindow = new BrowserWindow({
     webPreferences: {

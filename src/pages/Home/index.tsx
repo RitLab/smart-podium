@@ -9,31 +9,79 @@ import {
   CalendarIcon,
   UsersIcon,
   WebIcon,
+  WhiteboardIcon,
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 
 import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
-import {
-  startRecord,
-  stopRecord,
-  clearError,
-} from "@/stores/record";
+import { startRecord, stopRecord, clearError } from "@/stores/record";
 
 import { useToast } from "@/layouts/MainLayout";
 
-const menus = [
-  { path: "/calendar", label: "Kalender Akademik", icon: CalendarIcon, color: "blue" },
-  { path: "/student", label: "Manajemen Peserta Didik", icon: UsersIcon, color: "green" },
-  { path: "/module", label: "Materi Pelajaran", icon: BookIcon, color: "yellow" },
-  { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
-] as const;
+type MenuItem =
+  | {
+      path: string;
+      label: string;
+      icon: any;
+      color: keyof typeof colorMap;
+      action?: never;
+    }
+  | {
+      action: "whiteboard";
+      label: string;
+      icon: any;
+      color: keyof typeof colorMap;
+      path?: never;
+    };
+
+// const menus = [
+//   { path: "/calendar", label: "Kalender Akademik", icon: CalendarIcon, color: "blue" },
+//   { path: "/student", label: "Manajemen Peserta Didik", icon: UsersIcon, color: "green" },
+//   { path: "/module", label: "Materi Pelajaran", icon: BookIcon, color: "yellow" },
+//   { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
+//   { path: "/internet", label: "Whiteboard", icon: WhiteboardIcon, color: "blue" },
+// ] as const;
+
+const menus: MenuItem[] = [
+  {
+    path: "/calendar",
+    label: "Kalender Akademik",
+    icon: CalendarIcon,
+    color: "blue",
+  },
+  {
+    path: "/student",
+    label: "Manajemen Peserta Didik",
+    icon: UsersIcon,
+    color: "green",
+  },
+  {
+    path: "/module",
+    label: "Materi Pelajaran",
+    icon: BookIcon,
+    color: "yellow",
+  },
+  {
+    path: "/internet",
+    label: "Penampil Web",
+    icon: WebIcon,
+    color: "red",
+  },
+  {
+    action: "whiteboard",
+    label: "Whiteboard",
+    icon: WhiteboardIcon,
+    color: "blue",
+  },
+];
 
 const colorMap = {
   blue: "from-blue-500 to-blue-600 hover:from-blue-700 hover:to-blue-800",
   green: "from-green-500 to-green-600 hover:from-green-700 hover:to-green-800",
-  yellow: "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
+  yellow:
+    "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
   red: "from-red-500 to-red-600 hover:from-red-700 hover:to-red-800",
 };
 
@@ -44,7 +92,7 @@ const Home = () => {
 
   const { eventList } = useSelector((state: RootState) => state.calendar);
   const { isRecording, session_id, error } = useSelector(
-    (state: RootState) => state.record
+    (state: RootState) => state.record,
   );
 
   const [time, setTime] = useState(new Date());
@@ -52,6 +100,10 @@ const Home = () => {
   const [isStarted, setIsStarted] = useState(false);
 
   const hasAutoStoppedRef = useRef(false);
+
+  const openWhiteboard = () => {
+    window.ipcRenderer.invoke("open-whiteboard");
+  };
 
   /* ================= ERROR TOAST ================= */
   useEffect(() => {
@@ -91,7 +143,7 @@ const Home = () => {
         const seconds = Math.floor((diff / 1000) % 60);
 
         setCountdown(
-          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
         );
       }
     }, 1000);
@@ -118,7 +170,7 @@ const Home = () => {
             stopRecord({
               session_id,
               event_id: String(eventList.id),
-            })
+            }),
           ).unwrap();
 
           console.log("Recording auto stopped (end time reached)");
@@ -145,9 +197,7 @@ const Home = () => {
   }, [dispatch]);
 
   /* ================= START / STOP RECORD ================= */
-  const handleRecordToggle = async (
-    e: React.MouseEvent<HTMLButtonElement>
-  ) => {
+  const handleRecordToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
     if (!eventList) return;
@@ -156,9 +206,7 @@ const Home = () => {
       if (!isRecording) {
         hasAutoStoppedRef.current = false;
 
-        await dispatch(
-          startRecord({ id: String(eventList.id) })
-        ).unwrap();
+        await dispatch(startRecord({ id: String(eventList.id) })).unwrap();
 
         navigate("/module");
       } else {
@@ -168,7 +216,7 @@ const Home = () => {
           stopRecord({
             session_id,
             event_id: String(eventList.id),
-          })
+          }),
         ).unwrap();
       }
     } catch (err) {
@@ -212,9 +260,7 @@ const Home = () => {
             <h1 className="text-7xl font-bold text-gray-800">
               {formattedTime(time)}
             </h1>
-            <p className="text-2xl text-gray-600 mt-4">
-              {formattedDate(time)}
-            </p>
+            <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>
           </div>
 
           <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
@@ -260,25 +306,43 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-8 text-center">
         {menus.map((menu) => {
           const Icon = menu.icon;
+
           return (
-            <div key={menu.path}>
-              <NavLink to={menu.path}>
-                <div className="flex flex-col items-center hover:scale-105">
-                  <div
-                    className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${
-                      colorMap[menu.color]
-                    }`}
-                  >
-                    <Icon width={58} height={58} className="text-white" />
+            <div key={menu.label}>
+              {menu.action === "whiteboard" ? (
+                <button onClick={openWhiteboard}>
+                  <div className="flex flex-col items-center hover:scale-105">
+                    <div
+                      className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${
+                        colorMap[menu.color]
+                      }`}
+                    >
+                      <Icon width={58} height={58} className="text-white" />
+                    </div>
+                    <p className="mt-4 text-gray-700 font-medium">
+                      {menu.label}
+                    </p>
                   </div>
-                  <p className="mt-4 text-gray-700 font-medium">
-                    {menu.label}
-                  </p>
-                </div>
-              </NavLink>
+                </button>
+              ) : (
+                <NavLink to={menu.path}>
+                  <div className="flex flex-col items-center hover:scale-105">
+                    <div
+                      className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${
+                        colorMap[menu.color]
+                      }`}
+                    >
+                      <Icon width={58} height={58} className="text-white" />
+                    </div>
+                    <p className="mt-4 text-gray-700 font-medium">
+                      {menu.label}
+                    </p>
+                  </div>
+                </NavLink>
+              )}
             </div>
           );
         })}
