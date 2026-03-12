@@ -20,29 +20,17 @@ import { startRecord, stopRecord, clearError } from "@/stores/record";
 
 import { useToast } from "@/layouts/MainLayout";
 
-type MenuItem =
-  | {
-      path: string;
-      label: string;
-      icon: any;
-      color: keyof typeof colorMap;
-      action?: never;
-    }
-  | {
-      action: "whiteboard";
-      label: string;
-      icon: any;
-      color: keyof typeof colorMap;
-      path?: never;
-    };
+/* ================= MENU TYPE ================= */
 
-// const menus = [
-//   { path: "/calendar", label: "Kalender Akademik", icon: CalendarIcon, color: "blue" },
-//   { path: "/student", label: "Manajemen Peserta Didik", icon: UsersIcon, color: "green" },
-//   { path: "/module", label: "Materi Pelajaran", icon: BookIcon, color: "yellow" },
-//   { path: "/internet", label: "Penampil Web", icon: WebIcon, color: "red" },
-//   { path: "/internet", label: "Whiteboard", icon: WhiteboardIcon, color: "blue" },
-// ] as const;
+type MenuItem = {
+  label: string;
+  icon: any;
+  color: keyof typeof colorMap;
+  path?: string;
+  action?: "whiteboard" | "minimize";
+};
+
+/* ================= MENU LIST ================= */
 
 const menus: MenuItem[] = [
   {
@@ -75,7 +63,15 @@ const menus: MenuItem[] = [
     icon: WhiteboardIcon,
     color: "blue",
   },
+  {
+    action: "minimize",
+    label: "Minimize",
+    icon: WebIcon,
+    color: "green",
+  },
 ];
+
+/* ================= COLOR MAP ================= */
 
 const colorMap = {
   blue: "from-blue-500 to-blue-600 hover:from-blue-700 hover:to-blue-800",
@@ -84,6 +80,28 @@ const colorMap = {
     "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
   red: "from-red-500 to-red-600 hover:from-red-700 hover:to-red-800",
 };
+
+/* ================= MENU CARD ================= */
+
+type MenuCardProps = {
+  Icon: any;
+  menu: MenuItem;
+};
+
+const MenuCard = ({ Icon, menu }: MenuCardProps) => (
+  <div className="flex flex-col items-center hover:scale-105">
+    <div
+      className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${
+        colorMap[menu.color]
+      }`}
+    >
+      <Icon width={58} height={58} className="text-white" />
+    </div>
+    <p className="mt-4 text-gray-700 font-medium">{menu.label}</p>
+  </div>
+);
+
+/* ================= COMPONENT ================= */
 
 const Home = () => {
   const navigate = useNavigate();
@@ -101,11 +119,20 @@ const Home = () => {
 
   const hasAutoStoppedRef = useRef(false);
 
+  /* ================= WHITEBOARD ================= */
+
   const openWhiteboard = () => {
     window.ipcRenderer.invoke("open-whiteboard");
   };
 
+  /* ================= MINIMIZE ================= */
+
+  const minimizeApp = () => {
+    window.ipcRenderer.invoke("minimize-window");
+  };
+
   /* ================= ERROR TOAST ================= */
+
   useEffect(() => {
     if (error) {
       showToast(error, "error");
@@ -114,6 +141,7 @@ const Home = () => {
   }, [error, dispatch, showToast]);
 
   /* ================= HELPER TIME ================= */
+
   const getTimeToday = (timeStr: string) => {
     const [hours, minutes] = timeStr.split(":").map(Number);
     const date = new Date();
@@ -122,6 +150,7 @@ const Home = () => {
   };
 
   /* ================= COUNTDOWN START ================= */
+
   useEffect(() => {
     if (!eventList?.start_time) {
       setIsStarted(false);
@@ -143,7 +172,10 @@ const Home = () => {
         const seconds = Math.floor((diff / 1000) % 60);
 
         setCountdown(
-          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+            2,
+            "0",
+          )}`,
         );
       }
     }, 1000);
@@ -152,6 +184,7 @@ const Home = () => {
   }, [eventList]);
 
   /* ================= AUTO STOP RECORD ================= */
+
   useEffect(() => {
     if (!eventList?.end_time) return;
     if (!isRecording) return;
@@ -186,17 +219,20 @@ const Home = () => {
   }, [eventList, isRecording, session_id, dispatch]);
 
   /* ================= REALTIME CLOCK ================= */
+
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
   /* ================= FETCH USER ================= */
+
   useEffect(() => {
     dispatch(fetchUser());
   }, [dispatch]);
 
   /* ================= START / STOP RECORD ================= */
+
   const handleRecordToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
@@ -224,7 +260,8 @@ const Home = () => {
     }
   };
 
-  /* ================= DEBUG LOGO 5x ================= */
+  /* ================= DEBUG LOGO ================= */
+
   const clickCountRef = useRef(0);
 
   const handleClick = () => {
@@ -241,6 +278,7 @@ const Home = () => {
   };
 
   /* ================= RENDER ================= */
+
   return (
     <div className="h-full flex flex-col items-center justify-between py-24">
       <div>
@@ -310,39 +348,31 @@ const Home = () => {
         {menus.map((menu) => {
           const Icon = menu.icon;
 
+          if (menu.action === "whiteboard") {
+            return (
+              <div key={menu.label}>
+                <button type="button" onClick={openWhiteboard}>
+                  <MenuCard Icon={Icon} menu={menu} />
+                </button>
+              </div>
+            );
+          }
+
+          if (menu.action === "minimize") {
+            return (
+              <div key={menu.label}>
+                <button type="button" onClick={minimizeApp}>
+                  <MenuCard Icon={Icon} menu={menu} />
+                </button>
+              </div>
+            );
+          }
+
           return (
             <div key={menu.label}>
-              {menu.action === "whiteboard" ? (
-                <button onClick={openWhiteboard}>
-                  <div className="flex flex-col items-center hover:scale-105">
-                    <div
-                      className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${
-                        colorMap[menu.color]
-                      }`}
-                    >
-                      <Icon width={58} height={58} className="text-white" />
-                    </div>
-                    <p className="mt-4 text-gray-700 font-medium">
-                      {menu.label}
-                    </p>
-                  </div>
-                </button>
-              ) : (
-                <NavLink to={menu.path}>
-                  <div className="flex flex-col items-center hover:scale-105">
-                    <div
-                      className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${
-                        colorMap[menu.color]
-                      }`}
-                    >
-                      <Icon width={58} height={58} className="text-white" />
-                    </div>
-                    <p className="mt-4 text-gray-700 font-medium">
-                      {menu.label}
-                    </p>
-                  </div>
-                </NavLink>
-              )}
+              <NavLink to={menu.path || "/"}>
+                <MenuCard Icon={Icon} menu={menu} />
+              </NavLink>
             </div>
           );
         })}

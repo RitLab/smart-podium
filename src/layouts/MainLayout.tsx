@@ -11,6 +11,7 @@ import {
   HomeIcon,
   UsersIcon,
   WebIcon,
+  WhiteboardIcon,
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 import Loading from "@/components/Loading";
@@ -59,13 +60,60 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
    MENUS
 ===================================================== */
 
-const menus = [
-  { path: "/calendar", icon: CalendarIcon, color: "blue" },
-  { path: "/student", icon: UsersIcon, color: "green" },
-  { path: "/module", icon: BookIcon, color: "yellow" },
-  { path: "/internet", icon: WebIcon, color: "red" },
-  { path: "/internet", icon: WebIcon, color: "blue" },
-] as const;
+// const menus = [
+//   { path: "/calendar", icon: CalendarIcon, color: "blue" },
+//   { path: "/student", icon: UsersIcon, color: "green" },
+//   { path: "/module", icon: BookIcon, color: "yellow" },
+//   { path: "/internet", icon: WebIcon, color: "red" },
+//   { path: "/internet", icon: WebIcon, color: "blue" },
+// ] as const;
+
+type MenuItem = {
+  label: string;
+  icon: any;
+  color: keyof typeof colorMap;
+  path?: string;
+  action?: "whiteboard" | "minimize";
+};
+
+const menus: MenuItem[] = [
+  {
+    path: "/calendar",
+    label: "Kalender Akademik",
+    icon: CalendarIcon,
+    color: "blue",
+  },
+  {
+    path: "/student",
+    label: "Manajemen Peserta Didik",
+    icon: UsersIcon,
+    color: "green",
+  },
+  {
+    path: "/module",
+    label: "Materi Pelajaran",
+    icon: BookIcon,
+    color: "yellow",
+  },
+  {
+    path: "/internet",
+    label: "Penampil Web",
+    icon: WebIcon,
+    color: "red",
+  },
+  {
+    action: "whiteboard",
+    label: "Whiteboard",
+    icon: WhiteboardIcon,
+    color: "blue",
+  },
+  {
+    action: "minimize",
+    label: "Minimize",
+    icon: WebIcon,
+    color: "green",
+  },
+];
 
 const colorMap = {
   blue: {
@@ -265,16 +313,55 @@ const Navbar = () => {
 const Sidebar = () => {
   const location = useLocation();
 
+  /* ================= WHITEBOARD ================= */
+
+  const openWhiteboard = () => {
+    window.ipcRenderer.invoke("open-whiteboard");
+  };
+
+  /* ================= MINIMIZE ================= */
+
+  const minimizeApp = () => {
+    window.ipcRenderer.invoke("minimize-window");
+  };
+
   return (
     <aside className="flex flex-col justify-center">
       <div className="w-20 flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
         {menus.map((menu) => {
           const Icon = menu.icon;
+          const color = colorMap[menu.color];
+
+          if ("action" in menu) {
+            if (menu.action === "whiteboard") {
+              return (
+                <button key={menu.label} type="button" onClick={openWhiteboard}>
+                  <div
+                    className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
+                  >
+                    <Icon width={24} height={24} className={color.iconInactive} />
+                  </div>
+                </button>
+              );
+            }
+
+            if (menu.action === "minimize") {
+              return (
+                <button key={menu.label} type="button" onClick={minimizeApp}>
+                  <div
+                    className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
+                  >
+                    <Icon width={24} height={24} className={color.iconInactive} />
+                  </div>
+                </button>
+              );
+            }
+          }
+
           const isActive = location.pathname === menu.path;
-          const color = colorMap[menu.color as keyof typeof colorMap];
 
           return (
-            <NavLink key={menu.path} to={menu.path}>
+            <NavLink key={menu.path} to={menu.path!}>
               <div
                 className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${
                   isActive ? color.active : color.inactive

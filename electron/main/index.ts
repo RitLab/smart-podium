@@ -150,6 +150,13 @@ app.on("activate", () => {
 // ===============================
 // IPC
 // ===============================
+ipcMain.handle("minimize-window", () => {
+  const window = BrowserWindow.getFocusedWindow();
+  if (window) {
+    window.minimize();
+  }
+});
+
 ipcMain.handle("open-whiteboard", () => {
   openWhiteboard();
 });
