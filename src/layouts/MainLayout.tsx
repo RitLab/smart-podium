@@ -1,4 +1,4 @@
-import { Clock9, Minimize, Timer } from "lucide-react";
+import { Clock9, LogOut, Minimize, Timer } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
@@ -384,11 +384,15 @@ const Sidebar = () => {
             <HomeIcon width={24} height={24} className="text-orange-600" />
           </NavLink>
           <button
-            type="button"
-            onClick={minimizeApp}
-            className="flex items-center justify-center w-10 h-10 rounded-lg text-red-600 transition"
+            title="Logout / Reset Flow"
+            onClick={() => {
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.href = "/";
+            }}
+            className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
           >
-            <Minimize size={24} height={24} />
+            <LogOut size={24} />
           </button>
         </div>
       </div>

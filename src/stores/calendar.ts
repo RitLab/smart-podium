@@ -21,7 +21,7 @@ type CalendarState = {
 
 const initialState: CalendarState = {
   events: [],
-  loading: true,
+  loading: false,
   error: null,
   eventList: null,
 };
@@ -80,7 +80,7 @@ export const fetchEventList = createAsyncThunk<
     const CLASSROOM_ID = localStorage.getItem("class_id");
 
     const filtered = response.data.events.filter(
-      (ev) => ev.class_id === CLASSROOM_ID
+      (ev) => ev.class_room_id === CLASSROOM_ID
     );
 
     return filtered.map((event) => {
@@ -115,7 +115,7 @@ export const fetchEventByClassroomDate = createAsyncThunk<
       const CLASSROOM_ID = localStorage.getItem('class_id');
 
       const filteredByClassroomId = response.data.events.find(
-        (ev) => ev.class_id === CLASSROOM_ID,
+        (ev) => ev.class_room_id === CLASSROOM_ID,
       );
 
       if (!filteredByClassroomId) return null;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import CalendarComponents from "@/components/Calendar";
 import type { AppDispatch, RootState } from "@/stores";
@@ -24,20 +24,20 @@ const Calendar = () => {
   //   dispatch(fetchEvents());
   // }, [dispatch]);
 
-  useEffect(() => {
-    const today = new Date();
-    const month = today.getMonth() + 1;
-    const year = today.getFullYear();
+  const lastFetchRef = useRef<string>("");
 
-    dispatch(
-      fetchEventList({
-        month,
-        year,
-      })
-    );
+  const handleMonthChange = useCallback((month: number, year: number) => {
+    const fetchKey = `${year}-${month}`;
+    if (lastFetchRef.current === fetchKey) return;
+    
+    lastFetchRef.current = fetchKey;
+    dispatch(fetchEventList({ month, year }));
   }, [dispatch]);
 
-  if (loading) return <p>Loading...</p>;
+  // Hapus useEffect initial fetch karena sudah di-handle oleh handleMonthChange pas mounting
+  // useEffect(() => { ... }, [dispatch]);
+
+  // if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   const colorMap: Record<string, string> = {
@@ -81,7 +81,11 @@ const Calendar = () => {
     <div className="grid grid-cols-3 w-full h-[780px] gap-4 box-border">
       {/* Calendar section */}
       <div className="col-span-2 shadow-lg h-full">
-        <CalendarComponents events={events} onDateClick={onDateClick} />
+        <CalendarComponents 
+          events={events} 
+          onDateClick={onDateClick} 
+          onMonthChange={handleMonthChange}
+        />
       </div>
 
       {/* Event list section */}

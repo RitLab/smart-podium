@@ -10,11 +10,13 @@ type CalendarCell = {
 type CalendarComponentsProps = {
   events: EventGroup[];
   onDateClick?: (date: DateClick) => void;
+  onMonthChange?: (month: number, year: number) => void;
 };
 
 const CalendarComponents: React.FC<CalendarComponentsProps> = ({
   events,
   onDateClick,
+  onMonthChange,
 }) => {
   const MONTH_NAME = [
     "Januari",
@@ -105,6 +107,8 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
       monthName: MONTH_NAME[month],
       calendar: cells,
     });
+
+    onMonthChange?.(month + 1, year);
   };
 
   useEffect(() => {
