@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, session, Menu } from "electron";
+import { app, BrowserWindow, shell, ipcMain, session, Menu, dialog } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -154,6 +154,25 @@ ipcMain.handle("minimize-window", () => {
   const window = BrowserWindow.getFocusedWindow();
   if (window) {
     window.minimize();
+  }
+});
+
+ipcMain.handle("close-window", () => {
+  app.quit();
+});
+
+ipcMain.handle("show-quit-dialog", async () => {
+  const result = await dialog.showMessageBox({
+    type: "question",
+    buttons: ["Batal", "Ya, Tutup"],
+    defaultId: 1,
+    title: "Konfirmasi",
+    message: "Apakah Anda yakin ingin menutup aplikasi?",
+    icon: path.join(process.env.APP_ROOT, "src/assets/images/logo.png"),
+  });
+
+  if (result.response === 1) {
+    app.quit();
   }
 });
 

@@ -251,6 +251,7 @@ const Home = () => {
   /* ================= DEBUG LOGO ================= */
 
   const clickCountRef = useRef(0);
+  const versionClickCountRef = useRef(0);
 
   const handleClick = () => {
     clickCountRef.current += 1;
@@ -265,12 +266,28 @@ const Home = () => {
     }, 2000);
   };
 
+  const handleVersionClick = () => {
+    versionClickCountRef.current += 1;
+
+    if (versionClickCountRef.current === 5) {
+      versionClickCountRef.current = 0;
+      window.ipcRenderer.invoke("show-quit-dialog");
+    }
+
+    setTimeout(() => {
+      versionClickCountRef.current = 0;
+    }, 3000);
+  };
+
   /* ================= RENDER ================= */
 
   return (
     <div className="relative h-full flex flex-col items-center justify-between py-24">
       <div>
-        <p className="text-xs text-gray-400 text-center mb-2">
+        <p
+          className="text-xs text-gray-400 text-center mb-2 cursor-pointer select-none"
+          onClick={handleVersionClick}
+        >
           Smart Podium v{__APP_VERSION__}
         </p>
 
@@ -278,7 +295,7 @@ const Home = () => {
           <img
             src={Logo}
             alt="Logo"
-            className="h-18 w-96 object-contain"
+            className="h-18 w-96 object-contain cursor-pointer"
             onClick={handleClick}
           />
 

@@ -1,5 +1,5 @@
 import { Clock9, Minimize, Timer } from "lucide-react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 
@@ -405,6 +405,8 @@ const MainLayoutContent = () => {
   const { showToast } = useToast();
   const { error, loading } = useSelector((state: RootState) => state.ui);
 
+  const clickCountRef = useRef(0);
+
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
 
@@ -412,12 +414,20 @@ const MainLayoutContent = () => {
     window.ipcRenderer.invoke("minimize-window");
   };
 
-  // useEffect(() => {
-  //   if (error) {
-  //     showToast(error, "error");
-  //   }
-  // }, [error, showToast]);
+  const handleMinimizeOrClose = () => {
+    clickCountRef.current += 1;
 
+    if (clickCountRef.current === 5) {
+      clickCountRef.current = 0;
+      window.ipcRenderer.invoke("show-quit-dialog");
+    } else {
+      minimizeApp();
+    }
+
+    setTimeout(() => {
+      clickCountRef.current = 0;
+    }, 2000);
+  };
   useEffect(() => {
     if (error) {
       showToast(error, "error");
@@ -436,11 +446,9 @@ const MainLayoutContent = () => {
 
         <button
           type="button"
-          onClick={minimizeApp}
-          className="absolute top-0 right-0 flex items-center justify-center w-12 h-12 bg-red-600 text-white transition"
-        >
-          <Minimize size={22} />
-        </button>
+          onClick={handleMinimizeOrClose}
+          className="absolute top-0 right-0 w-16 h-16 opacity-0 cursor-default z-50"
+        />
 
         <Outlet />
         {loading && <Loading />}
