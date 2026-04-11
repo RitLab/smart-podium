@@ -161,8 +161,11 @@ ipcMain.handle("close-window", () => {
   app.quit();
 });
 
-ipcMain.handle("show-quit-dialog", async () => {
-  const result = await dialog.showMessageBox({
+ipcMain.handle("show-quit-dialog", async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+
+  const result = await dialog.showMessageBox(win, {
     type: "question",
     buttons: ["Batal", "Ya, Tutup"],
     defaultId: 1,
