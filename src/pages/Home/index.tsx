@@ -108,10 +108,64 @@ const Home = () => {
   );
 
   const [time, setTime] = useState(new Date());
+
+  /* ================= UPDATE LISTENER ================= */
+
+  useEffect(() => {
+    const handleUpdateStatus = (_event: any, status: string) => {
+      showToast(status, "info");
+    };
+
+    window.ipcRenderer.on("update-status", handleUpdateStatus);
+    return () => {
+      window.ipcRenderer.off("update-status", handleUpdateStatus);
+    };
+  }, [showToast]);
+
   const [countdown, setCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
 
   const hasAutoStoppedRef = useRef(false);
+
+  /* ================= DEBUG LOGIC ================= */
+
+  const clickCountRef = useRef(0);
+  const versionClickCountRef = useRef(0);
+  const clockClickCountRef = useRef(0);
+
+  const handleLogoClick = () => {
+    clickCountRef.current += 1;
+    if (clickCountRef.current === 5) {
+      clickCountRef.current = 0;
+      navigate("/lock-screen");
+    }
+    setTimeout(() => {
+      clickCountRef.current = 0;
+    }, 2000);
+  };
+
+  const handleVersionClick = () => {
+    versionClickCountRef.current += 1;
+    if (versionClickCountRef.current === 5) {
+      versionClickCountRef.current = 0;
+      window.ipcRenderer.invoke("show-quit-dialog");
+    }
+    setTimeout(() => {
+      versionClickCountRef.current = 0;
+    }, 2000);
+  };
+
+  const handleClockClick = () => {
+    clockClickCountRef.current += 1;
+    if (clockClickCountRef.current === 5) {
+      clockClickCountRef.current = 0;
+      window.ipcRenderer.invoke("check-update");
+      showToast("Sedang mengecek update ke GitHub...", "info");
+    }
+    setTimeout(() => {
+      clockClickCountRef.current = 0;
+    }, 2000);
+  };
 
   /* ================= WHITEBOARD ================= */
 
@@ -248,36 +302,7 @@ const Home = () => {
     }
   };
 
-  /* ================= DEBUG LOGO ================= */
 
-  const clickCountRef = useRef(0);
-  const versionClickCountRef = useRef(0);
-
-  const handleClick = () => {
-    clickCountRef.current += 1;
-
-    if (clickCountRef.current === 5) {
-      clickCountRef.current = 0;
-      navigate("/lock-screen");
-    }
-
-    setTimeout(() => {
-      clickCountRef.current = 0;
-    }, 2000);
-  };
-
-  const handleVersionClick = () => {
-    versionClickCountRef.current += 1;
-
-    if (versionClickCountRef.current === 5) {
-      versionClickCountRef.current = 0;
-      window.ipcRenderer.invoke("show-quit-dialog");
-    }
-
-    setTimeout(() => {
-      versionClickCountRef.current = 0;
-    }, 3000);
-  };
 
   /* ================= RENDER ================= */
 
@@ -296,11 +321,14 @@ const Home = () => {
             src={Logo}
             alt="Logo"
             className="h-18 w-96 object-contain cursor-pointer"
-            onClick={handleClick}
+            onClick={handleLogoClick}
           />
 
           <div className="text-center">
-            <h1 className="text-7xl font-bold text-gray-800">
+            <h1
+              className="text-7xl font-bold text-gray-800 cursor-pointer select-none"
+              onClick={handleClockClick}
+            >
               {formattedTime(time)}
             </h1>
             <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>

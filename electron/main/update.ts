@@ -24,10 +24,22 @@ export function update(win: Electron.BrowserWindow) {
     autoUpdater.quitAndInstall(true, true)
   })
 
-  autoUpdater.on('checking-for-update', () => console.log('Sedang mengecek update ke GitHub...'))
-  autoUpdater.on('update-available', () => console.log('Update ditemukan! Memulai download...'))
-  autoUpdater.on('update-not-available', () => console.log('Tidak ada update. Aplikasi sudah versi terbaru.'))
-  autoUpdater.on('error', (err: any) => console.error('Error saat update:', err))
+  autoUpdater.on('checking-for-update', () => {
+    win.webContents.send('update-status', 'Mengecek update ke GitHub...')
+  })
+  autoUpdater.on('update-available', (info: UpdateInfo) => {
+    win.webContents.send('update-status', `Update v${info.version} ditemukan! Memulai download...`)
+  })
+  autoUpdater.on('update-not-available', () => {
+    win.webContents.send('update-status', 'Aplikasi sudah versi terbaru.')
+  })
+  autoUpdater.on('error', (err: any) => {
+    win.webContents.send('update-status', `Error update: ${err.message}`)
+  })
+  autoUpdater.on('download-progress', (progress: ProgressInfo) => {
+    const percent = Math.floor(progress.percent)
+    win.webContents.send('update-status', `Mendownload: ${percent}%`)
+  })
 
   // // start check
   // autoUpdater.on('checking-for-update', function () { })
@@ -41,18 +53,18 @@ export function update(win: Electron.BrowserWindow) {
   // })
 
   // Checking for updates
-  // ipcMain.handle('check-update', async () => {
-  //   if (!app.isPackaged) {
-  //     const error = new Error('The update feature is only available after the package.')
-  //     return { message: error.message, error }
-  //   }
+  ipcMain.handle('check-update', async () => {
+    if (!app.isPackaged) {
+      const error = new Error('The update feature is only available after the package.')
+      return { message: error.message, error }
+    }
 
-  //   try {
-  //     return await autoUpdater.checkForUpdatesAndNotify()
-  //   } catch (error) {
-  //     return { message: 'Network error', error }
-  //   }
-  // })
+    try {
+      return await autoUpdater.checkForUpdatesAndNotify()
+    } catch (error) {
+      return { message: 'Network error', error }
+    }
+  })
 
   if (app.isPackaged) {
     autoUpdater.checkForUpdatesAndNotify();
