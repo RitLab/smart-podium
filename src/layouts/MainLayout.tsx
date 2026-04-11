@@ -462,7 +462,7 @@ const MainLayoutContent = () => {
 
   return (
     <div
-      className="relative min-h-screen w-full bg-cover bg-center flex"
+      className="relative h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
       <div className="absolute top-4 left-24">
@@ -470,13 +470,13 @@ const MainLayoutContent = () => {
       </div>
 
       <div
-        className={`flex-1 flex flex-col ${
-          !isInternet ? "pt-12 pl-24 pr-12" : "p-8"
+        className={`flex-1 flex flex-col overflow-hidden ${
+          !isInternet ? "pt-6 pl-12 pr-12 pb-6" : "p-8"
         }`}
       >
         {!isInternet && <Navbar />}
 
-        <main className={`flex-1 ${!isInternet ? "py-12" : "py-8"}`}>
+        <main className={`flex-1 overflow-hidden ${!isInternet ? "mt-4" : "py-8"}`}>
           <Outlet />
         </main>
       </div>

@@ -11,12 +11,18 @@ type CalendarComponentsProps = {
   events: EventGroup[];
   onDateClick?: (date: DateClick) => void;
   onMonthChange?: (month: number, year: number) => void;
+  selectedDate?: {
+    year: number;
+    month: number;
+    day: number;
+  };
 };
 
 const CalendarComponents: React.FC<CalendarComponentsProps> = ({
   events,
   onDateClick,
   onMonthChange,
+  selectedDate,
 }) => {
   const MONTH_NAME = [
     "Januari",
@@ -128,31 +134,31 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
   };
 
   return (
-    <div className="w-full h-full bg-white rounded-md flex flex-col overflow-hidden text-white">
+    <div className="w-full h-full bg-white rounded-md flex flex-col overflow-hidden text-white shadow-sm border border-gray-100">
       {/* header */}
-      <div className="flex bg-blue-800 gap-4 justify-center py-4 font-semibold text-sm rounded-t-md items-center">
+      <div className="flex bg-blue-800 gap-4 justify-center py-3 font-semibold text-sm rounded-t-md items-center">
         <button
-          className="border rounded-full text-center p-1"
+          className="border border-white/30 rounded-full text-center p-1 hover:bg-white/10 transition"
           onClick={goToPrevMonth}
         >
-          <ChevronLeft size={12} />
+          <ChevronLeft size={10} />
         </button>
-        <div>
+        <div className="min-w-[120px] text-center">
           {monthData.monthName} {monthData.year}
         </div>
         <button
-          className="border rounded-full text-center p-1"
+          className="border border-white/30 rounded-full text-center p-1 hover:bg-white/10 transition"
           onClick={goToNextMonth}
         >
-          <ChevronRight size={12} />
+          <ChevronRight size={10} />
         </button>
       </div>
 
       {/* day list */}
-      <div className="grid grid-cols-7 bg-blue-800 shrink-0">
+      <div className="grid grid-cols-7 bg-blue-800 shrink-0 border-t border-white/10">
         {dayList.map((day) => {
           return (
-            <div className="p-2 text-center text-sm" key={day}>
+            <div className="py-1.5 text-center text-[10px] uppercase tracking-wider opacity-80" key={day}>
               {day}
             </div>
           );
@@ -161,14 +167,25 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
 
       {/* calendary date */}
       <div className="text-blue-600 grid grid-cols-7 grid-rows-6 w-full flex-1">
-        {monthData.calendar.map((cell, idx) => (
-          <div
-            className={`${cell.currentMonth ? "" : "text-gray-500"} ${
-              idx === 35 ? "rounded-bl-md" : ""
-            } ${
-              idx === 41 ? "rounded-br-md" : ""
-            } bg-white border cursor-pointer border-gray-100 text-sm relative p-1 hover:bg-blue-300 hover:text-white hover:border-blue-600`}
-            key={idx}
+        {monthData.calendar.map((cell, idx) => {
+          const isSelected = selectedDate && 
+            selectedDate.day === cell.day && 
+            selectedDate.month === monthData.month && 
+            selectedDate.year === monthData.year && 
+            cell.currentMonth;
+
+          return (
+            <div
+              className={`${cell.currentMonth ? "" : "text-gray-500"} ${
+                idx === 35 ? "rounded-bl-md" : ""
+              } ${
+                idx === 41 ? "rounded-br-md" : ""
+              } ${
+                isSelected 
+                  ? "bg-blue-500 text-white border-blue-600 z-10" 
+                  : "bg-white border-gray-100 hover:bg-blue-50 hover:text-blue-600"
+              } border cursor-pointer text-sm relative p-1 transition-colors`}
+              key={idx}
             onClick={() => {
               if (cell.currentMonth && monthData.year && monthData.month) {
                 onDateClick?.({
@@ -218,27 +235,27 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
                             {visibleItems.map((item) => (
                               <div
                                 key={item.id}
-                                className={`mt-1 text-xs rounded px-1 block ${
-                                  item.type === "blue"
-                                    ? "bg-blue-200 text-blue-800"
-                                    : item.type === "green"
-                                    ? "bg-green-200 text-green-800"
+                                className={`mt-1.5 text-[10px] font-bold leading-tight rounded-full px-3 py-1 w-[90%] mx-auto text-center ${
+                                  item.type === "red"
+                                    ? "bg-red-100 text-red-600"
+                                    : item.type === "blue"
+                                    ? "bg-blue-100 text-blue-600"
                                     : item.type === "orange"
-                                    ? "bg-orange-200 text-orange-800"
+                                    ? "bg-orange-100 text-orange-600"
+                                    : item.type === "green"
+                                    ? "bg-green-100 text-green-600"
                                     : item.type === "purple"
-                                    ? "bg-purple-200 text-purple-800"
-                                    : item.type === "red"
-                                    ? "bg-red-200 text-red-800"
-                                    : "bg-gray-300 text-black"
+                                    ? "bg-purple-100 text-purple-600"
+                                    : "bg-gray-100 text-gray-500"
                                 }`}
                               >
-                                {item.name}
+                                <span className="truncate block">{item.name}</span>
                               </div>
                             ))}
 
                             {remainingCount > 0 && (
-                              <div className="mt-1 text-[10px] text-blue-500 font-semibold">
-                                +{remainingCount} data lainnya
+                              <div className="mt-0.5 text-[8px] text-gray-400 font-medium pl-1 italic">
+                                +{remainingCount} lainnya
                               </div>
                             )}
                           </>
@@ -248,12 +265,14 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
                   )}
                 </div>
               </>
-            )}
+              )
+            }
           </div>
-        ))}
-      </div>
+        )
+      })}
     </div>
-  );
-};
+  </div>
+)
+}
 
 export default CalendarComponents;
