@@ -144,23 +144,42 @@ const Home = () => {
     }, 2000);
   };
 
+  const isExitDialogOpeningRef = useRef(false);
+
   const handleVersionClick = () => {
+    if (isExitDialogOpeningRef.current) return;
+
     versionClickCountRef.current += 1;
     if (versionClickCountRef.current === 5) {
       versionClickCountRef.current = 0;
-      window.ipcRenderer.invoke("show-quit-dialog");
+      isExitDialogOpeningRef.current = true;
+
+      window.ipcRenderer.invoke("show-quit-dialog").finally(() => {
+        isExitDialogOpeningRef.current = false;
+      });
     }
     setTimeout(() => {
       versionClickCountRef.current = 0;
     }, 2000);
   };
 
+  const isUpdateCheckingRef = useRef(false);
+
   const handleClockClick = () => {
+    if (isUpdateCheckingRef.current) return; // Kalau lagi nge-cek, abaikan klik apa pun
+
     clockClickCountRef.current += 1;
     if (clockClickCountRef.current === 5) {
       clockClickCountRef.current = 0;
+      isUpdateCheckingRef.current = true; // Langsung kunci!
+
       window.ipcRenderer.invoke("check-update");
-      showToast("Sedang mengecek update ke GitHub...", "info");
+      showToast("Mengecek pembaruan sistem...", "info");
+
+      // Buka kunci otomatis setelah 10 detik biar bisa dipake lagi nanti
+      setTimeout(() => {
+        isUpdateCheckingRef.current = false;
+      }, 10000);
     }
     setTimeout(() => {
       clockClickCountRef.current = 0;

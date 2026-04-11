@@ -41,11 +41,11 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
 
   const showToast = useCallback((message: string, type: ToastType = "info") => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts([{ id, message, type }]); // Langsung ganti yang lama (biar cuma 1)
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 3000);
+    }, 4000); // Saya perlama sedikit durasinya biar enak dibaca
   }, []);
 
   return (

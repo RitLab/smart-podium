@@ -25,20 +25,20 @@ export function update(win: Electron.BrowserWindow) {
   })
 
   autoUpdater.on('checking-for-update', () => {
-    win.webContents.send('update-status', 'Mengecek update ke GitHub...')
+    win.webContents.send('update-status', 'Mengecek pembaruan sistem...')
   })
   autoUpdater.on('update-available', (info: UpdateInfo) => {
-    win.webContents.send('update-status', `Update v${info.version} ditemukan! Memulai download...`)
+    win.webContents.send('update-status', `Pembaruan v${info.version} tersedia. Mengunduh...`)
   })
   autoUpdater.on('update-not-available', () => {
-    win.webContents.send('update-status', 'Aplikasi sudah versi terbaru.')
+    win.webContents.send('update-status', 'Sistem sudah versi terbaru.')
   })
   autoUpdater.on('error', (err: any) => {
-    win.webContents.send('update-status', `Error update: ${err.message}`)
+    win.webContents.send('update-status', `Pembaruan gagal: ${err.message}`)
   })
   autoUpdater.on('download-progress', (progress: ProgressInfo) => {
     const percent = Math.floor(progress.percent)
-    win.webContents.send('update-status', `Mendownload: ${percent}%`)
+    win.webContents.send('update-status', `Mengunduh pembaruan: ${percent}%`)
   })
 
   // // start check
