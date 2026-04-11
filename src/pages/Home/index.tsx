@@ -16,6 +16,7 @@ import { Image } from "@/components/Image";
 import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
+import { fetchEventList } from "@/stores/calendar";
 import { startRecord, stopRecord, clearError } from "@/stores/record";
 
 import { useToast } from "@/layouts/MainLayout";
@@ -102,12 +103,54 @@ const Home = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { showToast } = useToast();
 
-  const { eventList } = useSelector((state: RootState) => state.calendar);
+  const { rawEvents } = useSelector((state: RootState) => state.calendar);
   const { isRecording, session_id, error } = useSelector(
     (state: RootState) => state.record,
   );
 
   const [time, setTime] = useState(new Date());
+  const [activeEvent, setActiveEvent] = useState<any>(null);
+
+  /* ================= FETCH EVENTS ================= */
+
+  useEffect(() => {
+    const now = new Date();
+    dispatch(fetchEventList({ 
+      month: now.getMonth() + 1, 
+      year: now.getFullYear() 
+    }));
+  }, [dispatch]);
+
+  /* ================= FIND NEXT EVENT ================= */
+
+  useEffect(() => {
+    if (!rawEvents || rawEvents.length === 0) return;
+
+    const now = new Date();
+    
+    const todayStr = now.toLocaleDateString("id-ID", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+
+    const currentTimeStr = now.toLocaleTimeString("id-ID", {
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).replace(".", ":");
+
+    const todayEvents = rawEvents.filter(ev => ev.event_date === todayStr);
+
+    if (todayEvents.length === 0) {
+      setActiveEvent(null);
+      return;
+    }
+
+    const upcoming = todayEvents
+      .filter(ev => {
+        return ev.start_time > currentTimeStr || (ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr);
+      })
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    setActiveEvent(upcoming.length > 0 ? upcoming[0] : null);
+  }, [rawEvents, time]);
 
   /* ================= UPDATE LISTENER ================= */
 
@@ -166,17 +209,16 @@ const Home = () => {
   const isUpdateCheckingRef = useRef(false);
 
   const handleClockClick = () => {
-    if (isUpdateCheckingRef.current) return; // Kalau lagi nge-cek, abaikan klik apa pun
+    if (isUpdateCheckingRef.current) return;
 
     clockClickCountRef.current += 1;
     if (clockClickCountRef.current === 5) {
       clockClickCountRef.current = 0;
-      isUpdateCheckingRef.current = true; // Langsung kunci!
+      isUpdateCheckingRef.current = true;
 
       window.ipcRenderer.invoke("check-update");
       showToast("Mengecek pembaruan sistem...", "info");
 
-      // Buka kunci otomatis setelah 10 detik biar bisa dipake lagi nanti
       setTimeout(() => {
         isUpdateCheckingRef.current = false;
       }, 10000);
@@ -204,6 +246,7 @@ const Home = () => {
   /* ================= HELPER TIME ================= */
 
   const getTimeToday = (timeStr: string) => {
+    if (!timeStr) return 0;
     const [hours, minutes] = timeStr.split(":").map(Number);
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
@@ -213,45 +256,55 @@ const Home = () => {
   /* ================= COUNTDOWN START ================= */
 
   useEffect(() => {
-    if (!eventList?.start_time) {
+    if (!activeEvent?.start_time) {
       setIsStarted(false);
+      setCountdown(null);
       return;
     }
 
-    const startTime = getTimeToday(eventList.start_time);
+    const startTime = getTimeToday(activeEvent.start_time);
+    const endTime = getTimeToday(activeEvent.end_time);
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const diff = startTime - now;
-
-      if (diff <= 0) {
+      
+      if (now >= startTime && now < endTime) {
         setIsStarted(true);
         setCountdown(null);
-        clearInterval(interval);
-      } else {
-        const minutes = Math.floor((diff / 1000 / 60) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
+      } else if (now < startTime) {
+        setIsStarted(false);
+        const diff = startTime - now;
+        const totalSeconds = Math.floor(diff / 1000);
+        const minutes = Math.floor((totalSeconds / 60) % 60);
+        const hours = Math.floor(totalSeconds / 3600);
+        const seconds = totalSeconds % 60;
 
-        setCountdown(
-          `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
-            2,
-            "0",
-          )}`,
-        );
+        if (hours > 0) {
+          setCountdown(
+            `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+          );
+        } else {
+          setCountdown(
+            `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+          );
+        }
+      } else {
+        setIsStarted(false);
+        setCountdown(null);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [eventList]);
+  }, [activeEvent]);
 
   /* ================= AUTO STOP RECORD ================= */
 
   useEffect(() => {
-    if (!eventList?.end_time) return;
+    if (!activeEvent?.end_time) return;
     if (!isRecording) return;
     if (!session_id) return;
 
-    const endTime = getTimeToday(eventList.end_time);
+    const endTime = getTimeToday(activeEvent.end_time);
 
     const interval = setInterval(async () => {
       const now = Date.now();
@@ -263,7 +316,7 @@ const Home = () => {
           await dispatch(
             stopRecord({
               session_id,
-              event_id: String(eventList.id),
+              event_id: String(activeEvent.id),
             }),
           ).unwrap();
 
@@ -277,7 +330,7 @@ const Home = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [eventList, isRecording, session_id, dispatch]);
+  }, [activeEvent, isRecording, session_id, dispatch]);
 
   /* ================= REALTIME CLOCK ================= */
 
@@ -297,13 +350,13 @@ const Home = () => {
   const handleRecordToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
-    if (!eventList) return;
+    if (!activeEvent) return;
 
     try {
       if (!isRecording) {
         hasAutoStoppedRef.current = false;
 
-        await dispatch(startRecord({ id: String(eventList.id) })).unwrap();
+        await dispatch(startRecord({ id: String(activeEvent.id) })).unwrap();
 
         navigate("/module");
       } else {
@@ -312,7 +365,7 @@ const Home = () => {
         await dispatch(
           stopRecord({
             session_id,
-            event_id: String(eventList.id),
+            event_id: String(activeEvent.id),
           }),
         ).unwrap();
       }
@@ -353,20 +406,29 @@ const Home = () => {
             <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>
           </div>
 
-          <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white border">
-            <Image
-              src={eventList?.teacher_image}
-              alt={eventList?.teacher_name}
-              className="h-16 w-16"
-            />
+          <div className="flex items-center gap-6 justify-between p-6 rounded-2xl shadow-lg bg-white border border-gray-100 min-w-[550px] max-w-[650px]">
+            <div className="flex items-center gap-5 flex-1 min-w-0">
+              <Image
+                src={activeEvent?.teacher_image}
+                alt={activeEvent?.teacher_name}
+                className="h-20 w-20 rounded-full border-2 border-gray-50 shrink-0"
+              />
 
-            <div className="flex flex-col gap-1">
-              <h3 className="text-2xl text-gray-800">
-                {eventList?.teacher_name}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {eventList?.class_room_name}
-              </p>
+              <div className="flex flex-col gap-1 min-w-0">
+                <h3 className="text-2xl font-bold text-gray-800 truncate">
+                  {activeEvent?.teacher_name || "Tidak ada jadwal"}
+                </h3>
+                <p className="text-sm text-gray-500 leading-snug break-words">
+                  {activeEvent?.course_name 
+                    ? <span className="font-semibold text-blue-600">{activeEvent.course_name}</span> 
+                    : "Silakan cek kalender untuk jadwal lainnya"}
+                </p>
+                {activeEvent?.class_room_name && (
+                  <p className="text-[11px] text-gray-400 uppercase tracking-widest font-medium">
+                    {activeEvent.class_room_name}
+                  </p>
+                )}
+              </div>
             </div>
 
             {isStarted ? (

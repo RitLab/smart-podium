@@ -14,6 +14,7 @@ import type {
 
 type CalendarState = {
   events: EventGroup[];
+  rawEvents: EventList[];
   loading: boolean;
   error: string | null;
   eventList: EventList | null;
@@ -21,6 +22,7 @@ type CalendarState = {
 
 const initialState: CalendarState = {
   events: [],
+  rawEvents: [],
   loading: false,
   error: null,
   eventList: null,
@@ -169,6 +171,7 @@ const calendarSlice = createSlice({
       .addCase(fetchEventList.fulfilled, (state, action) => {
         state.loading = false;
         state.events = groupEventsByDate(action.payload);
+        state.rawEvents = action.payload;
         console.log('pload: ', action.payload)
       })
       .addCase(fetchEventList.rejected, (state, action) => {
@@ -192,5 +195,4 @@ const calendarSlice = createSlice({
   },
 });
 
-// export const { setEvents } = calendarSlice.actions;
 export default calendarSlice.reducer;

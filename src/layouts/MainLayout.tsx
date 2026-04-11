@@ -18,6 +18,7 @@ import Loading from "@/components/Loading";
 import { formatDuration, formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
+import { fetchEventList } from "@/stores/calendar";
 import { Toast, ToastContextType, ToastType } from "@/types/ui";
 import ToastComponent from "@/components/Toast";
 import RecorderComponents from "@/components/Recorder";
@@ -144,51 +145,88 @@ const colorMap = {
 ===================================================== */
 const Navbar = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { eventList } = useSelector((state: RootState) => state.calendar);
+  const { rawEvents } = useSelector((state: RootState) => state.calendar);
 
   const [time, setTime] = useState(new Date());
+  const [activeEvent, setActiveEvent] = useState<any>(null);
   const [countdown, setCountdown] = useState("00:00:00");
+  const [isStarted, setIsStarted] = useState(false);
 
   useEffect(() => {
     dispatch(fetchUser());
+    const now = new Date();
+    dispatch(fetchEventList({ 
+      month: now.getMonth() + 1, 
+      year: now.getFullYear() 
+    }));
   }, [dispatch]);
+
+  // Logika cari event (sama dengan Home)
+  useEffect(() => {
+    if (!rawEvents || rawEvents.length === 0) return;
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("id-ID", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+    const currentTimeStr = now.toLocaleTimeString("id-ID", {
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).replace(".", ":");
+
+    const todayEvents = rawEvents.filter(ev => ev.event_date === todayStr);
+    const upcoming = todayEvents
+      .filter(ev => ev.start_time > currentTimeStr || (ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr))
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    setActiveEvent(upcoming.length > 0 ? upcoming[0] : null);
+  }, [rawEvents, time]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
       setTime(now);
 
-      if (!eventList?.event_date || !eventList?.end_time) return;
-
-      // Gabungkan tanggal + end_time
-      const endDateTime = new Date(
-        `${eventList.event_date}T${eventList.end_time}`,
-      );
-
-      const diff = endDateTime.getTime() - now.getTime();
-
-      if (diff <= 0) {
+      if (!activeEvent?.start_time) {
         setCountdown("00:00:00");
+        setIsStarted(false);
         return;
       }
 
-      const hours = Math.floor(
-        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-      );
+      const getTimeToday = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(":").map(Number);
+        const d = new Date();
+        d.setHours(hours, minutes, 0, 0);
+        return d.getTime();
+      };
 
+      const startTime = getTimeToday(activeEvent.start_time);
+      const endTime = getTimeToday(activeEvent.end_time);
+      const currentTime = now.getTime();
+
+      let targetTime = 0;
+      if (currentTime >= startTime && currentTime < endTime) {
+        setIsStarted(true);
+        targetTime = endTime;
+      } else if (currentTime < startTime) {
+        setIsStarted(false);
+        targetTime = startTime;
+      } else {
+        setCountdown("00:00:00");
+        setIsStarted(false);
+        return;
+      }
+
+      const diff = targetTime - currentTime;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
       setCountdown(
-        `${hours.toString().padStart(2, "0")}:${minutes
-          .toString()
-          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
+        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
       );
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [eventList]);
+  }, [activeEvent]);
 
   return (
     <header className="flex items-center justify-between relative">
@@ -197,15 +235,15 @@ const Navbar = () => {
       <div className="flex items-center gap-6">
         <div className="flex items-center bg-white shadow-md rounded-md p-4">
           <Image
-            src={eventList?.teacher_image}
-            alt={eventList?.teacher_name}
+            src={activeEvent?.teacher_image}
+            alt={activeEvent?.teacher_name}
             className="h-14 w-14"
           />
           <div className="mx-3">
             <h3 className="font-semibold text-gray-900">
-              {eventList?.teacher_name}
+              {activeEvent?.teacher_name || "Tidak ada jadwal"}
             </h3>
-            <p className="text-sm text-gray-600">{eventList?.course_name}</p>
+            <p className="text-sm text-gray-600">{activeEvent?.course_name || "Cek kalender"}</p>
           </div>
         </div>
 
@@ -219,7 +257,7 @@ const Navbar = () => {
           </div>
 
           <div className="p-4">
-            <p className="text-sm">Sisa Waktu</p>
+            <p className="text-sm">{isStarted ? "Sisa Waktu" : "Mulai Dalam"}</p>
             <div className="flex items-center gap-2 mt-1">
               <Timer size={16} />
               <span className="text-lg font-bold">{countdown}</span>
