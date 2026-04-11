@@ -52,6 +52,8 @@ export function update(win: Electron.BrowserWindow) {
   //   win.webContents.send('update-can-available', { update: false, version: app.getVersion(), newVersion: arg?.version })
   // })
 
+  let manualChecking = false;
+
   // Checking for updates
   ipcMain.handle('check-update', async () => {
     if (!app.isPackaged) {
@@ -59,10 +61,17 @@ export function update(win: Electron.BrowserWindow) {
       return { message: error.message, error }
     }
 
+    if (manualChecking) return { message: 'Sudah sedang mengecek...' };
+    
+    manualChecking = true;
     try {
-      return await autoUpdater.checkForUpdatesAndNotify()
+      const result = await autoUpdater.checkForUpdatesAndNotify()
+      return result;
     } catch (error) {
       return { message: 'Network error', error }
+    } finally {
+      // Tunggu sebentar sebelum boleh klik lagi
+      setTimeout(() => { manualChecking = false }, 5000);
     }
   })
 

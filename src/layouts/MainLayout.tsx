@@ -39,14 +39,14 @@ export const useToast = () => {
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = (message: string, type: ToastType = "info") => {
+  const showToast = useCallback((message: string, type: ToastType = "info") => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id));
     }, 3000);
-  };
+  }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>
