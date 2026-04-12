@@ -25,11 +25,11 @@ const Student = () => {
   const [page, setPage] = useState(1);
   const [totalPage, setTotalPage] = useState(1);
 
-  const { rawEvents } = useSelector((state: RootState) => state.calendar);
+  const { headerEvents } = useSelector((state: RootState) => state.calendar);
 
   /* ================= ACTIVE EVENT ID LOGIC ================= */
   const activeEventId = useMemo(() => {
-    if (!rawEvents || rawEvents.length === 0) return null;
+    if (!headerEvents || headerEvents.length === 0) return null;
     
     const now = new Date();
     const todayStr = now.toLocaleDateString("id-ID", {
@@ -39,7 +39,7 @@ const Student = () => {
       hour: "2-digit", minute: "2-digit", hour12: false
     }).replace(".", ":");
 
-    const todayEvents = rawEvents.filter(ev => ev.event_date === todayStr);
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
     
     // Cari yang sedang jalan sekarang
     let current = todayEvents.find(ev => 
@@ -54,7 +54,7 @@ const Student = () => {
     }
 
     return current?.id || null;
-  }, [rawEvents]);
+  }, [headerEvents]);
 
   useEffect(() => {
     if (activeEventId) {

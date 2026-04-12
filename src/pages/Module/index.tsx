@@ -22,7 +22,7 @@ const Module = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const { rawEvents } = useSelector((state: RootState) => state.calendar);
+  const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { referensi, detail, loading, error } = useSelector(
     (state: RootState) => state.module,
   );
@@ -33,7 +33,7 @@ const Module = () => {
 
   /* ================= COURSE ID LOGIC ================= */
   const activeCourseId = useMemo(() => {
-    if (!rawEvents || rawEvents.length === 0) return null;
+    if (!headerEvents || headerEvents.length === 0) return null;
     
     const now = new Date();
     const todayStr = now.toLocaleDateString("id-ID", {
@@ -43,7 +43,7 @@ const Module = () => {
       hour: "2-digit", minute: "2-digit", hour12: false
     }).replace(".", ":");
 
-    const todayEvents = rawEvents.filter(ev => ev.event_date === todayStr);
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
     
     // Cari yang sedang jalan sekarang
     let current = todayEvents.find(ev => 
@@ -58,7 +58,7 @@ const Module = () => {
     }
 
     return current?.course_id || null;
-  }, [rawEvents]);
+  }, [headerEvents]);
 
   /* ================= FETCH ================= */
 

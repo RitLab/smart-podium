@@ -18,7 +18,7 @@ import Loading from "@/components/Loading";
 import { formatDuration, formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
-import { fetchEventList } from "@/stores/calendar";
+import { fetchEventList, fetchHeaderEvents } from "@/stores/calendar";
 import { Toast, ToastContextType, ToastType } from "@/types/ui";
 import ToastComponent from "@/components/Toast";
 import RecorderComponents from "@/components/Recorder";
@@ -145,7 +145,7 @@ const colorMap = {
 ===================================================== */
 const Navbar = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { rawEvents } = useSelector((state: RootState) => state.calendar);
+  const { headerEvents } = useSelector((state: RootState) => state.calendar);
 
   const [time, setTime] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<any>(null);
@@ -155,7 +155,8 @@ const Navbar = () => {
   useEffect(() => {
     dispatch(fetchUser());
     const now = new Date();
-    dispatch(fetchEventList({ 
+    // Gunakan fetchHeaderEvents biar datanya tetap di bulan ini
+    dispatch(fetchHeaderEvents({ 
       month: now.getMonth() + 1, 
       year: now.getFullYear() 
     }));
@@ -163,7 +164,7 @@ const Navbar = () => {
 
   // Logika cari event (sama dengan Home)
   useEffect(() => {
-    if (!rawEvents || rawEvents.length === 0) return;
+    if (!headerEvents || headerEvents.length === 0) return;
     const now = new Date();
     const todayStr = now.toLocaleDateString("id-ID", {
       day: "numeric", month: "long", year: "numeric",
@@ -172,13 +173,13 @@ const Navbar = () => {
       hour: "2-digit", minute: "2-digit", hour12: false
     }).replace(".", ":");
 
-    const todayEvents = rawEvents.filter(ev => ev.event_date === todayStr);
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
     const upcoming = todayEvents
       .filter(ev => ev.start_time > currentTimeStr || (ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr))
       .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
     setActiveEvent(upcoming.length > 0 ? upcoming[0] : null);
-  }, [rawEvents, time]);
+  }, [headerEvents, time]);
 
   useEffect(() => {
     const interval = setInterval(() => {
