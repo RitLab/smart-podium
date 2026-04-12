@@ -7,6 +7,7 @@ import type { AppDispatch, RootState } from "@/stores";
 import { fetchReferensi, fetchBahanAjarDetail } from "@/stores/module";
 
 // icon
+import { CalendarIcon } from "@/components/Icon";
 import iconPdf from "@/assets/images/icon/icon-pdf.png";
 import iconMp4 from "@/assets/images/icon/icon-mp4.png";
 import iconPng from "@/assets/images/icon/icon-png.png";
@@ -32,7 +33,7 @@ const Module = () => {
 
   /* ================= COURSE ID LOGIC ================= */
   const activeCourseId = useMemo(() => {
-    if (!rawEvents || rawEvents.length === 0) return 1;
+    if (!rawEvents || rawEvents.length === 0) return null;
     
     const now = new Date();
     const todayStr = now.toLocaleDateString("id-ID", {
@@ -49,14 +50,14 @@ const Module = () => {
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
 
-    // Kalau nggak ada yang jalan, cari yang paling deket nanti
+    // Kalau nggak ada yang jalan, cari yang paling deket nanti (hari ini)
     if (!current) {
       current = todayEvents
         .filter(ev => ev.start_time > currentTimeStr)
         .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
     }
 
-    return current?.course_id || 1;
+    return current?.course_id || null;
   }, [rawEvents]);
 
   /* ================= FETCH ================= */
@@ -68,7 +69,7 @@ const Module = () => {
   const activeBab = referensi?.[activeBabIndex];
 
   useEffect(() => {
-    if (!activeBab) return;
+    if (!activeBab || !activeCourseId) return;
     dispatch(fetchBahanAjarDetail(activeCourseId));
   }, [dispatch, activeBab, activeCourseId]);
 
@@ -206,6 +207,28 @@ const Module = () => {
 
   if (loading) return <p className="p-6">Loading...</p>;
   if (error) return <p className="p-6 text-red-500">{error}</p>;
+
+  if (!activeCourseId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-6 space-y-4">
+        <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md border border-gray-100 animate-in fade-in zoom-in duration-500">
+          <div className="bg-gray-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+             <CalendarIcon width={48} height={48} className="text-gray-300" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Tidak Ada Jadwal Berjalan</h2>
+          <p className="text-gray-500 mb-6">
+            Materi pelajaran akan muncul secara otomatis saat sesi pelajaran dimulai sesuai jadwal di kalender.
+          </p>
+          <button 
+            onClick={() => navigate("/calendar")}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-200"
+          >
+            Lihat Kalender Akademik
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-12 gap-6 p-6 h-[calc(100vh-140px)] pb-10">

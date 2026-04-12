@@ -24,14 +24,19 @@ const VideoPlayer: React.FC = () => {
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const startTimer = () => {
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+  };
+
   // Auto-hide controls
   useEffect(() => {
     if (isPlaying && !isSeeking) {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-      controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false);
-      }, 3000);
+      startTimer();
     } else {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       setShowControls(true);
     }
 
@@ -40,8 +45,12 @@ const VideoPlayer: React.FC = () => {
     };
   }, [isPlaying, isSeeking]);
 
-  const handleUserActivity = () => {
+  const handleUserActivity = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setShowControls(true);
+    if (isPlaying && !isSeeking) {
+      startTimer();
+    }
   };
 
   // --- HELPER FUNCTIONS ---
@@ -142,8 +151,7 @@ const VideoPlayer: React.FC = () => {
   return (
     <div 
       className="flex flex-col h-screen bg-black font-sans text-gray-800 overflow-hidden"
-      onMouseMove={handleUserActivity}
-      onClick={handleUserActivity}
+      onMouseMove={() => handleUserActivity()}
     >
       {/* HEADER */}
       <div className={`flex justify-between items-center px-6 py-4 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm z-30 transition-all duration-500 absolute top-0 left-0 w-full ${

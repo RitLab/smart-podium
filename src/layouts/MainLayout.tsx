@@ -513,13 +513,13 @@ const MainLayoutContent = () => {
       )}
 
       <div
-        className={`flex-1 flex flex-col overflow-hidden transition-all duration-500 ${
-          isFullScreen ? "p-0" : !isInternet ? "pt-6 pl-12 pr-12 pb-6" : "p-8"
+        className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-500 ${
+          isFullScreen ? "p-0 m-0" : isInternet ? "p-8" : "pt-6 pl-12 pr-12 pb-6"
         }`}
       >
         {!isInternet && !isFullScreen && <Navbar />}
 
-        <main className={`flex-1 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : isFullScreen ? "m-0" : "py-8"}`}>
+        <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : "m-0"}`}>
           <Outlet />
         </main>
       </div>

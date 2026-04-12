@@ -98,8 +98,10 @@ const Internet = () => {
   const handleReload = () => webviewRef.current?.reload();
 
   return (
-    <div className={`w-full h-full bg-white overflow-hidden flex flex-col transition-all duration-300 ${
-      isWebviewFullScreen ? "rounded-0 border-0" : "rounded-3xl shadow-2xl border border-gray-100"
+    <div className={`w-full flex-col transition-all duration-300 flex overflow-hidden ${
+      isWebviewFullScreen 
+        ? "h-screen rounded-none border-0 fixed inset-0 z-[9999]" 
+        : "h-full rounded-3xl shadow-2xl border border-gray-100"
     }`}>
       {/* ADDRESS BAR - Sembunyikan kalau lagi Full Screen */}
       {!isWebviewFullScreen && (
