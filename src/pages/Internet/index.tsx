@@ -21,14 +21,22 @@ const Internet = () => {
       setInputUrl(webview.getURL());
     };
 
+    const handleFail = (e: any) => {
+      // Abaikan error -3 (ERR_ABORTED) karena itu normal pas redirect atau refresh
+      if (e.errorCode === -3) return;
+      console.error("Webview navigation failed:", e.errorDescription, e.url);
+    };
+
     webview.addEventListener("did-finish-load", updateNavigation);
     webview.addEventListener("did-navigate", updateNavigation);
     webview.addEventListener("did-navigate-in-page", updateNavigation);
+    webview.addEventListener("did-fail-load", handleFail);
 
     return () => {
       webview.removeEventListener("did-finish-load", updateNavigation);
       webview.removeEventListener("did-navigate", updateNavigation);
       webview.removeEventListener("did-navigate-in-page", updateNavigation);
+      webview.removeEventListener("did-fail-load", handleFail);
     };
   }, [isLanding]);
 
