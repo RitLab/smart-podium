@@ -21,6 +21,7 @@ const Module = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
+  const { rawEvents } = useSelector((state: RootState) => state.calendar);
   const { referensi, detail, loading, error } = useSelector(
     (state: RootState) => state.module,
   );
@@ -28,6 +29,35 @@ const Module = () => {
   const [activeBabIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<number | "header" | null>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+
+  /* ================= COURSE ID LOGIC ================= */
+  const activeCourseId = useMemo(() => {
+    if (!rawEvents || rawEvents.length === 0) return 1;
+    
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("id-ID", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+    const currentTimeStr = now.toLocaleTimeString("id-ID", {
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).replace(".", ":");
+
+    const todayEvents = rawEvents.filter(ev => ev.event_date === todayStr);
+    
+    // Cari yang sedang jalan sekarang
+    let current = todayEvents.find(ev => 
+      ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
+    );
+
+    // Kalau nggak ada yang jalan, cari yang paling deket nanti
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+    }
+
+    return current?.course_id || 1;
+  }, [rawEvents]);
 
   /* ================= FETCH ================= */
 
@@ -39,8 +69,8 @@ const Module = () => {
 
   useEffect(() => {
     if (!activeBab) return;
-    dispatch(fetchBahanAjarDetail(1));
-  }, [dispatch, activeBab]);
+    dispatch(fetchBahanAjarDetail(activeCourseId));
+  }, [dispatch, activeBab, activeCourseId]);
 
   useEffect(() => {
     if (detail?.sesi?.length) {
@@ -178,7 +208,7 @@ const Module = () => {
   if (error) return <p className="p-6 text-red-500">{error}</p>;
 
   return (
-    <div className="grid grid-cols-12 gap-6 p-6">
+    <div className="grid grid-cols-12 gap-6 p-6 h-[calc(100vh-80px)]">
       {/* LEFT PANEL */}
       <Card className="col-span-8 p-0 flex flex-col">
         <div className="p-6 space-y-4 border-b">
@@ -285,7 +315,7 @@ const Module = () => {
       <Card className="col-span-4 p-0 flex flex-col sticky top-6 overflow-hidden">
         {selectedItem ? (
           <>
-            <div className="flex-1 p-5 space-y-4">
+            <div className="flex-1 p-5 space-y-4 overflow-y-auto">
               <div className="w-full h-40 bg-gray-100 rounded-t-xl flex items-center justify-center overflow-hidden">
                 <img
                   src={

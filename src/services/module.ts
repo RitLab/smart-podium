@@ -19,7 +19,7 @@ export const moduleApi = {
       data: { rows: BahanAjarItem[]; total: number };
     }>("/portal/bahan-ajar/list", body),
 
-  getDetail: (id: number) =>
+  getDetail: (id: number | string) =>
     slmsHandler.get<{
       success: boolean;
       data: BahanAjarDetail;

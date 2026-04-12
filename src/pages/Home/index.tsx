@@ -388,7 +388,7 @@ const Home = () => {
           Smart Podium v{__APP_VERSION__}
         </p>
 
-        <div className="flex flex-col gap-16">
+        <div className="flex flex-col gap-16 items-center">
           <img
             src={Logo}
             alt="Logo"
