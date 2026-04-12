@@ -208,7 +208,7 @@ const Module = () => {
   if (error) return <p className="p-6 text-red-500">{error}</p>;
 
   return (
-    <div className="grid grid-cols-12 gap-6 p-6 h-[calc(100vh-80px)]">
+    <div className="grid grid-cols-12 gap-6 p-6 h-[calc(100vh-140px)] pb-10">
       {/* LEFT PANEL */}
       <Card className="col-span-8 p-0 flex flex-col">
         <div className="p-6 space-y-4 border-b">
@@ -312,48 +312,50 @@ const Module = () => {
       </Card>
 
       {/* RIGHT PANEL */}
-      <Card className="col-span-4 p-0 flex flex-col sticky top-6 overflow-hidden">
-        {selectedItem ? (
-          <>
-            <div className="flex-1 p-5 space-y-4 overflow-y-auto">
-              <div className="w-full h-40 bg-gray-100 rounded-t-xl flex items-center justify-center overflow-hidden">
-                <img
-                  src={
-                    selectedItem.file_thumb ||
-                    (selectedItem.type === "konten_interaktif"
-                      ? icon3d
-                      : getFallbackIcon(selectedItem.ext))
-                  }
-                  className={
-                    selectedItem.file_thumb
-                      ? "w-full h-full object-cover object-top"
-                      : "w-24 h-24 object-contain"
-                  }
-                />
+      <div className="col-span-4 h-full">
+        <Card className="h-full p-0 flex flex-col overflow-hidden">
+          {selectedItem ? (
+            <>
+              <div className="flex-1 p-5 space-y-4 overflow-y-auto">
+                <div className="w-full h-40 bg-gray-100 rounded-t-xl flex items-center justify-center overflow-hidden">
+                  <img
+                    src={
+                      selectedItem.file_thumb ||
+                      (selectedItem.type === "konten_interaktif"
+                        ? icon3d
+                        : getFallbackIcon(selectedItem.ext))
+                    }
+                    className={
+                      selectedItem.file_thumb
+                        ? "w-full h-full object-cover object-top"
+                        : "w-24 h-24 object-contain"
+                    }
+                  />
+                </div>
+
+                <h3 className="font-bold text-lg">{selectedItem.file_name}</h3>
+
+                <p className="text-sm text-gray-600">
+                  {selectedItem.description ?? "Tidak ada deskripsi tersedia"}
+                </p>
               </div>
 
-              <h3 className="font-bold text-lg">{selectedItem.file_name}</h3>
-
-              <p className="text-sm text-gray-600">
-                {selectedItem.description ?? "Tidak ada deskripsi tersedia"}
-              </p>
+              <div className="p-5 border-t bg-white">
+                <button
+                  onClick={() => openItem(selectedItem)}
+                  className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 shadow-lg active:scale-95 transition-all"
+                >
+                  Open Materi
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-400 text-center p-6">
+              Pilih konten di sebelah kiri
             </div>
-
-            <div className="p-5 border-t">
-              <button
-                onClick={() => openItem(selectedItem)}
-                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700"
-              >
-                Open
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 text-center p-6">
-            Pilih konten di sebelah kiri
-          </div>
-        )}
-      </Card>
+          )}
+        </Card>
+      </div>
     </div>
   );
 };
