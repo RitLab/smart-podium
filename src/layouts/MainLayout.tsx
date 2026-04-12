@@ -445,7 +445,7 @@ const Sidebar = () => {
 const MainLayoutContent = () => {
   const location = useLocation();
   const { showToast } = useToast();
-  const { error, loading } = useSelector((state: RootState) => state.ui);
+  const { error, loading, isFullScreen } = useSelector((state: RootState) => state.ui);
 
   const clickCountRef = useRef(0);
 
@@ -470,6 +470,7 @@ const MainLayoutContent = () => {
       clickCountRef.current = 0;
     }, 2000);
   };
+
   useEffect(() => {
     if (error) {
       showToast(error, "error");
@@ -482,9 +483,11 @@ const MainLayoutContent = () => {
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        <div className="absolute top-4 left-24">
-          <RecorderComponents />
-        </div>
+        {!isFullScreen && (
+          <div className="absolute top-4 left-24">
+            <RecorderComponents />
+          </div>
+        )}
 
         <button
           type="button"
@@ -503,23 +506,25 @@ const MainLayoutContent = () => {
       className="relative h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      <div className="absolute top-4 left-24">
-        <RecorderComponents />
-      </div>
+      {!isFullScreen && (
+        <div className="absolute top-4 left-24">
+          <RecorderComponents />
+        </div>
+      )}
 
       <div
-        className={`flex-1 flex flex-col overflow-hidden ${
-          !isInternet ? "pt-6 pl-12 pr-12 pb-6" : "p-8"
+        className={`flex-1 flex flex-col overflow-hidden transition-all duration-500 ${
+          isFullScreen ? "p-0" : !isInternet ? "pt-6 pl-12 pr-12 pb-6" : "p-8"
         }`}
       >
-        {!isInternet && <Navbar />}
+        {!isInternet && !isFullScreen && <Navbar />}
 
-        <main className={`flex-1 overflow-hidden ${!isInternet ? "mt-4" : "py-8"}`}>
+        <main className={`flex-1 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : isFullScreen ? "m-0" : "py-8"}`}>
           <Outlet />
         </main>
       </div>
 
-      <Sidebar />
+      {!isFullScreen && <Sidebar />}
       {loading && <Loading />}
     </div>
   );

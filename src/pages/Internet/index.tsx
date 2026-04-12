@@ -1,8 +1,11 @@
 import { WebviewTag } from "electron";
 import { ChevronLeft, ChevronRight, RotateCw, Search, Globe, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useDispatch } from "react-redux";
+import { setFullScreen } from "@/stores/ui";
 
 const Internet = () => {
+  const dispatch = useDispatch();
   const webviewRef = useRef<WebviewTag | null>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
@@ -10,6 +13,14 @@ const Internet = () => {
   const [currentUrl, setCurrentUrl] = useState("");
   const [inputUrl, setInputUrl] = useState("");
   const [isLanding, setIsLanding] = useState(true);
+  const [isWebviewFullScreen, setIsWebviewFullScreen] = useState(false);
+
+  useEffect(() => {
+    // Reset full screen pas pindah halaman
+    return () => {
+      dispatch(setFullScreen(false));
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     const webview = webviewRef.current;
@@ -22,21 +33,34 @@ const Internet = () => {
     };
 
     const handleFail = (e: any) => {
-      // Abaikan error -3 (ERR_ABORTED) karena itu normal pas redirect atau refresh
       if (e.errorCode === -3) return;
       console.error("Webview navigation failed:", e.errorDescription, e.url);
+    };
+
+    const handleEnterFullScreen = () => {
+      setIsWebviewFullScreen(true);
+      dispatch(setFullScreen(true));
+    };
+
+    const handleLeaveFullScreen = () => {
+      setIsWebviewFullScreen(false);
+      dispatch(setFullScreen(false));
     };
 
     webview.addEventListener("did-finish-load", updateNavigation);
     webview.addEventListener("did-navigate", updateNavigation);
     webview.addEventListener("did-navigate-in-page", updateNavigation);
     webview.addEventListener("did-fail-load", handleFail);
+    webview.addEventListener("enter-html-full-screen", handleEnterFullScreen);
+    webview.addEventListener("leave-html-full-screen", handleLeaveFullScreen);
 
     return () => {
       webview.removeEventListener("did-finish-load", updateNavigation);
       webview.removeEventListener("did-navigate", updateNavigation);
       webview.removeEventListener("did-navigate-in-page", updateNavigation);
       webview.removeEventListener("did-fail-load", handleFail);
+      webview.removeEventListener("enter-html-full-screen", handleEnterFullScreen);
+      webview.removeEventListener("leave-html-full-screen", handleLeaveFullScreen);
     };
   }, [isLanding]);
 
@@ -74,69 +98,73 @@ const Internet = () => {
   const handleReload = () => webviewRef.current?.reload();
 
   return (
-    <div className="w-full h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100">
-      {/* ADDRESS BAR */}
-      <div className="p-3 bg-gray-50 border-b flex items-center gap-4 px-6">
-        <div className="flex items-center gap-2">
+    <div className={`w-full h-full bg-white overflow-hidden flex flex-col transition-all duration-300 ${
+      isWebviewFullScreen ? "rounded-0 border-0" : "rounded-3xl shadow-2xl border border-gray-100"
+    }`}>
+      {/* ADDRESS BAR - Sembunyikan kalau lagi Full Screen */}
+      {!isWebviewFullScreen && (
+        <div className="p-3 bg-gray-50 border-b flex items-center gap-4 px-6 animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBack}
+              disabled={isLanding}
+              className={`p-2 rounded-full transition-all ${
+                !isLanding
+                  ? "bg-white text-gray-700 shadow-sm hover:bg-gray-100 active:scale-90" 
+                  : "text-gray-300 cursor-not-allowed"
+              }`}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            
+            <button
+              onClick={handleForward}
+              disabled={!canGoForward || isLanding}
+              className={`p-2 rounded-full transition-all ${
+                canGoForward && !isLanding
+                  ? "bg-white text-gray-700 shadow-sm hover:bg-gray-100 active:scale-90" 
+                  : "text-gray-300 cursor-not-allowed"
+              }`}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
           <button
-            onClick={handleBack}
+            onClick={handleReload}
             disabled={isLanding}
             className={`p-2 rounded-full transition-all ${
-              !isLanding
-                ? "bg-white text-gray-700 shadow-sm hover:bg-gray-100 active:scale-90" 
-                : "text-gray-300 cursor-not-allowed"
+              isLanding ? "text-gray-300" : "bg-white text-gray-700 shadow-sm hover:bg-gray-100"
             }`}
           >
-            <ChevronLeft size={20} />
+            <RotateCw size={18} />
           </button>
-          
-          <button
-            onClick={handleForward}
-            disabled={!canGoForward || isLanding}
-            className={`p-2 rounded-full transition-all ${
-              canGoForward && !isLanding
-                ? "bg-white text-gray-700 shadow-sm hover:bg-gray-100 active:scale-90" 
-                : "text-gray-300 cursor-not-allowed"
-            }`}
+
+          <form 
+            className="flex-1 relative group"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearch(inputUrl);
+            }}
           >
-            <ChevronRight size={20} />
-          </button>
-        </div>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+              {isLanding ? <Search size={16} /> : <Globe size={16} className="text-blue-500" />}
+            </div>
+            <input
+              type="text"
+              value={inputUrl}
+              onChange={(e) => setInputUrl(e.target.value)}
+              placeholder="Ketik URL atau cari di Google..."
+              className="w-full bg-white border border-gray-200 rounded-full pl-12 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-inner"
+            />
+          </form>
 
-        <button
-          onClick={handleReload}
-          disabled={isLanding}
-          className={`p-2 rounded-full transition-all ${
-            isLanding ? "text-gray-300" : "bg-white text-gray-700 shadow-sm hover:bg-gray-100"
-          }`}
-        >
-          <RotateCw size={18} />
-        </button>
-
-        <form 
-          className="flex-1 relative group"
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSearch(inputUrl);
-          }}
-        >
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            {isLanding ? <Search size={16} /> : <Globe size={16} className="text-blue-500" />}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-semibold border border-green-100">
+            <ShieldCheck size={14} />
+            Safe
           </div>
-          <input
-            type="text"
-            value={inputUrl}
-            onChange={(e) => setInputUrl(e.target.value)}
-            placeholder="Ketik URL atau cari di Google..."
-            className="w-full bg-white border border-gray-200 rounded-full pl-12 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-inner"
-          />
-        </form>
-
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-semibold border border-green-100">
-          <ShieldCheck size={14} />
-          Safe
         </div>
-      </div>
+      )}
 
       {/* CONTENT AREA */}
       <div className="flex-1 relative bg-[#F8FAFC]">
@@ -200,7 +228,7 @@ const Internet = () => {
             ref={webviewRef}
             src={currentUrl}
             className="w-full h-full bg-white"
-            style={{ height: "100%" }}
+            style={{ width: "100%", height: "100%" }}
           />
         )}
       </div>
