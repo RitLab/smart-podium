@@ -426,7 +426,7 @@ const Sidebar = () => {
             onClick={() => {
               localStorage.clear();
               sessionStorage.clear();
-              window.location.href = "/";
+              window.location.reload();
             }}
             className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
           >
