@@ -1,10 +1,6 @@
 {
   "name": "smart-podium",
-<<<<<<< HEAD
-  "version": "0.0.54",
-=======
   "version": "0.0.55",
->>>>>>> c7fa455ec101d9a4edd79f8f8dcbef2e2110f111
   "main": "dist-electron/main/index.js",
   "description": "Smart Podium",
   "author": "Muhammad Abdul Karim",
