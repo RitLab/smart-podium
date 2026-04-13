@@ -4,7 +4,12 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 
-const bypassToken = ["/login", "/forgot-password", "/user/login"];
+const bypassToken = [
+  "/login",
+  "/forgot-password",
+  "/user/login",
+  "/portal/event/attendance",
+];
 
 axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   let token = localStorage.getItem("token");

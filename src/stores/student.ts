@@ -51,7 +51,8 @@ export const fetchAttendance = createAsyncThunk<
     const data = await studentService.getAttendance(payload ?? undefined);
     return data;
   } catch (error: any) {
-    return rejectWithValue(error?.toString() || "Gagal mengambil data kehadiran");
+    const message = error.response?.data?.message || error.message || "Gagal mengambil data kehadiran";
+    return rejectWithValue(message);
   }
 });
 
