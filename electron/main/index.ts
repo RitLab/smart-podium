@@ -51,6 +51,20 @@ function openWhiteboard() {
   }
 }
 
+function openZoom() {
+  const exePath =
+    "C:\\Users\\Smartclass\\AppData\\Roaming\\Zoom\\bin\\Zoom.exe"
+
+  try {
+    spawn(exePath, [], {
+      detached: true,
+      stdio: "ignore",
+    }).unref();
+  } catch (error) {
+    console.error("Failed to open Whiteboard:", error);
+  }
+}
+
 // ===============================
 // CREATE WINDOW
 // ===============================
@@ -159,6 +173,10 @@ ipcMain.handle("minimize-window", () => {
 
 ipcMain.handle("open-whiteboard", () => {
   openWhiteboard();
+});
+
+ipcMain.handle("open-zoom", () => {
+  openZoom();
 });
 
 ipcMain.handle("open-win", (_, arg) => {

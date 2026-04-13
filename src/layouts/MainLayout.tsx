@@ -12,6 +12,7 @@ import {
   UsersIcon,
   WebIcon,
   WhiteboardIcon,
+  ZoomIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 import Loading from "@/components/Loading";
@@ -73,7 +74,7 @@ type MenuItem = {
   icon: any;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize";
+  action?: "whiteboard" | "minimize" | "zoom";
 };
 
 const menus: MenuItem[] = [
@@ -105,8 +106,14 @@ const menus: MenuItem[] = [
     action: "whiteboard",
     label: "Whiteboard",
     icon: WhiteboardIcon,
-    color: "blue",
+    color: "green",
   },
+  {
+    action: "zoom",
+    label: "Zoom",
+    icon: ZoomIcon,
+    color: "blue"
+  }
 ];
 
 const colorMap = {
@@ -313,6 +320,10 @@ const Sidebar = () => {
     window.ipcRenderer.invoke("open-whiteboard");
   };
 
+  const openZoom = () => {
+    window.ipcRenderer.invoke('open-zoom')
+  }
+
   /* ================= MINIMIZE ================= */
 
   const minimizeApp = () => {
@@ -330,6 +341,22 @@ const Sidebar = () => {
             if (menu.action === "whiteboard") {
               return (
                 <button key={menu.label} type="button" onClick={openWhiteboard}>
+                  <div
+                    className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
+                  >
+                    <Icon
+                      width={24}
+                      height={24}
+                      className={color.iconInactive}
+                    />
+                  </div>
+                </button>
+              );
+            }
+
+            if (menu.action === "zoom") {
+              return (
+                <button key={menu.label} type="button" onClick={openZoom}>
                   <div
                     className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
                   >
