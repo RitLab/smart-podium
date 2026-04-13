@@ -10,6 +10,7 @@ import {
   UsersIcon,
   WebIcon,
   WhiteboardIcon,
+  ZoomIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 
@@ -28,7 +29,7 @@ type MenuItem = {
   icon: any;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize";
+  action?: "whiteboard" | "minimize" | "zoom";
 };
 
 /* ================= MENU LIST ================= */
@@ -62,6 +63,12 @@ const menus: MenuItem[] = [
     action: "whiteboard",
     label: "Whiteboard",
     icon: WhiteboardIcon,
+    color: "green",
+  },
+  {
+    action: "zoom",
+    label: "Zoom",
+    icon: ZoomIcon,
     color: "blue",
   },
 ];
@@ -232,6 +239,10 @@ const Home = () => {
 
   const openWhiteboard = () => {
     window.ipcRenderer.invoke("open-whiteboard");
+  };
+
+  const openZoom = () => {
+    window.ipcRenderer.invoke("open-zoom");
   };
 
   /* ================= ERROR TOAST ================= */
@@ -466,6 +477,16 @@ const Home = () => {
             return (
               <div key={menu.label}>
                 <button type="button" onClick={openWhiteboard}>
+                  <MenuCard Icon={Icon} menu={menu} />
+                </button>
+              </div>
+            );
+          }
+
+          if (menu.action === "zoom") {
+            return (
+              <div key={menu.label}>
+                <button type="button" onClick={openZoom}>
                   <MenuCard Icon={Icon} menu={menu} />
                 </button>
               </div>
