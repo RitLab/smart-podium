@@ -1,6 +1,6 @@
 {
   "name": "smart-podium",
-  "version": "0.0.55",
+  "version": "0.0.56",
   "main": "dist-electron/main/index.js",
   "description": "Smart Podium",
   "author": "Muhammad Abdul Karim",
@@ -18,7 +18,9 @@
     "preview": "vite preview",
     "pretest": "vite build --mode=test",
     "mock": "npx json-server src/mock/db.json",
-    "release": "tsc && vite build && electron-builder --publish always"
+    "release": "tsc && vite build && electron-builder --publish always",
+    "build:win": "tsc && vite build && electron-builder --win",
+    "publish:win": "export GH_TOKEN=$(grep VITE_GH_TOKEN .env | cut -d '=' -f2) && tsc && vite build && electron-builder --win --publish always"
   },
   "dependencies": {
     "@react-three/drei": "^9.88.17",
