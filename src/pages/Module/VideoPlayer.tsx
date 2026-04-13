@@ -1,5 +1,5 @@
 import { Captions, Pause, Play, Volume2, VolumeX, X } from "lucide-react";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import { useNavigate, useSearchParams } from "react-router";
 
@@ -21,6 +21,37 @@ const VideoPlayer: React.FC = () => {
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startTimer = () => {
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+  };
+
+  // Auto-hide controls
+  useEffect(() => {
+    if (isPlaying && !isSeeking) {
+      startTimer();
+    } else {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      setShowControls(true);
+    }
+
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, [isPlaying, isSeeking]);
+
+  const handleUserActivity = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setShowControls(true);
+    if (isPlaying && !isSeeking) {
+      startTimer();
+    }
+  };
 
   // --- HELPER FUNCTIONS ---
   const getSafeDuration = (player: any) => {
@@ -57,7 +88,8 @@ const VideoPlayer: React.FC = () => {
 
   // --- HANDLERS ---
 
-  const togglePlay = () => {
+  const togglePlay = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation(); // Biar nggak mental ke container
     setIsPlaying(!isPlaying);
   };
 
@@ -117,9 +149,14 @@ const VideoPlayer: React.FC = () => {
   const progressPercent = (currentTime / duration) * 100 || 0;
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 font-sans text-gray-800">
+    <div 
+      className="flex flex-col h-screen bg-black font-sans text-gray-800 overflow-hidden"
+      onMouseMove={() => handleUserActivity()}
+    >
       {/* HEADER */}
-      <div className="flex justify-between items-center px-6 py-4 bg-white border-b border-gray-200 shadow-sm z-20">
+      <div className={`flex justify-between items-center px-6 py-4 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm z-30 transition-all duration-500 absolute top-0 left-0 w-full ${
+        showControls ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+      }`}>
         <div className="flex-1"></div>
         <h1 className="text-lg font-bold text-gray-900 flex-1 text-center truncate">
           {videoTitle}
@@ -127,7 +164,10 @@ const VideoPlayer: React.FC = () => {
         <div className="flex-1 flex justify-end">
           <button
             className="p-1 hover:bg-gray-100 rounded-full transition text-gray-500 hover:text-red-500"
-            onClick={() => navigate(-1)}
+            onClick={(e) => {
+                e.stopPropagation();
+                navigate(-1);
+            }}
           >
             <X className="w-6 h-6" />
           </button>
@@ -135,18 +175,20 @@ const VideoPlayer: React.FC = () => {
       </div>
 
       {/* MAIN VIDEO AREA */}
-      <div className="flex-1 relative flex items-center justify-center bg-black overflow-hidden group">
+      <div 
+        className="flex-1 relative flex items-center justify-center bg-black overflow-hidden"
+        onClick={() => setShowControls(!showControls)}
+      >
         <div className="w-full h-full relative">
           <Player
             ref={playerRef}
-            src={videoUrl} // Tetap 'src'
+            src={videoUrl}
             width="100%"
             height="100%"
             playing={isPlaying}
             muted={isMuted}
             controls={false}
             progressInterval={500}
-            // Callbacks ReactPlayer
             onProgress={handleProgress}
             onDuration={handleDuration}
             onEnded={handleEnded}
@@ -154,66 +196,44 @@ const VideoPlayer: React.FC = () => {
               const d = getSafeDuration(playerRef.current);
               if (d && !isNaN(d) && d !== Infinity) setDuration(d);
             }}
-            onError={(e: any) => console.error("ReactPlayer Error:", e)}
-            // FIX: Tambahkan Native Event Listener ke props
-            // ReactPlayer (FilePlayer) akan meneruskan props ini ke tag <video>
             onTimeUpdate={handleNativeTimeUpdate}
-            // Config
-            config={
-              {
-                youtube: {
-                  playerVars: {
-                    showinfo: 0,
-                    controls: 0,
-                    modestbranding: 1,
-                    disablekb: 1,
-                    fs: 0,
-                    iv_load_policy: 3,
-                    rel: 0,
-                  },
-                },
-                file: {
-                  attributes: {
-                    controlsList: "nodownload",
-                  },
-                },
-              } as any
-            }
-          />
-
-          {/* Click Handler */}
-          <div
-            className="absolute inset-0 z-10 cursor-pointer"
-            onClick={togglePlay}
+            config={{
+                file: { attributes: { controlsList: "nodownload" } }
+            }}
           />
 
           {/* Play/Pause Overlay */}
           <div
-            className={`absolute inset-0 flex items-center justify-center pointer-events-none z-20 transition-opacity duration-300 ${
-              !isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            className={`absolute inset-0 flex items-center justify-center z-20 transition-all duration-300 ${
+              showControls ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"
             }`}
           >
-            <div className="bg-black/40 backdrop-blur-sm p-4 rounded-full">
+            <button 
+                onClick={togglePlay}
+                className="bg-black/40 backdrop-blur-md p-6 rounded-full hover:bg-black/60 transition-all active:scale-90 shadow-2xl border border-white/20"
+            >
               {isPlaying ? (
-                <Pause className="w-10 h-10 text-white fill-white" />
+                <Pause className="w-12 h-12 text-white fill-white" />
               ) : (
-                <Play className="w-10 h-10 text-white fill-white ml-1" />
+                <Play className="w-12 h-12 text-white fill-white ml-2" />
               )}
-            </div>
+            </button>
           </div>
         </div>
       </div>
 
       {/* CONTROLS BAR */}
-      <div className="bg-[#f0f0f0] px-6 py-4 border-t border-gray-300">
+      <div className={`bg-white/90 backdrop-blur-md px-6 py-4 border-t border-gray-200 z-30 transition-all duration-500 absolute bottom-0 left-0 w-full ${
+        showControls ? "translate-y-0 opacity-100 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]" : "translate-y-full opacity-0"
+      }`}>
         <div className="flex items-center gap-4 mb-2">
           {/* Timestamp Kiri */}
-          <span className="text-xs font-medium text-gray-600 w-12 text-right">
+          <span className="text-xs font-semibold text-gray-600 w-12 text-right tabular-nums">
             {formatTime(currentTime)}
           </span>
 
           {/* Slider */}
-          <div className="relative flex-1 h-1.5 bg-gray-300 rounded-full group cursor-pointer">
+          <div className="relative flex-1 h-2 bg-gray-200 rounded-full cursor-pointer group">
             <input
               type="range"
               min="0"
@@ -225,19 +245,20 @@ const VideoPlayer: React.FC = () => {
               onMouseUp={handleSeekMouseUp}
               onTouchStart={handleSeekMouseDown}
               onTouchEnd={handleSeekMouseUp}
+              onClick={(e) => e.stopPropagation()}
               className="absolute w-full h-full opacity-0 cursor-pointer z-10"
             />
             {/* Visual Orange Line */}
             <div
-              className="absolute top-0 left-0 h-full bg-orange-500 rounded-full pointer-events-none"
+              className="absolute top-0 left-0 h-full bg-orange-500 rounded-full pointer-events-none transition-all duration-100"
               style={{ width: `${progressPercent}%` }}
             >
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-orange-500 rounded-full shadow border border-white"></div>
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-orange-600 rounded-full shadow-lg border-2 border-white"></div>
             </div>
           </div>
 
           {/* Timestamp Kanan */}
-          <span className="text-xs font-medium text-gray-600 w-12 text-left">
+          <span className="text-xs font-semibold text-gray-600 w-12 text-left tabular-nums">
             {formatTime(duration)}
           </span>
         </div>
@@ -245,14 +266,19 @@ const VideoPlayer: React.FC = () => {
         {/* Buttons */}
         <div className="flex justify-between items-center mt-2 px-1">
           <button
-            onClick={toggleMute}
-            className="text-gray-700 hover:text-black focus:outline-none transition"
+            onClick={(e) => {
+                e.stopPropagation();
+                toggleMute();
+            }}
+            className="text-gray-600 hover:text-black focus:outline-none transition active:scale-90"
           >
-            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+            {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
           </button>
-          <button className="text-gray-700 hover:text-black focus:outline-none bg-gray-200 hover:bg-gray-300 p-0.5 rounded transition">
-            <Captions size={18} strokeWidth={2.5} />
-          </button>
+          <div className="flex items-center gap-4">
+             <button className="text-gray-500 hover:text-black focus:outline-none transition">
+                <Captions size={20} strokeWidth={2.5} />
+             </button>
+          </div>
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import type { AppDispatch, RootState } from "@/stores";
 import { fetchReferensi, fetchBahanAjarDetail } from "@/stores/module";
 
 // icon
+import { CalendarIcon } from "@/components/Icon";
 import iconPdf from "@/assets/images/icon/icon-pdf.png";
 import iconMp4 from "@/assets/images/icon/icon-mp4.png";
 import iconPng from "@/assets/images/icon/icon-png.png";
@@ -21,6 +22,7 @@ const Module = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
+  const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { referensi, detail, loading, error } = useSelector(
     (state: RootState) => state.module,
   );
@@ -28,6 +30,35 @@ const Module = () => {
   const [activeBabIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<number | "header" | null>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+
+  /* ================= COURSE ID LOGIC ================= */
+  const activeCourseId = useMemo(() => {
+    if (!headerEvents || headerEvents.length === 0) return null;
+    
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("id-ID", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+    const currentTimeStr = now.toLocaleTimeString("id-ID", {
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).replace(".", ":");
+
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
+    
+    // Cari yang sedang jalan sekarang
+    let current = todayEvents.find(ev => 
+      ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
+    );
+
+    // Kalau nggak ada yang jalan, cari yang paling deket nanti (hari ini)
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+    }
+
+    return current?.course_id || null;
+  }, [headerEvents]);
 
   /* ================= FETCH ================= */
 
@@ -38,9 +69,9 @@ const Module = () => {
   const activeBab = referensi?.[activeBabIndex];
 
   useEffect(() => {
-    if (!activeBab) return;
-    dispatch(fetchBahanAjarDetail(1));
-  }, [dispatch, activeBab]);
+    if (!activeBab || !activeCourseId) return;
+    dispatch(fetchBahanAjarDetail(activeCourseId));
+  }, [dispatch, activeBab, activeCourseId]);
 
   useEffect(() => {
     if (detail?.sesi?.length) {
@@ -177,8 +208,30 @@ const Module = () => {
   if (loading) return <p className="p-6">Loading...</p>;
   if (error) return <p className="p-6 text-red-500">{error}</p>;
 
+  if (!activeCourseId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-6 space-y-4">
+        <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md border border-gray-100 animate-in fade-in zoom-in duration-500">
+          <div className="bg-gray-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+             <CalendarIcon width={48} height={48} className="text-gray-300" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Tidak Ada Jadwal Berjalan</h2>
+          <p className="text-gray-500 mb-6">
+            Materi pelajaran akan muncul secara otomatis saat sesi pelajaran dimulai sesuai jadwal di kalender.
+          </p>
+          <button 
+            onClick={() => navigate("/calendar")}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-200"
+          >
+            Lihat Kalender Akademik
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-12 gap-6 p-6">
+    <div className="grid grid-cols-12 gap-6 p-6 h-[calc(100vh-140px)] pb-10">
       {/* LEFT PANEL */}
       <Card className="col-span-8 p-0 flex flex-col">
         <div className="p-6 space-y-4 border-b">
@@ -282,48 +335,50 @@ const Module = () => {
       </Card>
 
       {/* RIGHT PANEL */}
-      <Card className="col-span-4 p-0 flex flex-col sticky top-6 overflow-hidden">
-        {selectedItem ? (
-          <>
-            <div className="flex-1 p-5 space-y-4">
-              <div className="w-full h-40 bg-gray-100 rounded-t-xl flex items-center justify-center overflow-hidden">
-                <img
-                  src={
-                    selectedItem.file_thumb ||
-                    (selectedItem.type === "konten_interaktif"
-                      ? icon3d
-                      : getFallbackIcon(selectedItem.ext))
-                  }
-                  className={
-                    selectedItem.file_thumb
-                      ? "w-full h-full object-cover object-top"
-                      : "w-24 h-24 object-contain"
-                  }
-                />
+      <div className="col-span-4 h-full">
+        <Card className="h-full p-0 flex flex-col overflow-hidden">
+          {selectedItem ? (
+            <>
+              <div className="flex-1 p-5 space-y-4 overflow-y-auto">
+                <div className="w-full h-40 bg-gray-100 rounded-t-xl flex items-center justify-center overflow-hidden">
+                  <img
+                    src={
+                      selectedItem.file_thumb ||
+                      (selectedItem.type === "konten_interaktif"
+                        ? icon3d
+                        : getFallbackIcon(selectedItem.ext))
+                    }
+                    className={
+                      selectedItem.file_thumb
+                        ? "w-full h-full object-cover object-top"
+                        : "w-24 h-24 object-contain"
+                    }
+                  />
+                </div>
+
+                <h3 className="font-bold text-lg">{selectedItem.file_name}</h3>
+
+                <p className="text-sm text-gray-600">
+                  {selectedItem.description ?? "Tidak ada deskripsi tersedia"}
+                </p>
               </div>
 
-              <h3 className="font-bold text-lg">{selectedItem.file_name}</h3>
-
-              <p className="text-sm text-gray-600">
-                {selectedItem.description ?? "Tidak ada deskripsi tersedia"}
-              </p>
+              <div className="p-5 border-t bg-white">
+                <button
+                  onClick={() => openItem(selectedItem)}
+                  className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 shadow-lg active:scale-95 transition-all"
+                >
+                  Open Materi
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-400 text-center p-6">
+              Pilih konten di sebelah kiri
             </div>
-
-            <div className="p-5 border-t">
-              <button
-                onClick={() => openItem(selectedItem)}
-                className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700"
-              >
-                Open
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 text-center p-6">
-            Pilih konten di sebelah kiri
-          </div>
-        )}
-      </Card>
+          )}
+        </Card>
+      </div>
     </div>
   );
 };

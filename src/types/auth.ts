@@ -58,7 +58,7 @@ export interface Pagination {
 }
 
 export interface ClassData {
-  classes: Classes[];
+  classrooms: Classes[];
   pagination: Pagination;
 }
 

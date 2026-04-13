@@ -41,7 +41,7 @@ export const authService = {
   },
 
   getClassList: async (): Promise<ClassListResponse> => {
-    const url = `${baseURL}/portal/class`
+    const url = `${baseURL}/portal/classroom`
     return await handler.get<any>(url, []);
   }
 };

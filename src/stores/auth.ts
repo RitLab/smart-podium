@@ -61,7 +61,7 @@ export const fetchClass = createAsyncThunk<Class[]>(
       // const fData = await authService.getCLass();
       const data = await authService.getClassList()
       // console.log('fData: ', fData)
-      return data.data.classes;
+      return data.data.classrooms;
     } catch (error: any) {
       dispatch(setError(error.message || "Failed to fetch class"));
       return rejectWithValue(error.message || "Failed to fetch class");

@@ -3,11 +3,13 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 type UIState = {
   loading: boolean;
   error: string;
+  isFullScreen: boolean;
 };
 
 const initialState: UIState = {
   loading: false,
   error: "",
+  isFullScreen: false,
 };
 
 const uiSlice = createSlice({
@@ -23,8 +25,11 @@ const uiSlice = createSlice({
     clearError: (state) => {
       state.error = "";
     },
+    setFullScreen: (state, action: PayloadAction<boolean>) => {
+      state.isFullScreen = action.payload;
+    },
   },
 });
 
-export const { setLoading, setError, clearError } = uiSlice.actions;
+export const { setLoading, setError, clearError, setFullScreen } = uiSlice.actions;
 export default uiSlice.reducer;

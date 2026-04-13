@@ -45,7 +45,7 @@ export const fetchBahanAjarList = createAsyncThunk<
   }
 });
 
-export const fetchBahanAjarDetail = createAsyncThunk<BahanAjarDetail, number>(
+export const fetchBahanAjarDetail = createAsyncThunk<BahanAjarDetail, number | string>(
   "module/fetchBahanAjarDetail",
   async (id, { rejectWithValue }) => {
     try {

@@ -1,5 +1,5 @@
-import { Clock9, Minimize, Timer } from "lucide-react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { Clock9, LogOut, Minimize, Timer } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 
@@ -19,6 +19,7 @@ import Loading from "@/components/Loading";
 import { formatDuration, formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
+import { fetchEventList, fetchHeaderEvents } from "@/stores/calendar";
 import { Toast, ToastContextType, ToastType } from "@/types/ui";
 import ToastComponent from "@/components/Toast";
 import RecorderComponents from "@/components/Recorder";
@@ -40,14 +41,14 @@ export const useToast = () => {
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = (message: string, type: ToastType = "info") => {
+  const showToast = useCallback((message: string, type: ToastType = "info") => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts([{ id, message, type }]); // Langsung ganti yang lama (biar cuma 1)
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 3000);
-  };
+    }, 4000); // Saya perlama sedikit durasinya biar enak dibaca
+  }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>
@@ -151,51 +152,89 @@ const colorMap = {
 ===================================================== */
 const Navbar = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { eventList } = useSelector((state: RootState) => state.calendar);
+  const { headerEvents } = useSelector((state: RootState) => state.calendar);
 
   const [time, setTime] = useState(new Date());
+  const [activeEvent, setActiveEvent] = useState<any>(null);
   const [countdown, setCountdown] = useState("00:00:00");
+  const [isStarted, setIsStarted] = useState(false);
 
   useEffect(() => {
     dispatch(fetchUser());
+    const now = new Date();
+    // Gunakan fetchHeaderEvents biar datanya tetap di bulan ini
+    dispatch(fetchHeaderEvents({ 
+      month: now.getMonth() + 1, 
+      year: now.getFullYear() 
+    }));
   }, [dispatch]);
+
+  // Logika cari event (sama dengan Home)
+  useEffect(() => {
+    if (!headerEvents || headerEvents.length === 0) return;
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("id-ID", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+    const currentTimeStr = now.toLocaleTimeString("id-ID", {
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).replace(".", ":");
+
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
+    const upcoming = todayEvents
+      .filter(ev => ev.start_time > currentTimeStr || (ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr))
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    setActiveEvent(upcoming.length > 0 ? upcoming[0] : null);
+  }, [headerEvents, time]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
       setTime(now);
 
-      if (!eventList?.event_date || !eventList?.end_time) return;
-
-      // Gabungkan tanggal + end_time
-      const endDateTime = new Date(
-        `${eventList.event_date}T${eventList.end_time}`,
-      );
-
-      const diff = endDateTime.getTime() - now.getTime();
-
-      if (diff <= 0) {
+      if (!activeEvent?.start_time) {
         setCountdown("00:00:00");
+        setIsStarted(false);
         return;
       }
 
-      const hours = Math.floor(
-        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-      );
+      const getTimeToday = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(":").map(Number);
+        const d = new Date();
+        d.setHours(hours, minutes, 0, 0);
+        return d.getTime();
+      };
 
+      const startTime = getTimeToday(activeEvent.start_time);
+      const endTime = getTimeToday(activeEvent.end_time);
+      const currentTime = now.getTime();
+
+      let targetTime = 0;
+      if (currentTime >= startTime && currentTime < endTime) {
+        setIsStarted(true);
+        targetTime = endTime;
+      } else if (currentTime < startTime) {
+        setIsStarted(false);
+        targetTime = startTime;
+      } else {
+        setCountdown("00:00:00");
+        setIsStarted(false);
+        return;
+      }
+
+      const diff = targetTime - currentTime;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
       setCountdown(
-        `${hours.toString().padStart(2, "0")}:${minutes
-          .toString()
-          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
+        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
       );
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [eventList]);
+  }, [activeEvent]);
 
   return (
     <header className="flex items-center justify-between relative">
@@ -204,15 +243,15 @@ const Navbar = () => {
       <div className="flex items-center gap-6">
         <div className="flex items-center bg-white shadow-md rounded-md p-4">
           <Image
-            src={eventList?.teacher_image}
-            alt={eventList?.teacher_name}
+            src={activeEvent?.teacher_image}
+            alt={activeEvent?.teacher_name}
             className="h-14 w-14"
           />
           <div className="mx-3">
             <h3 className="font-semibold text-gray-900">
-              {eventList?.teacher_name}
+              {activeEvent?.teacher_name || "Tidak ada jadwal"}
             </h3>
-            <p className="text-sm text-gray-600">{eventList?.course_name}</p>
+            <p className="text-sm text-gray-600">{activeEvent?.course_name || "Cek kalender"}</p>
           </div>
         </div>
 
@@ -226,7 +265,7 @@ const Navbar = () => {
           </div>
 
           <div className="p-4">
-            <p className="text-sm">Sisa Waktu</p>
+            <p className="text-sm">{isStarted ? "Sisa Waktu" : "Mulai Dalam"}</p>
             <div className="flex items-center gap-2 mt-1">
               <Timer size={16} />
               <span className="text-lg font-bold">{countdown}</span>
@@ -411,11 +450,15 @@ const Sidebar = () => {
             <HomeIcon width={24} height={24} className="text-orange-600" />
           </NavLink>
           <button
-            type="button"
-            onClick={minimizeApp}
-            className="flex items-center justify-center w-10 h-10 rounded-lg text-red-600 transition"
+            title="Logout / Reset Flow"
+            onClick={() => {
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.reload();
+            }}
+            className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
           >
-            <Minimize size={24} height={24} />
+            <LogOut size={24} />
           </button>
         </div>
       </div>
@@ -430,7 +473,9 @@ const Sidebar = () => {
 const MainLayoutContent = () => {
   const location = useLocation();
   const { showToast } = useToast();
-  const { error, loading } = useSelector((state: RootState) => state.ui);
+  const { error, loading, isFullScreen } = useSelector((state: RootState) => state.ui);
+
+  const clickCountRef = useRef(0);
 
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
@@ -439,11 +484,20 @@ const MainLayoutContent = () => {
     window.ipcRenderer.invoke("minimize-window");
   };
 
-  // useEffect(() => {
-  //   if (error) {
-  //     showToast(error, "error");
-  //   }
-  // }, [error, showToast]);
+  const handleMinimizeOrClose = () => {
+    clickCountRef.current += 1;
+
+    if (clickCountRef.current === 5) {
+      clickCountRef.current = 0;
+      window.ipcRenderer.invoke("show-quit-dialog");
+    } else {
+      minimizeApp();
+    }
+
+    setTimeout(() => {
+      clickCountRef.current = 0;
+    }, 2000);
+  };
 
   useEffect(() => {
     if (error) {
@@ -457,17 +511,17 @@ const MainLayoutContent = () => {
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        <div className="absolute top-4 left-24">
-          <RecorderComponents />
-        </div>
+        {!isFullScreen && (
+          <div className="absolute top-4 left-24">
+            <RecorderComponents />
+          </div>
+        )}
 
         <button
           type="button"
-          onClick={minimizeApp}
-          className="absolute top-0 right-0 flex items-center justify-center w-12 h-12 bg-red-600 text-white transition"
-        >
-          <Minimize size={22} />
-        </button>
+          onClick={handleMinimizeOrClose}
+          className="absolute top-0 right-0 w-16 h-16 opacity-0 cursor-default z-50"
+        />
 
         <Outlet />
         {loading && <Loading />}
@@ -477,26 +531,28 @@ const MainLayoutContent = () => {
 
   return (
     <div
-      className="relative min-h-screen w-full bg-cover bg-center flex"
+      className="relative h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      <div className="absolute top-4 left-24">
-        <RecorderComponents />
-      </div>
+      {!isFullScreen && (
+        <div className="absolute top-4 left-24">
+          <RecorderComponents />
+        </div>
+      )}
 
       <div
-        className={`flex-1 flex flex-col ${
-          !isInternet ? "pt-12 pl-24 pr-12" : "p-8"
+        className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-500 ${
+          isFullScreen ? "p-0 m-0" : isInternet ? "p-8" : "pt-6 pl-12 pr-12 pb-6"
         }`}
       >
-        {!isInternet && <Navbar />}
+        {!isInternet && !isFullScreen && <Navbar />}
 
-        <main className={`flex-1 ${!isInternet ? "py-12" : "py-8"}`}>
+        <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : "m-0"}`}>
           <Outlet />
         </main>
       </div>
 
-      <Sidebar />
+      {!isFullScreen && <Sidebar />}
       {loading && <Loading />}
     </div>
   );

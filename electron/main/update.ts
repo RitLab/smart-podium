@@ -24,10 +24,22 @@ export function update(win: Electron.BrowserWindow) {
     autoUpdater.quitAndInstall(true, true)
   })
 
-  autoUpdater.on('checking-for-update', () => console.log('Sedang mengecek update ke GitHub...'))
-  autoUpdater.on('update-available', () => console.log('Update ditemukan! Memulai download...'))
-  autoUpdater.on('update-not-available', () => console.log('Tidak ada update. Aplikasi sudah versi terbaru.'))
-  autoUpdater.on('error', (err: any) => console.error('Error saat update:', err))
+  autoUpdater.on('checking-for-update', () => {
+    win.webContents.send('update-status', 'Mengecek pembaruan sistem...')
+  })
+  autoUpdater.on('update-available', (info: UpdateInfo) => {
+    win.webContents.send('update-status', `Pembaruan v${info.version} tersedia. Mengunduh...`)
+  })
+  autoUpdater.on('update-not-available', () => {
+    win.webContents.send('update-status', 'Sistem sudah versi terbaru.')
+  })
+  autoUpdater.on('error', (err: any) => {
+    win.webContents.send('update-status', `Pembaruan gagal: ${err.message}`)
+  })
+  autoUpdater.on('download-progress', (progress: ProgressInfo) => {
+    const percent = Math.floor(progress.percent)
+    win.webContents.send('update-status', `Mengunduh pembaruan: ${percent}%`)
+  })
 
   // // start check
   // autoUpdater.on('checking-for-update', function () { })
@@ -40,19 +52,28 @@ export function update(win: Electron.BrowserWindow) {
   //   win.webContents.send('update-can-available', { update: false, version: app.getVersion(), newVersion: arg?.version })
   // })
 
-  // Checking for updates
-  // ipcMain.handle('check-update', async () => {
-  //   if (!app.isPackaged) {
-  //     const error = new Error('The update feature is only available after the package.')
-  //     return { message: error.message, error }
-  //   }
+  let manualChecking = false;
 
-  //   try {
-  //     return await autoUpdater.checkForUpdatesAndNotify()
-  //   } catch (error) {
-  //     return { message: 'Network error', error }
-  //   }
-  // })
+  // Checking for updates
+  ipcMain.handle('check-update', async () => {
+    if (!app.isPackaged) {
+      const error = new Error('The update feature is only available after the package.')
+      return { message: error.message, error }
+    }
+
+    if (manualChecking) return { message: 'Sudah sedang mengecek...' };
+    
+    manualChecking = true;
+    try {
+      const result = await autoUpdater.checkForUpdatesAndNotify()
+      return result;
+    } catch (error) {
+      return { message: 'Network error', error }
+    } finally {
+      // Tunggu sebentar sebelum boleh klik lagi
+      setTimeout(() => { manualChecking = false }, 5000);
+    }
+  })
 
   if (app.isPackaged) {
     autoUpdater.checkForUpdatesAndNotify();

@@ -3,10 +3,53 @@ import axios, { type AxiosResponse } from "axios";
 
 const slmsAxios = axios.create({
   baseURL: import.meta.env.VITE_API_SLMS_URL || "",
+  timeout: 15000, // Tambah timeout biar nggak nunggu selamanya
   headers: {
-    Authorization: import.meta.env.VITE_API_AUTH_CODE || ""
-  }
+    Authorization: import.meta.env.VITE_API_AUTH_CODE || "",
+  },
 });
+
+// Helper buat nerjemahin error backend jadi bahasa manusia
+const getHumanMessage = (error: any) => {
+  if (!error.response) {
+    if (error.code === "ECONNABORTED") return "Koneksi terputus (Timeout). Silakan cek internet Anda.";
+    return "Gagal terhubung ke server. Pastikan Anda online.";
+  }
+
+  const status = error.response.status;
+  const data = error.response.data;
+  const backendMessage = data?.message?.toLowerCase() || "";
+
+  // Mapping error alien jadi manusiawi
+  if (backendMessage.includes("unexpected error")) {
+    return "Sistem sedang mengalami kendala teknis. Silakan coba beberapa saat lagi.";
+  }
+  if (backendMessage.includes("invalid format")) {
+    return "Data yang dikirimkan tidak sesuai format. Silakan hubungi admin.";
+  }
+  if (backendMessage.includes("required")) {
+    return "Ada informasi wajib yang belum terisi atau tidak terbaca oleh sistem.";
+  }
+
+  // Mapping berdasarkan status code
+  switch (status) {
+    case 401: return "Sesi Anda telah berakhir. Silakan masuk kembali.";
+    case 403: return "Anda tidak memiliki akses untuk melakukan aksi ini.";
+    case 404: return "Data yang Anda cari tidak ditemukan di server.";
+    case 500: return "Server sedang mengalami gangguan (Internal Error).";
+    case 502: case 503: return "Layanan sedang tidak tersedia. Server mungkin sedang maintenance.";
+    default: return data?.message || "Terjadi kesalahan sistem. Silakan coba lagi.";
+  }
+};
+
+slmsAxios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message = getHumanMessage(error);
+    // Kita bungkus lagi biar catch di UI nerima string pesan yang enak dibaca
+    return Promise.reject(message);
+  }
+);
 
 const responseBody = <T>(response: AxiosResponse<T>) => response.data;
 

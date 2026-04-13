@@ -37,6 +37,7 @@ export interface EventList {
   teacher_name: string;
   teacher_image: string;
   color: string;
+  course_id: number | string;
   metadata?: string | null;
 }
 
