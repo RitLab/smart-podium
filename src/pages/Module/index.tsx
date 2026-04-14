@@ -45,12 +45,23 @@ const Module = () => {
 
     const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
     
-    // Cari yang sedang jalan sekarang
+    // 1. Cari yang sedang jalan sekarang
     let current = todayEvents.find(ev => 
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
 
-    // Kalau nggak ada yang jalan, cari yang paling deket nanti (hari ini)
+    // 2. Kalau nggak ada yang jalan, cari yang baru saja selesai hari ini
+    if (!current) {
+      const finishedEvents = todayEvents
+        .filter(ev => ev.end_time <= currentTimeStr)
+        .sort((a, b) => b.end_time.localeCompare(a.end_time)); // Urutkan dari yang paling baru selesai
+      
+      if (finishedEvents.length > 0) {
+        current = finishedEvents[0];
+      }
+    }
+
+    // 3. Kalau tetap nggak ada (misal masih pagi banget), baru cari yang paling deket nanti
     if (!current) {
       current = todayEvents
         .filter(ev => ev.start_time > currentTimeStr)

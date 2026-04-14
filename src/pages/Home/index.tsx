@@ -150,13 +150,30 @@ const Home = () => {
       return;
     }
 
-    const upcoming = todayEvents
-      .filter(ev => {
-        return ev.start_time > currentTimeStr || (ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr);
-      })
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+    // 1. Cari yang sedang jalan
+    let current = todayEvents.find(ev => 
+      ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
+    );
 
-    setActiveEvent(upcoming.length > 0 ? upcoming[0] : null);
+    // 2. Jika tidak ada, cari yang baru saja selesai hari ini
+    if (!current) {
+      const finishedEvents = todayEvents
+        .filter(ev => ev.end_time <= currentTimeStr)
+        .sort((a, b) => b.end_time.localeCompare(a.end_time));
+      
+      if (finishedEvents.length > 0) {
+        current = finishedEvents[0];
+      }
+    }
+
+    // 3. Jika tetap tidak ada, baru cari yang paling deket nanti
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+    }
+
+    setActiveEvent(current || null);
   }, [rawEvents, time]);
 
   /* ================= UPDATE LISTENER ================= */
@@ -469,36 +486,46 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-8 text-center">
+      {/* MAIN MENUS */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-x-12 gap-y-10 text-center max-w-6xl px-8">
         {menus.map((menu) => {
           const Icon = menu.icon;
 
+          const renderMenu = (
+            <div key={menu.label} className="group flex flex-col items-center">
+              <div
+                className={`h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-xl shadow-gray-200 bg-gradient-to-b transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-2 group-active:scale-95 ${
+                  colorMap[menu.color]
+                }`}
+              >
+                <Icon width={52} height={52} className="text-white drop-shadow-md" />
+              </div>
+              <p className="mt-4 text-sm text-gray-700 font-bold tracking-tight opacity-90 group-hover:opacity-100 group-hover:text-blue-600 transition-all">
+                {menu.label}
+              </p>
+            </div>
+          );
+
           if (menu.action === "whiteboard") {
             return (
-              <div key={menu.label}>
-                <button type="button" onClick={openWhiteboard}>
-                  <MenuCard Icon={Icon} menu={menu} />
-                </button>
-              </div>
+              <button key={menu.label} type="button" onClick={openWhiteboard} className="outline-none">
+                {renderMenu}
+              </button>
             );
           }
 
           if (menu.action === "zoom") {
             return (
-              <div key={menu.label}>
-                <button type="button" onClick={openZoom}>
-                  <MenuCard Icon={Icon} menu={menu} />
-                </button>
-              </div>
+              <button key={menu.label} type="button" onClick={openZoom} className="outline-none">
+                {renderMenu}
+              </button>
             );
           }
 
           return (
-            <div key={menu.label}>
-              <NavLink to={menu.path || "/"}>
-                <MenuCard Icon={Icon} menu={menu} />
-              </NavLink>
-            </div>
+            <NavLink key={menu.label} to={menu.path || "/"}>
+              {renderMenu}
+            </NavLink>
           );
         })}
       </div>

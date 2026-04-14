@@ -181,11 +181,31 @@ const Navbar = () => {
     }).replace(".", ":");
 
     const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
-    const upcoming = todayEvents
-      .filter(ev => ev.start_time > currentTimeStr || (ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr))
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+    
+    // 1. Cari yang sedang jalan
+    let current = todayEvents.find(ev => 
+      ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
+    );
 
-    setActiveEvent(upcoming.length > 0 ? upcoming[0] : null);
+    // 2. Jika tidak ada, cari yang baru saja selesai hari ini
+    if (!current) {
+      const finishedEvents = todayEvents
+        .filter(ev => ev.end_time <= currentTimeStr)
+        .sort((a, b) => b.end_time.localeCompare(a.end_time));
+      
+      if (finishedEvents.length > 0) {
+        current = finishedEvents[0];
+      }
+    }
+
+    // 3. Jika tetap tidak ada, baru cari yang paling deket nanti
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+    }
+
+    setActiveEvent(current || null);
   }, [headerEvents, time]);
 
   useEffect(() => {
