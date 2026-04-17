@@ -28,35 +28,7 @@ import RecorderComponents from "@/components/Recorder";
    TOAST CONTEXT
 ===================================================== */
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error("useToast must be used within ToastProvider");
-  }
-  return context;
-};
-
-export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const showToast = useCallback((message: string, type: ToastType = "info") => {
-    const id = Date.now();
-    setToasts([{ id, message, type }]); // Langsung ganti yang lama (biar cuma 1)
-
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 4000); // Saya perlama sedikit durasinya biar enak dibaca
-  }, []);
-
-  return (
-    <ToastContext.Provider value={{ showToast }}>
-      {children}
-      <ToastComponent toasts={toasts} setToasts={setToasts} />
-    </ToastContext.Provider>
-  );
-};
+import { useToast } from "@/components/ToastProvider";
 
 /* =====================================================
    MENUS
@@ -153,6 +125,8 @@ const colorMap = {
 const Navbar = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
+  const { isRecording } = useSelector((state: RootState) => state.record);
+  const { showToast } = useToast();
 
   const [time, setTime] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<any>(null);
@@ -161,12 +135,22 @@ const Navbar = () => {
 
   useEffect(() => {
     dispatch(fetchUser());
-    const now = new Date();
-    // Gunakan fetchHeaderEvents biar datanya tetap di bulan ini
-    dispatch(fetchHeaderEvents({ 
-      month: now.getMonth() + 1, 
-      year: now.getFullYear() 
-    }));
+
+    const fetchData = () => {
+      const now = new Date();
+      dispatch(
+        fetchHeaderEvents({
+          month: now.getMonth() + 1,
+          year: now.getFullYear(),
+        }),
+      );
+    };
+
+    fetchData();
+
+    // Refetch every 5 seconds to keep the header schedule updated (Real-time feel)
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, [dispatch]);
 
   // Logika cari event (sama dengan Home)
@@ -494,6 +478,95 @@ const MainLayoutContent = () => {
   const location = useLocation();
   const { showToast } = useToast();
   const { error, loading, isFullScreen } = useSelector((state: RootState) => state.ui);
+  const { isRecording } = useSelector((state: RootState) => state.record);
+  const { headerEvents } = useSelector((state: RootState) => state.calendar);
+
+  const [activeEvent, setActiveEvent] = useState<any>(null);
+  const [isStarted, setIsStarted] = useState(false);
+  const [time, setTime] = useState(new Date());
+
+  // Logika cari event (sama dengan Navbar)
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date()), 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!headerEvents || headerEvents.length === 0) return;
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("id-ID", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+    const currentTimeStr = now.toLocaleTimeString("id-ID", {
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).replace(".", ":");
+
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
+    
+    let current = todayEvents.find(ev => 
+      ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
+    );
+
+    if (!current) {
+      const finishedEvents = todayEvents
+        .filter(ev => ev.end_time <= currentTimeStr)
+        .sort((a, b) => b.end_time.localeCompare(a.end_time));
+      
+      if (finishedEvents.length > 0) {
+        current = finishedEvents[0];
+      }
+    }
+
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+    }
+
+    setActiveEvent(current || null);
+  }, [headerEvents, time]);
+
+  useEffect(() => {
+    if (!activeEvent?.start_time) {
+      setIsStarted(false);
+      return;
+    }
+
+    const getTimeToday = (timeStr: string) => {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      const d = new Date();
+      d.setHours(hours, minutes, 0, 0);
+      return d.getTime();
+    };
+
+    const startTime = getTimeToday(activeEvent.start_time);
+    const endTime = getTimeToday(activeEvent.end_time);
+    const currentTime = Date.now();
+
+    if (currentTime >= startTime && currentTime < endTime) {
+      setIsStarted(true);
+    } else {
+      setIsStarted(false);
+    }
+  }, [activeEvent, time]);
+
+  /* ================= ENFORCE START NOTIFICATION ================= */
+  useEffect(() => {
+    if (isStarted && !isRecording) {
+      showToast(
+        "Kelas telah dimulai, silakan klik tombol Mulai untuk memulai kelas.",
+        "info"
+      );
+      const interval = setInterval(() => {
+        showToast(
+          "Kelas telah dimulai, silakan klik tombol Mulai untuk memulai kelas.",
+          "info"
+        );
+      }, 10000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isStarted, isRecording, showToast]);
 
   const clickCountRef = useRef(0);
 
@@ -596,9 +669,7 @@ const MainLayout = () => {
   }
 
   return (
-    <ToastProvider>
-      <MainLayoutContent />
-    </ToastProvider>
+    <MainLayoutContent />
   );
 };
 

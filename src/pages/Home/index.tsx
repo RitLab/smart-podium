@@ -20,7 +20,7 @@ import { fetchUser } from "@/stores/auth";
 import { fetchEventList } from "@/stores/calendar";
 import { startRecord, stopRecord, clearError } from "@/stores/record";
 
-import { useToast } from "@/layouts/MainLayout";
+import { useToast } from "@/components/ToastProvider";
 
 /* ================= MENU TYPE ================= */
 
@@ -121,11 +121,21 @@ const Home = () => {
   /* ================= FETCH EVENTS ================= */
 
   useEffect(() => {
-    const now = new Date();
-    dispatch(fetchEventList({ 
-      month: now.getMonth() + 1, 
-      year: now.getFullYear() 
-    }));
+    const fetchData = () => {
+      const now = new Date();
+      dispatch(
+        fetchEventList({
+          month: now.getMonth() + 1,
+          year: now.getFullYear(),
+        }),
+      );
+    };
+
+    fetchData();
+
+    // Refetch every 5 seconds to keep the schedule updated (Real-time feel)
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, [dispatch]);
 
   /* ================= FIND NEXT EVENT ================= */
@@ -465,7 +475,7 @@ const Home = () => {
                 className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white ${
                   isRecording
                     ? "bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
-                    : "bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800"
+                    : "bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 animate-pulse ring-4 ring-emerald-500/50"
                 }`}
               >
                 <LogOut size={18} />

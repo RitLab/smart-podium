@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router";
+import { ToastProvider } from "@/components/ToastProvider";
 
 import AuthLayout from "@/layouts/AuthLayout";
 import MainLayout from "@/layouts/MainLayout";
@@ -21,34 +22,36 @@ import Viewer from "@/pages/Module/Viewer";
 
 export default () => {
   return (
-    <Routes>
-      <Route element={<AuthLayout />}>
-        <Route path="/lock-screen" element={<LockScreen />} />
-        <Route path="/input-pin" element={<InputPIN />} />
-        <Route path="/setting-pin" element={<SettingPIN />} />
-        <Route path="/license" element={<LicenseKey />} />
-      </Route>
-
-      <Route path="/">
-        <Route index element={<Navigate to="/home" replace />} />
-        <Route path="file" element={<File />} />
-        <Route path="video" element={<VideoPlayer />} />
-        <Route path="image" element={<ImageViewer />} />
-        <Route path="3d" element={<ThreeDimensionViewer />} />
-        <Route path="interactive" element={<Interactive />} />
-        <Route path="viewer" element={<Viewer />} />
-        <Route path="/" element={<MainLayout />}>
-          <Route path="home" element={<Home />} />
-          <Route path="calendar" element={<Calendar />} />
-          <Route path="student" element={<Student />} />
-          <Route path="module" element={<Module />} />
-          <Route path="internet" element={<Internet />} />
+    <ToastProvider>
+      <Routes>
+        <Route element={<AuthLayout />}>
+          <Route path="/lock-screen" element={<LockScreen />} />
+          <Route path="/input-pin" element={<InputPIN />} />
+          <Route path="/setting-pin" element={<SettingPIN />} />
+          <Route path="/license" element={<LicenseKey />} />
         </Route>
-        <Route path="*" element={<Navigate to="/home" replace />} />
-      </Route>
 
-      {/* catch all */}
-      <Route path="*" element={<Navigate to="/lock-screen" replace />} />
-    </Routes>
+        <Route path="/">
+          <Route index element={<Navigate to="/home" replace />} />
+          <Route path="file" element={<File />} />
+          <Route path="video" element={<VideoPlayer />} />
+          <Route path="image" element={<ImageViewer />} />
+          <Route path="3d" element={<ThreeDimensionViewer />} />
+          <Route path="interactive" element={<Interactive />} />
+          <Route path="viewer" element={<Viewer />} />
+          <Route path="/" element={<MainLayout />}>
+            <Route path="home" element={<Home />} />
+            <Route path="calendar" element={<Calendar />} />
+            <Route path="student" element={<Student />} />
+            <Route path="module" element={<Module />} />
+            <Route path="internet" element={<Internet />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/home" replace />} />
+        </Route>
+
+        {/* catch all */}
+        <Route path="*" element={<Navigate to="/lock-screen" replace />} />
+      </Routes>
+    </ToastProvider>
   );
 };
