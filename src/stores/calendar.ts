@@ -70,7 +70,7 @@ export const fetchHeaderEvents = createAsyncThunk<
       await eventService.getEventList(payload);
     const CLASSROOM_ID = localStorage.getItem("class_id");
     const filtered = response.data.events.filter(
-      (ev) => ev.class_room_id === CLASSROOM_ID
+      (ev) => ev.class_room_id === CLASSROOM_ID,
     );
     return filtered.map((event) => {
       const date = new Date(event.event_date);
@@ -100,38 +100,36 @@ export const fetchEvents = createAsyncThunk<EventGroup[]>(
   },
 );
 
-export const fetchEventList = createAsyncThunk<
-  EventList[],
-  EventListPayload
->("calendar/fetchEventList", async (payload, { rejectWithValue }) => {
-  try {
-    const response: EventListResponse =
-      await eventService.getEventList(payload);
+export const fetchEventList = createAsyncThunk<EventList[], EventListPayload>(
+  "calendar/fetchEventList",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response: EventListResponse =
+        await eventService.getEventList(payload);
 
-    const CLASSROOM_ID = localStorage.getItem("class_id");
+      const CLASSROOM_ID = localStorage.getItem("class_id");
 
-    const filtered = response.data.events.filter(
-      (ev) => ev.class_room_id === CLASSROOM_ID
-    );
+      const filtered = response.data.events.filter(
+        (ev) => ev.class_room_id === CLASSROOM_ID,
+      );
 
-    return filtered.map((event) => {
-      const date = new Date(event.event_date);
+      return filtered.map((event) => {
+        const date = new Date(event.event_date);
 
-      return {
-        ...event,
-        event_date: date.toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-      };
-    });
-  } catch (error: any) {
-    return rejectWithValue(
-      error?.message || "Failed to fetch event list"
-    );
-  }
-});
+        return {
+          ...event,
+          event_date: date.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }),
+        };
+      });
+    } catch (error: any) {
+      return rejectWithValue(error?.message || "Failed to fetch event list");
+    }
+  },
+);
 
 export const fetchEventByClassroomDate = createAsyncThunk<
   EventList | null,
@@ -143,15 +141,22 @@ export const fetchEventByClassroomDate = createAsyncThunk<
       const response: EventListResponse =
         await eventService.getEventList(payload);
 
-      const CLASSROOM_ID = localStorage.getItem('class_id');
+      const CLASSROOM_ID = localStorage.getItem("class_id");
+
+      // const filteredByClassroomId = response.data.events.find(
+      //   (ev) => ev.class_room_id === CLASSROOM_ID,
+      // );
+
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0, 5);
 
       const filteredByClassroomId = response.data.events.find(
-        (ev) => ev.class_room_id === CLASSROOM_ID,
+        (ev) => ev.class_room_id === CLASSROOM_ID && ev.end_time < currentTime,
       );
 
       if (!filteredByClassroomId) return null;
 
-      console.log('filteredCl: ', filteredByClassroomId) 
+      console.log("filteredCl: ", filteredByClassroomId);
 
       return filteredByClassroomId;
     } catch (error: any) {
@@ -207,10 +212,9 @@ const calendarSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    builder
-      .addCase(fetchHeaderEvents.fulfilled, (state, action) => {
-        state.headerEvents = action.payload;
-      });
+    builder.addCase(fetchHeaderEvents.fulfilled, (state, action) => {
+      state.headerEvents = action.payload;
+    });
 
     builder
       .addCase(fetchEventByClassroomDate.pending, (state) => {
