@@ -80,7 +80,14 @@ const LockScreen = () => {
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
 
-    // 2. Jika tidak ada, cari yang baru saja selesai hari ini
+    // 2. Jika tidak ada yang sedang jalan, cari yang akan datang (upcoming)
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+    }
+
+    // 3. Jika tetap tidak ada (sudah habis semua), baru tunjukkan yang terakhir selesai
     if (!current) {
       const finishedEvents = todayEvents
         .filter(ev => ev.end_time <= currentTimeStr)
@@ -91,12 +98,7 @@ const LockScreen = () => {
       }
     }
 
-    // 3. Jika tetap tidak ada, baru cari yang paling deket nanti
-    if (!current) {
-      current = todayEvents
-        .filter(ev => ev.start_time > currentTimeStr)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
-    }
+
 
     setActiveEvent(current || null);
   }, [rawEvents, time]);

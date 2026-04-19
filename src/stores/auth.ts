@@ -53,38 +53,54 @@ export const getToken = createAsyncThunk<TokenResponse, Token>(
 
 export const fetchClass = createAsyncThunk<Class[]>(
   "auth/fetchClass",
-  async (_, { dispatch, rejectWithValue }) => {
+  async (_, { dispatch, getState, rejectWithValue }) => {
+    const state = getState() as { auth: AuthState };
+    const isInitialLoad = state.auth.classList.length === 0;
+
     try {
-      dispatch(setLoading(true));
+      if (isInitialLoad) {
+        dispatch(setLoading(true));
+      }
       dispatch(setError(""));
 
-      // const fData = await authService.getCLass();
-      const data = await authService.getClassList()
-      // console.log('fData: ', fData)
+      const data = await authService.getClassList();
       return data.data.classrooms;
     } catch (error: any) {
-      dispatch(setError(error.message || "Failed to fetch class"));
+      if (isInitialLoad) {
+        dispatch(setError(error.message || "Failed to fetch class"));
+      }
       return rejectWithValue(error.message || "Failed to fetch class");
     } finally {
-      dispatch(setLoading(false));
+      if (isInitialLoad) {
+        dispatch(setLoading(false));
+      }
     }
   }
 );
 
 export const fetchUser = createAsyncThunk<User>(
   "auth/fetchUser",
-  async (_, { dispatch, rejectWithValue }) => {
+  async (_, { dispatch, getState, rejectWithValue }) => {
+    const state = getState() as { auth: AuthState };
+    const isInitialLoad = !state.auth.user;
+
     try {
-      dispatch(setLoading(true));
+      if (isInitialLoad) {
+        dispatch(setLoading(true));
+      }
       dispatch(setError(""));
 
       const data = await authService.getUser();
       return data;
     } catch (error: any) {
-      dispatch(setError(error.message || "Failed to fetch user"));
+      if (isInitialLoad) {
+        dispatch(setError(error.message || "Failed to fetch user"));
+      }
       return rejectWithValue(error.message || "Failed to fetch user");
     } finally {
-      dispatch(setLoading(false));
+      if (isInitialLoad) {
+        dispatch(setLoading(false));
+      }
     }
   }
 );

@@ -1,5 +1,5 @@
 import { Clock9, LogOut, Minimize, Timer } from "lucide-react";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 
@@ -20,6 +20,7 @@ import { formatDuration, formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { fetchEventList, fetchHeaderEvents } from "@/stores/calendar";
+import { stopRecord } from "@/stores/record";
 import { Toast, ToastContextType, ToastType } from "@/types/ui";
 import ToastComponent from "@/components/Toast";
 import RecorderComponents from "@/components/Recorder";
@@ -122,124 +123,7 @@ const colorMap = {
 /* =====================================================
    NAVBAR
 ===================================================== */
-const Navbar = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { headerEvents } = useSelector((state: RootState) => state.calendar);
-  const { isRecording } = useSelector((state: RootState) => state.record);
-  const { showToast } = useToast();
-
-  const [time, setTime] = useState(new Date());
-  const [activeEvent, setActiveEvent] = useState<any>(null);
-  const [countdown, setCountdown] = useState("00:00:00");
-  const [isStarted, setIsStarted] = useState(false);
-
-  useEffect(() => {
-    dispatch(fetchUser());
-
-    const fetchData = () => {
-      const now = new Date();
-      dispatch(
-        fetchHeaderEvents({
-          month: now.getMonth() + 1,
-          year: now.getFullYear(),
-        }),
-      );
-    };
-
-    fetchData();
-
-    // Refetch every 5 seconds to keep the header schedule updated (Real-time feel)
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
-  }, [dispatch]);
-
-  // Logika cari event (sama dengan Home)
-  useEffect(() => {
-    if (!headerEvents || headerEvents.length === 0) return;
-    const now = new Date();
-    const todayStr = now.toLocaleDateString("id-ID", {
-      day: "numeric", month: "long", year: "numeric",
-    });
-    const currentTimeStr = now.toLocaleTimeString("id-ID", {
-      hour: "2-digit", minute: "2-digit", hour12: false
-    }).replace(".", ":");
-
-    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
-    
-    // 1. Cari yang sedang jalan
-    let current = todayEvents.find(ev => 
-      ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
-    );
-
-    // 2. Jika tidak ada, cari yang baru saja selesai hari ini
-    if (!current) {
-      const finishedEvents = todayEvents
-        .filter(ev => ev.end_time <= currentTimeStr)
-        .sort((a, b) => b.end_time.localeCompare(a.end_time));
-      
-      if (finishedEvents.length > 0) {
-        current = finishedEvents[0];
-      }
-    }
-
-    // 3. Jika tetap tidak ada, baru cari yang paling deket nanti
-    if (!current) {
-      current = todayEvents
-        .filter(ev => ev.start_time > currentTimeStr)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
-    }
-
-    setActiveEvent(current || null);
-  }, [headerEvents, time]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setTime(now);
-
-      if (!activeEvent?.start_time) {
-        setCountdown("00:00:00");
-        setIsStarted(false);
-        return;
-      }
-
-      const getTimeToday = (timeStr: string) => {
-        const [hours, minutes] = timeStr.split(":").map(Number);
-        const d = new Date();
-        d.setHours(hours, minutes, 0, 0);
-        return d.getTime();
-      };
-
-      const startTime = getTimeToday(activeEvent.start_time);
-      const endTime = getTimeToday(activeEvent.end_time);
-      const currentTime = now.getTime();
-
-      let targetTime = 0;
-      if (currentTime >= startTime && currentTime < endTime) {
-        setIsStarted(true);
-        targetTime = endTime;
-      } else if (currentTime < startTime) {
-        setIsStarted(false);
-        targetTime = startTime;
-      } else {
-        setCountdown("00:00:00");
-        setIsStarted(false);
-        return;
-      }
-
-      const diff = targetTime - currentTime;
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      setCountdown(
-        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [activeEvent]);
-
+const Navbar = React.memo(({ time, activeEvent, isStarted, countdown }: any) => {
   return (
     <header className="flex items-center justify-between relative">
       <img src={Logo} alt="Logo" className="h-28 w-96 object-contain" />
@@ -279,7 +163,8 @@ const Navbar = () => {
       </div>
     </header>
   );
-};
+});
+
 
 // const Navbar = () => {
 //   const dispatch = useDispatch<AppDispatch>();
@@ -354,7 +239,7 @@ const Navbar = () => {
    SIDEBAR
 ===================================================== */
 
-const Sidebar = () => {
+const Sidebar = React.memo(() => {
   const location = useLocation();
 
   /* ================= WHITEBOARD ================= */
@@ -468,7 +353,7 @@ const Sidebar = () => {
       </div>
     </aside>
   );
-};
+});
 
 /* =====================================================
    MAIN LAYOUT CORE
@@ -476,21 +361,89 @@ const Sidebar = () => {
 
 const MainLayoutContent = () => {
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatch>();
   const { showToast } = useToast();
+  
   const { error, loading, isFullScreen } = useSelector((state: RootState) => state.ui);
-  const { isRecording } = useSelector((state: RootState) => state.record);
+  const { isRecording, session_id } = useSelector((state: RootState) => state.record);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
 
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [isStarted, setIsStarted] = useState(false);
   const [time, setTime] = useState(new Date());
+  const [countdown, setCountdown] = useState("00:00:00");
 
-  // Logika cari event (sama dengan Navbar)
+  const hasAutoStoppedRef = useRef(false);
+
+  // 1. Fetch data on mount and interval
   useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 5000);
-    return () => clearInterval(interval);
-  }, []);
+    dispatch(fetchUser());
 
+    const fetchData = () => {
+      const now = new Date();
+      dispatch(
+        fetchHeaderEvents({
+          month: now.getMonth() + 1,
+          year: now.getFullYear(),
+        }),
+      );
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 10000); // Background refresh every 10s
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  // 2. Update time every second and calculate countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setTime(now);
+
+      if (!activeEvent?.start_time) {
+        setCountdown("00:00:00");
+        setIsStarted(false);
+        return;
+      }
+
+      const getTimeToday = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(":").map(Number);
+        const d = new Date();
+        d.setHours(hours, minutes, 0, 0);
+        return d.getTime();
+      };
+
+      const startTime = getTimeToday(activeEvent.start_time);
+      const endTime = getTimeToday(activeEvent.end_time);
+      const currentTime = now.getTime();
+
+      let targetTime = 0;
+      if (currentTime >= startTime && currentTime < endTime) {
+        setIsStarted(true);
+        targetTime = endTime;
+      } else if (currentTime < startTime) {
+        setIsStarted(false);
+        targetTime = startTime;
+      } else {
+        setCountdown("00:00:00");
+        setIsStarted(false);
+        return;
+      }
+
+      const diff = targetTime - currentTime;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setCountdown(
+        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeEvent]);
+
+  // 3. Logic cari event
   useEffect(() => {
     if (!headerEvents || headerEvents.length === 0) return;
     const now = new Date();
@@ -503,10 +456,19 @@ const MainLayoutContent = () => {
 
     const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
     
+    // 1. Cari yang sedang jalan sekarang
     let current = todayEvents.find(ev => 
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
 
+    // 2. Jika tidak ada yang sedang jalan, cari yang akan datang (upcoming)
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+    }
+
+    // 3. Jika tetap tidak ada (sudah habis semua), baru tunjukkan yang terakhir selesai
     if (!current) {
       const finishedEvents = todayEvents
         .filter(ev => ev.end_time <= currentTimeStr)
@@ -517,38 +479,13 @@ const MainLayoutContent = () => {
       }
     }
 
-    if (!current) {
-      current = todayEvents
-        .filter(ev => ev.start_time > currentTimeStr)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+
+
+    // Hindari re-render jika event-nya sama (sampe ID-nya sama)
+    if (!activeEvent || activeEvent.id !== current?.id) {
+       setActiveEvent(current || null);
     }
-
-    setActiveEvent(current || null);
-  }, [headerEvents, time]);
-
-  useEffect(() => {
-    if (!activeEvent?.start_time) {
-      setIsStarted(false);
-      return;
-    }
-
-    const getTimeToday = (timeStr: string) => {
-      const [hours, minutes] = timeStr.split(":").map(Number);
-      const d = new Date();
-      d.setHours(hours, minutes, 0, 0);
-      return d.getTime();
-    };
-
-    const startTime = getTimeToday(activeEvent.start_time);
-    const endTime = getTimeToday(activeEvent.end_time);
-    const currentTime = Date.now();
-
-    if (currentTime >= startTime && currentTime < endTime) {
-      setIsStarted(true);
-    } else {
-      setIsStarted(false);
-    }
-  }, [activeEvent, time]);
+  }, [headerEvents, time, activeEvent]);
 
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
@@ -567,6 +504,50 @@ const MainLayoutContent = () => {
       return () => clearInterval(interval);
     }
   }, [isStarted, isRecording, showToast]);
+
+  /* ================= AUTO STOP RECORD ================= */
+  useEffect(() => {
+    if (!activeEvent?.end_time) return;
+    if (!isRecording) {
+      hasAutoStoppedRef.current = false;
+      return;
+    }
+    if (!session_id) return;
+
+    const getTimeToday = (timeStr: string) => {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      const d = new Date();
+      d.setHours(hours, minutes, 0, 0);
+      return d.getTime();
+    };
+
+    const endTime = getTimeToday(activeEvent.end_time);
+
+    const interval = setInterval(async () => {
+      const now = Date.now();
+
+      if (now >= endTime && !hasAutoStoppedRef.current) {
+        hasAutoStoppedRef.current = true;
+
+        try {
+          await dispatch(
+            stopRecord({
+              session_id,
+              event_id: String(activeEvent.id),
+            }),
+          ).unwrap();
+
+          console.log("Recording auto stopped (end time reached)");
+        } catch (err) {
+          console.error("Auto stop failed:", err);
+        }
+
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeEvent, isRecording, session_id, dispatch]);
 
   const clickCountRef = useRef(0);
 
@@ -592,11 +573,14 @@ const MainLayoutContent = () => {
     }, 2000);
   };
 
+
   useEffect(() => {
     if (error) {
       showToast(error, "error");
+      // Prevent infinite loops or redundant toasts by clearing if needed
+      // dispatch(clearError()); 
     }
-  }, [error]);
+  }, [error, showToast]);
 
   if (isHome) {
     return (
@@ -638,7 +622,15 @@ const MainLayoutContent = () => {
           isFullScreen ? "p-0 m-0" : isInternet ? "p-8" : "pt-6 pl-12 pr-12 pb-6"
         }`}
       >
-        {!isInternet && !isFullScreen && <Navbar />}
+        {!isInternet && !isFullScreen && (
+          <Navbar 
+            time={time} 
+            activeEvent={activeEvent} 
+            isStarted={isStarted} 
+            countdown={countdown} 
+          />
+        )}
+
 
         <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : "m-0"}`}>
           <Outlet />

@@ -11,18 +11,21 @@ const Calendar = () => {
     (state: RootState) => state.calendar
   );
 
-  const calendarRef = useRef<HTMLDivElement>(null);
-  // const [height, setHeight] = useState<number>();
   const [dateClick, setDateClick] = useState<{
     year: number;
     month: number;
     day: number;
   }>();
 
-  // fetch data event
-  // useEffect(() => {
-  //   dispatch(fetchEvents());
-  // }, [dispatch]);
+  useEffect(() => {
+    const today = new Date();
+    setDateClick({
+      year: today.getFullYear(),
+      month: today.getMonth() + 1,
+      day: today.getDate()
+    });
+  }, []);
+
 
   const lastFetchRef = useRef<string>("");
 

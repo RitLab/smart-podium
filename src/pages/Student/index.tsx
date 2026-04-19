@@ -41,30 +41,34 @@ const Student = () => {
 
     const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
     
-    // 1. Cari yang sedang jalan sekarang
+    // 1. Cari yang sedang jalan sekarang (Priority 1)
     let current = todayEvents.find(ev => 
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
 
-    // 2. Kalau nggak ada yang jalan, cari yang baru saja selesai hari ini
+    // 2. Jika tidak ada yang jalan, tampilkan yang TERBARU SELESAI (Priority 2)
+    // Supaya guru masih bisa cek presensi manual selama jeda kelas (gap).
     if (!current) {
       const finishedEvents = todayEvents
         .filter(ev => ev.end_time <= currentTimeStr)
-        .sort((a, b) => b.end_time.localeCompare(a.end_time)); // Urutkan dari yang paling baru selesai
+        .sort((a, b) => b.end_time.localeCompare(a.end_time));
       
       if (finishedEvents.length > 0) {
         current = finishedEvents[0];
       }
     }
 
-    // 3. Kalau tetap nggak ada (misal masih pagi banget belum ada kelas), baru cari yang paling deket nanti
+    // 3. Jika tetap tidak ada (misal masih pagi belum ada kelas), baru cari yang AKAN DATANG (Priority 3)
     if (!current) {
       current = todayEvents
         .filter(ev => ev.start_time > currentTimeStr)
         .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
     }
 
+
+
     return current?.id || null;
+
   }, [headerEvents]);
 
   useEffect(() => {

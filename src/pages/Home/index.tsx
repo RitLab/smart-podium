@@ -160,12 +160,19 @@ const Home = () => {
       return;
     }
 
-    // 1. Cari yang sedang jalan
+    // 1. Cari yang sedang jalan sekarang
     let current = todayEvents.find(ev => 
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
 
-    // 2. Jika tidak ada, cari yang baru saja selesai hari ini
+    // 2. Jika tidak ada yang sedang jalan, cari yang akan datang (upcoming)
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+    }
+
+    // 3. Jika tetap tidak ada (sudah habis semua), baru tunjukkan yang terakhir selesai
     if (!current) {
       const finishedEvents = todayEvents
         .filter(ev => ev.end_time <= currentTimeStr)
@@ -176,12 +183,7 @@ const Home = () => {
       }
     }
 
-    // 3. Jika tetap tidak ada, baru cari yang paling deket nanti
-    if (!current) {
-      current = todayEvents
-        .filter(ev => ev.start_time > currentTimeStr)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
-    }
+
 
     setActiveEvent(current || null);
   }, [rawEvents, time]);
@@ -202,7 +204,7 @@ const Home = () => {
   const [countdown, setCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
 
-  const hasAutoStoppedRef = useRef(false);
+
 
   /* ================= DEBUG LOGIC ================= */
 
@@ -273,13 +275,8 @@ const Home = () => {
   };
 
   /* ================= ERROR TOAST ================= */
+  // Moved to MainLayout for centralized handling
 
-  useEffect(() => {
-    if (error) {
-      showToast(error, "error");
-      dispatch(clearError());
-    }
-  }, [error, dispatch, showToast]);
 
   /* ================= HELPER TIME ================= */
 
@@ -337,39 +334,6 @@ const Home = () => {
 
   /* ================= AUTO STOP RECORD ================= */
 
-  useEffect(() => {
-    if (!activeEvent?.end_time) return;
-    if (!isRecording) return;
-    if (!session_id) return;
-
-    const endTime = getTimeToday(activeEvent.end_time);
-
-    const interval = setInterval(async () => {
-      const now = Date.now();
-
-      if (now >= endTime && !hasAutoStoppedRef.current) {
-        hasAutoStoppedRef.current = true;
-
-        try {
-          await dispatch(
-            stopRecord({
-              session_id,
-              event_id: String(activeEvent.id),
-            }),
-          ).unwrap();
-
-          console.log("Recording auto stopped (end time reached)");
-        } catch (err) {
-          console.error("Auto stop failed:", err);
-        }
-
-        clearInterval(interval);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [activeEvent, isRecording, session_id, dispatch]);
-
   /* ================= REALTIME CLOCK ================= */
 
   useEffect(() => {
@@ -392,8 +356,6 @@ const Home = () => {
 
     try {
       if (!isRecording) {
-        hasAutoStoppedRef.current = false;
-
         await dispatch(startRecord({ id: String(activeEvent.id) })).unwrap();
 
         navigate("/module");

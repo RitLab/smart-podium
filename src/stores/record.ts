@@ -20,11 +20,39 @@ export type RecordState = {
    INITIAL STATE
 ===================================================== */
 
+const RECOVERY_KEY = "smart_podium_recording_state";
+
+const loadPersistedState = (): Partial<RecordState> => {
+  try {
+    const serializedState = localStorage.getItem(RECOVERY_KEY);
+    if (!serializedState) return {};
+    return JSON.parse(serializedState);
+  } catch (err) {
+    return {};
+  }
+};
+
+const savePersistedState = (state: RecordState) => {
+  try {
+    const { isRecording, session_id, startTime } = state;
+    localStorage.setItem(
+      RECOVERY_KEY,
+      JSON.stringify({ isRecording, session_id, startTime })
+    );
+  } catch (err) {
+    // ignore
+  }
+};
+
+const persisted = loadPersistedState();
+
 const initialState: RecordState = {
-  isRecording: false,
-  session_id: null,
-  startTime: null,
-  duration: 0,
+  isRecording: persisted.isRecording ?? false,
+  session_id: persisted.session_id ?? null,
+  startTime: persisted.startTime ?? null,
+  duration: persisted.startTime
+    ? Math.floor((Date.now() - persisted.startTime) / 1000)
+    : 0,
   loading: false,
   error: null,
 };
@@ -85,6 +113,7 @@ const recordSlice = createSlice({
       state.duration = 0;
       state.error = null;
       state.loading = false;
+      savePersistedState(state);
     },
 
     tick(state) {
@@ -116,6 +145,7 @@ const recordSlice = createSlice({
         state.session_id = action.payload.session_id;
         state.startTime = Date.now();
         state.duration = 0;
+        savePersistedState(state);
       })
       .addCase(startRecord.rejected, (state, action) => {
         state.loading = false;
@@ -138,6 +168,7 @@ const recordSlice = createSlice({
         state.session_id = null;
         state.startTime = null;
         state.duration = 0;
+        savePersistedState(state);
       })
       .addCase(stopRecord.rejected, (state, action) => {
         state.loading = false;
