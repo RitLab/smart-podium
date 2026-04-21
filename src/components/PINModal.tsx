@@ -124,7 +124,7 @@ const PINModal: React.FC<PINModalProps> = ({ isOpen, onClose, onSuccess, teacher
               <button
                 key={num}
                 onClick={() => handlePress(num)}
-                className="w-20 h-20 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-3xl font-light hover:bg-white/20 active:scale-90 active:bg-white/30 transition-all duration-150 backdrop-blur-md"
+                className="w-20 h-20 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-3xl font-light backdrop-blur-md"
               >
                 {num}
               </button>
@@ -134,14 +134,14 @@ const PINModal: React.FC<PINModalProps> = ({ isOpen, onClose, onSuccess, teacher
 
             <button
               onClick={() => handlePress("0")}
-              className="w-20 h-20 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-3xl font-light hover:bg-white/20 active:scale-90 active:bg-white/30 transition-all duration-150 backdrop-blur-md"
+              className="w-20 h-20 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-3xl font-light backdrop-blur-md"
             >
               0
             </button>
 
             <button
               onClick={handleDelete}
-              className="w-20 h-20 flex items-center justify-center text-sm font-medium text-white/60 hover:text-white active:scale-95 transition-all"
+              className="w-20 h-20 flex items-center justify-center text-sm font-medium text-white/60"
             >
               Hapus
             </button>

@@ -192,7 +192,7 @@ const Student = () => {
   }
 
   return (
-    <div className="w-full flex flex-col gap-8">
+    <div className="w-full flex flex-col gap-4">
       {graceCountdown && (
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-pulse">
           <div className="flex items-center gap-3 text-orange-700">
@@ -217,7 +217,7 @@ const Student = () => {
             " transition-all"
           }
         >
-        <div className="grid grid-cols-5 grid-rows-2 gap-6">
+        <div className="grid grid-cols-5 grid-rows-2 gap-4">
           {filterAttendanceList?.map((item) => (
             <ItemStudent
               key={item.user_id}
@@ -229,7 +229,7 @@ const Student = () => {
           ))}
         </div>
 
-        <div className="mt-8 flex justify-end">
+        <div className="mt-4 flex justify-end">
           <Pagination
             currentPage={page}
             totalPages={totalPage}

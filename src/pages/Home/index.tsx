@@ -55,13 +55,7 @@ const menus: MenuItem[] = [
     color: "green",
     access: "lesson_plus_15",
   },
-  {
-    path: "/module",
-    label: "Materi Pelajaran",
-    icon: BookIcon,
-    color: "yellow",
-    access: "lesson_plus_15",
-  },
+
   {
     path: "/internet",
     label: "Penampil Web",
@@ -433,7 +427,7 @@ const Home = () => {
     try {
       await dispatch(startRecord({ id: String(activeEvent.id) })).unwrap();
       showToast("Sesi belajar dimulai", "success");
-      navigate("/module");
+      navigate("/internet");
     } catch (err: any) {
       console.error("Start record error:", err);
       showToast(err || "Gagal memulai sesi belajar", "error");
@@ -542,12 +536,13 @@ const Home = () => {
                 </button>
               </div>
             ) : isRecording ? (
+              // Sedang rekam — tampilkan tombol Selesai Kelas
               <button
                 onClick={handleRecordToggle}
                 className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white cursor-pointer active:scale-95 bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
               >
                 <LogOut size={18} />
-                <div>Stop</div>
+                <div>Selesai</div>
               </button>
             ) : isLessonActive ? (
               <button
@@ -575,13 +570,13 @@ const Home = () => {
 
 
       {/* MAIN MENUS */}
-      <div className="grid grid-cols-7 gap-x-12 gap-y-8 text-center max-w-6xl">
+      <div className="text-center w-full" style={{ display: "grid", gridTemplateColumns: "repeat(6, 120px)", justifyContent: "center", columnGap: "2.5rem", rowGap: "1.5rem", alignItems: "start" }}>
         {menus.map((menu) => {
           const Icon = menu.icon;
           const enabled = isMenuEnabled(menu.access);
 
           const renderMenuInner = (
-            <div key={menu.label} className={`group flex flex-col items-center transition-all duration-300 ${enabled ? "" : "opacity-35 grayscale pointer-events-none"
+            <div key={menu.label} className={`group flex flex-col items-center justify-start w-full transition-all duration-300 ${enabled ? "" : "opacity-35 grayscale pointer-events-none"
               }`}>
               <div
                 className={`h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-xl shadow-gray-200 overflow-hidden transition-all duration-300 ${enabled
@@ -596,10 +591,13 @@ const Home = () => {
                   <Icon width={52} height={52} className="text-white drop-shadow-md" />
                 )}
               </div>
-              <p className={`mt-4 text-sm font-bold tracking-tight transition-all ${enabled
-                ? "text-gray-700 opacity-90 group-hover:opacity-100 group-hover:text-blue-600"
-                : "text-gray-400"
-                }`}>
+              <p
+                style={{ marginTop: "12px", lineHeight: "1.4" }}
+                className={`text-xs font-bold tracking-tight text-center w-24 transition-all ${enabled
+                  ? "text-gray-700 opacity-90 group-hover:opacity-100 group-hover:text-blue-600"
+                  : "text-gray-400"
+                  }`}
+              >
                 {menu.label}
               </p>
             </div>

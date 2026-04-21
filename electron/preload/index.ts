@@ -23,6 +23,17 @@
 //   // ...
 // })
 
+// Filter out specific console errors
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  const message = args[0];
+  if (typeof message === 'string' && (message.includes('Autofill.enable failed') || message.includes('Autofill.setAddresses failed'))) {
+    // Ignore these specific autofill errors
+    return;
+  }
+  originalConsoleError(...args);
+};
+
 import { ipcRenderer, contextBridge } from 'electron'
 
 // --------- Expose some API to the Renderer process ---------

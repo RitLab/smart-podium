@@ -12,7 +12,8 @@ import {
   UsersIcon,
   WebIcon,
   WhiteboardIcon,
-  ZoomIcon
+  ZoomIcon,
+  VoicemeeterIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 import Loading from "@/components/Loading";
@@ -41,7 +42,7 @@ type MenuItem = {
   icon: any;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
+  action?: "whiteboard" | "minimize" | "zoom" | "wondercast" | "voicemeeter";
   access: MenuAccess;
 };
 
@@ -60,13 +61,7 @@ const menus: MenuItem[] = [
     color: "green",
     access: "lesson_plus_15",
   },
-  {
-    path: "/module",
-    label: "Materi Pelajaran",
-    icon: BookIcon,
-    color: "yellow",
-    access: "lesson_plus_15",
-  },
+
   {
     path: "/internet",
     label: "Penampil Web",
@@ -86,6 +81,13 @@ const menus: MenuItem[] = [
     label: "Zoom",
     icon: ZoomIcon,
     color: "blue" as const,
+    access: "lesson_only",
+  },
+  {
+    action: "voicemeeter" as const,
+    label: "VB Voicemeeter",
+    icon: VoicemeeterIcon,
+    color: "green" as const,
     access: "lesson_only",
   },
 ];
@@ -192,6 +194,10 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
     window.ipcRenderer.invoke('open-zoom');
   };
 
+  const openVoicemeeter = () => {
+    window.ipcRenderer.invoke("open-voicemeeter");
+  };
+
   const minimizeApp = () => {
     window.ipcRenderer.invoke("minimize-window");
   };
@@ -256,6 +262,15 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
               );
             }
 
+            if (menu.action === "voicemeeter") {
+              if (!enabled) return disabledWrapper(iconEl);
+              return (
+                <button key={menu.label} type="button" onClick={openVoicemeeter}>
+                  {iconEl}
+                </button>
+              );
+            }
+
             if (menu.action === "minimize") {
               return (
                 <button key={menu.label} type="button" onClick={minimizeApp}>
@@ -291,17 +306,6 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
           <NavLink to="/home">
             <HomeIcon width={24} height={24} className="text-orange-600" />
           </NavLink>
-          <button
-            title="Logout / Reset Flow"
-            onClick={() => {
-              localStorage.clear();
-              sessionStorage.clear();
-              window.location.reload();
-            }}
-            className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
-          >
-            <LogOut size={24} />
-          </button>
         </div>
       </div>
     </aside>
@@ -545,6 +549,7 @@ function MainLayoutContent() {
 
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
+
 
   if (isHome) {
     return (
