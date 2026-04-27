@@ -31,3 +31,4 @@ yarn.lock
 /test-results/
 
 .env
+.agent

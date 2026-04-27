@@ -589,7 +589,7 @@ const MainLayoutContent = () => {
         style={{ backgroundImage: `url(${bgImage})` }}
       >
         {!isFullScreen && (
-          <div className="absolute top-4 left-24">
+          <div className="absolute top-4 left-24 z-50">
             <RecorderComponents />
           </div>
         )}
@@ -612,7 +612,7 @@ const MainLayoutContent = () => {
       style={{ backgroundImage: `url(${bgImage})` }}
     >
       {!isFullScreen && (
-        <div className="absolute top-4 left-24">
+        <div className="absolute top-4 left-24 z-50">
           <RecorderComponents />
         </div>
       )}

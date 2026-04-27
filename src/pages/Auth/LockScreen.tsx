@@ -152,12 +152,26 @@ const LockScreen = () => {
 
   if (loading) return <p>Loading...</p>;
   if (error) return (
-    <>
-    <div className="flex flex-col gap-2 justify-center items-center">
-      <p className="text-red-500">{error}</p>
-      <button onClick={() => window.location.reload()} className="bg-white px-2 py-1 text-black border border-gray-200 rounded-md">Reload</button>
+    <div className="flex flex-col gap-4 justify-center items-center bg-black/50 p-8 rounded-2xl backdrop-blur-sm border border-white/10 shadow-2xl">
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-red-400 font-semibold text-lg">Network Error or System Trouble</p>
+        <p className="text-white/70 text-sm max-w-xs text-center">{error}</p>
+      </div>
+      <div className="flex gap-3">
+        <button 
+          onClick={() => window.location.reload()} 
+          className="bg-white hover:bg-gray-100 px-6 py-2 text-black font-medium rounded-lg transition-all active:scale-95 shadow-lg"
+        >
+          Reload
+        </button>
+        <button 
+          onClick={() => window.ipcRenderer.invoke('show-quit-dialog')} 
+          className="bg-red-600 hover:bg-red-700 px-6 py-2 text-white font-medium rounded-lg transition-all active:scale-95 shadow-lg"
+        >
+          Keluar
+        </button>
+      </div>
     </div>
-    </>
   );
 
   return (
