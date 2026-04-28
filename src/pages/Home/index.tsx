@@ -10,9 +10,9 @@ import {
   UsersIcon,
   WebIcon,
   WhiteboardIcon,
-  WonderCastIcon,
   ZoomIcon
 } from "@/components/Icon";
+import WonderCastImg from "@/assets/images/icon-wondercast.png";
 import { Image } from "@/components/Image";
 
 import { formattedDate, formattedTime } from "@/utils";
@@ -27,7 +27,8 @@ import { useToast } from "@/components/ToastProvider";
 
 type MenuItem = {
   label: string;
-  icon: any;
+  icon?: any;
+  image?: string;
   color: keyof typeof colorMap;
   path?: string;
   action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
@@ -75,7 +76,7 @@ const menus: MenuItem[] = [
   {
     action: "wondercast",
     label: "WonderCast",
-    icon: WonderCastIcon,
+    image: WonderCastImg,
     color: "blue",
   },
 ];
@@ -458,18 +459,22 @@ const Home = () => {
       </div>
 
       {/* MAIN MENUS */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-x-12 gap-y-10 text-center max-w-6xl px-8">
+      <div className="grid grid-cols-7 gap-x-10 gap-y-10 text-center max-w-6xl px-8">
         {menus.map((menu) => {
           const Icon = menu.icon;
 
           const renderMenu = (
             <div key={menu.label} className="group flex flex-col items-center">
               <div
-                className={`h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-xl shadow-gray-200 bg-gradient-to-b transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-2 group-active:scale-95 ${
-                  colorMap[menu.color]
+                className={`h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-xl shadow-gray-200 overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-2 group-active:scale-95 ${
+                  menu.image ? "" : `bg-gradient-to-b ${colorMap[menu.color]}`
                 }`}
               >
-                <Icon width={52} height={52} className="text-white drop-shadow-md" />
+                {menu.image ? (
+                  <img src={menu.image} alt={menu.label} className="w-full h-full object-cover" />
+                ) : (
+                  <Icon width={52} height={52} className="text-white drop-shadow-md" />
+                )}
               </div>
               <p className="mt-4 text-sm text-gray-700 font-bold tracking-tight opacity-90 group-hover:opacity-100 group-hover:text-blue-600 transition-all">
                 {menu.label}
