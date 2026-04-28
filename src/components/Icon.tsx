@@ -110,6 +110,38 @@ export const WhiteboardIcon = (props: any) => (
   </svg>
 );
 
+export const WonderCastIcon = (props: any) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 100 100"
+    fill="none"
+    {...props}
+  >
+    {/* Arcs - top large */}
+    <path
+      d="M20 38 Q50 10 80 38"
+      stroke="currentColor"
+      strokeWidth="9"
+      strokeLinecap="round"
+      fill="none"
+    />
+    {/* Arcs - middle */}
+    <path
+      d="M28 50 Q50 28 72 50"
+      stroke="currentColor"
+      strokeWidth="9"
+      strokeLinecap="round"
+      fill="none"
+    />
+    {/* Triangle / screen */}
+    <path
+      d="M38 72 L62 72 L50 88 Z"
+      fill="currentColor"
+      opacity="0.85"
+    />
+  </svg>
+);
+
 export const ZoomIcon = (props: any) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

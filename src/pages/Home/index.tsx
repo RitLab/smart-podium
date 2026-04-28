@@ -10,6 +10,7 @@ import {
   UsersIcon,
   WebIcon,
   WhiteboardIcon,
+  WonderCastIcon,
   ZoomIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
@@ -29,7 +30,7 @@ type MenuItem = {
   icon: any;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize" | "zoom";
+  action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
 };
 
 /* ================= MENU LIST ================= */
@@ -69,6 +70,12 @@ const menus: MenuItem[] = [
     action: "zoom",
     label: "Zoom",
     icon: ZoomIcon,
+    color: "blue",
+  },
+  {
+    action: "wondercast",
+    label: "WonderCast",
+    icon: WonderCastIcon,
     color: "blue",
   },
 ];
@@ -260,6 +267,10 @@ const Home = () => {
 
   const openZoom = () => {
     window.ipcRenderer.invoke("open-zoom");
+  };
+
+  const openWonderCast = () => {
+    window.ipcRenderer.invoke("open-wondercast");
   };
 
   /* ================= ERROR TOAST ================= */
@@ -477,6 +488,14 @@ const Home = () => {
           if (menu.action === "zoom") {
             return (
               <button key={menu.label} type="button" onClick={openZoom} className="outline-none">
+                {renderMenu}
+              </button>
+            );
+          }
+
+          if (menu.action === "wondercast") {
+            return (
+              <button key={menu.label} type="button" onClick={openWonderCast} className="outline-none">
                 {renderMenu}
               </button>
             );

@@ -12,6 +12,7 @@ import {
   UsersIcon,
   WebIcon,
   WhiteboardIcon,
+  WonderCastIcon,
   ZoomIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
@@ -48,7 +49,7 @@ type MenuItem = {
   icon: any;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize" | "zoom";
+  action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
 };
 
 const menus: MenuItem[] = [
@@ -83,11 +84,17 @@ const menus: MenuItem[] = [
     color: "green",
   },
   {
-    action: "zoom",
+    action: "zoom" as const,
     label: "Zoom",
     icon: ZoomIcon,
-    color: "blue"
-  }
+    color: "blue" as const,
+  },
+  {
+    action: "wondercast" as const,
+    label: "WonderCast",
+    icon: WonderCastIcon,
+    color: "blue" as const,
+  },
 ];
 
 const colorMap = {
@@ -252,6 +259,10 @@ const Sidebar = React.memo(() => {
     window.ipcRenderer.invoke('open-zoom')
   }
 
+  const openWonderCast = () => {
+    window.ipcRenderer.invoke('open-wondercast')
+  }
+
   /* ================= MINIMIZE ================= */
 
   const minimizeApp = () => {
@@ -285,6 +296,22 @@ const Sidebar = React.memo(() => {
             if (menu.action === "zoom") {
               return (
                 <button key={menu.label} type="button" onClick={openZoom}>
+                  <div
+                    className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
+                  >
+                    <Icon
+                      width={24}
+                      height={24}
+                      className={color.iconInactive}
+                    />
+                  </div>
+                </button>
+              );
+            }
+
+            if (menu.action === "wondercast") {
+              return (
+                <button key={menu.label} type="button" onClick={openWonderCast}>
                   <div
                     className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
                   >

@@ -61,7 +61,21 @@ function openZoom() {
       stdio: "ignore",
     }).unref();
   } catch (error) {
-    console.error("Failed to open Whiteboard:", error);
+    console.error("Failed to open Zoom:", error);
+  }
+}
+
+function openWonderCast() {
+  const exePath =
+    "C:\\Program Files (x86)\\WonderCast\\WonderCast.exe";
+
+  try {
+    spawn(exePath, [], {
+      detached: true,
+      stdio: "ignore",
+    }).unref();
+  } catch (error) {
+    console.error("Failed to open WonderCast:", error);
   }
 }
 
@@ -199,6 +213,10 @@ ipcMain.handle("open-whiteboard", () => {
 
 ipcMain.handle("open-zoom", () => {
   openZoom();
+});
+
+ipcMain.handle("open-wondercast", () => {
+  openWonderCast();
 });
 
 ipcMain.handle("open-win", (_, arg) => {
