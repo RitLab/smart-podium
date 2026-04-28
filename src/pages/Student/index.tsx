@@ -203,6 +203,7 @@ const Student = () => {
           attendanceOptions={attendanceOptions}
           teacher={teacher}
           handleDone={() => fetchData(activeEventId)}
+          eventId={activeEventId}
         />
       </div>
     </div>

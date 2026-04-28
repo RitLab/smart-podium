@@ -14,9 +14,10 @@ type DetailProps = {
   attendanceOptions: HandlingStatus[];
   teacher: TeacherType;
   handleDone: (param?: any) => void;
+  eventId: string | null;
 };
 
-const Detail = ({ attendance, attendanceOptions, teacher, handleDone }: DetailProps) => {
+const Detail = ({ attendance, attendanceOptions, teacher, handleDone, eventId }: DetailProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { total } = useSelector((state: RootState) => state.student);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -33,11 +34,11 @@ const Detail = ({ attendance, attendanceOptions, teacher, handleDone }: DetailPr
   }, [attendance]);
 
   const handleConfirmation = async () => {
-    // Hardcoded event_id
+    if (!eventId) return;
     await dispatch(
       updateAttendance({
         status: status!,
-        event_id: "b686d699-73f4-4b05-99fd-b9ef723e66ec",
+        event_id: eventId,
         user_id: attendance.user_id,
       }),
     ).unwrap();
