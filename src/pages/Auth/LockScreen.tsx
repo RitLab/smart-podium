@@ -87,19 +87,7 @@ const LockScreen = () => {
         .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
     }
 
-    // 3. Jika tetap tidak ada (sudah habis semua), baru tunjukkan yang terakhir selesai
-    if (!current) {
-      const finishedEvents = todayEvents
-        .filter(ev => ev.end_time <= currentTimeStr)
-        .sort((a, b) => b.end_time.localeCompare(a.end_time));
-      
-      if (finishedEvents.length > 0) {
-        current = finishedEvents[0];
-      }
-    }
-
-
-
+    // Jika semua selesai → kosongkan, jangan tampilkan event terakhir
     setActiveEvent(current || null);
   }, [rawEvents, time]);
 
@@ -194,18 +182,20 @@ const LockScreen = () => {
             <p className="text-2xl mt-4">{formattedDate(time)}</p>
           </div>
 
-          <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white/20">
-            <Image
-              src={activeEvent?.teacher_image}
-              alt={activeEvent?.teacher_name}
-              className="h-16 w-16"
-            />
+          {activeEvent && (
+            <div className="flex items-center gap-6 justify-between p-4 rounded-xl shadow-md bg-white/20">
+              <Image
+                src={activeEvent?.teacher_image}
+                alt={activeEvent?.teacher_name}
+                className="h-16 w-16"
+              />
 
-            <div className="flex flex-col gap-1 text-white">
-              <h3 className="text-2xl">{activeEvent?.teacher_name}</h3>
-              <p className="text-sm">{activeEvent?.course_name}</p>
+              <div className="flex flex-col gap-1 text-white">
+                <h3 className="text-2xl">{activeEvent?.teacher_name}</h3>
+                <p className="text-sm">{activeEvent?.course_name}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="text-white/50">
