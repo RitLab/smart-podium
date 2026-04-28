@@ -468,19 +468,7 @@ const MainLayoutContent = () => {
         .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
     }
 
-    // 3. Jika tetap tidak ada (sudah habis semua), baru tunjukkan yang terakhir selesai
-    if (!current) {
-      const finishedEvents = todayEvents
-        .filter(ev => ev.end_time <= currentTimeStr)
-        .sort((a, b) => b.end_time.localeCompare(a.end_time));
-      
-      if (finishedEvents.length > 0) {
-        current = finishedEvents[0];
-      }
-    }
-
-
-
+    // Jika tidak ada yang jalan dan tidak ada upcoming → semua selesai, kosongkan header
     // Hindari re-render jika event-nya sama (sampe ID-nya sama)
     if (!activeEvent || activeEvent.id !== current?.id) {
        setActiveEvent(current || null);
