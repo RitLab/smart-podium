@@ -199,7 +199,11 @@ const calendarSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchEventList.pending, (state) => {
-        state.loading = true;
+        // Only show loading spinner on first fetch (when no data yet)
+        // Background refreshes should NOT trigger loading to prevent flickering
+        if (state.rawEvents.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchEventList.fulfilled, (state, action) => {
@@ -218,7 +222,9 @@ const calendarSlice = createSlice({
 
     builder
       .addCase(fetchEventByClassroomDate.pending, (state) => {
-        state.loading = true;
+        if (state.eventList === null) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchEventByClassroomDate.fulfilled, (state, action) => {
