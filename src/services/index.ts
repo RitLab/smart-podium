@@ -8,7 +8,6 @@ const bypassToken = [
   "/login",
   "/forgot-password",
   "/user/login",
-  "/portal/event/attendance",
 ];
 
 axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {

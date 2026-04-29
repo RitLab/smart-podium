@@ -8,6 +8,7 @@ import { Button } from "@/components/Button";
 import type { AppDispatch, RootState } from "@/stores";
 import { formattedDate } from "@/utils";
 import { updateAttendance } from "@/stores/student";
+import { useToast } from "@/components/ToastProvider";
 
 type DetailProps = {
   attendance: Attendance;
@@ -21,9 +22,11 @@ const Detail = ({ attendance, attendanceOptions, teacher, handleDone, eventId }:
   const dispatch = useDispatch<AppDispatch>();
   const { total } = useSelector((state: RootState) => state.student);
   const { user } = useSelector((state: RootState) => state.auth);
+  const { showToast } = useToast();
 
   const [time, setTime] = useState(new Date());
   const [status, setStatus] = useState<number>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setTime(new Date());
@@ -35,15 +38,24 @@ const Detail = ({ attendance, attendanceOptions, teacher, handleDone, eventId }:
 
   const handleConfirmation = async () => {
     if (!eventId) return;
-    await dispatch(
-      updateAttendance({
-        status: status!,
-        event_id: eventId,
-        user_id: attendance.user_id,
-      }),
-    ).unwrap();
+    setIsSubmitting(true);
+    try {
+      await dispatch(
+        updateAttendance({
+          status: status!,
+          event_id: eventId,
+          user_id: attendance.user_id,
+        }),
+      ).unwrap();
 
-    handleDone();
+      showToast(`Kehadiran ${attendance.student_name} berhasil diperbarui`, "success");
+      handleDone();
+    } catch (err: any) {
+      const message = typeof err === "string" ? err : err?.message || "Gagal memperbarui kehadiran";
+      showToast(message, "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -103,11 +115,16 @@ const Detail = ({ attendance, attendanceOptions, teacher, handleDone, eventId }:
               outline
               className="w-full py-2"
               onClick={() => setStatus(attendance.attendance_status)}
+              disabled={isSubmitting}
             >
               Batalkan
             </Button>
-            <Button className="w-full py-2" onClick={handleConfirmation}>
-              Konfirmasi
+            <Button
+              className="w-full py-2"
+              onClick={handleConfirmation}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Menyimpan..." : "Konfirmasi"}
             </Button>
           </div>
         )}
