@@ -12,7 +12,6 @@ import {
   UsersIcon,
   WebIcon,
   WhiteboardIcon,
-  WonderCastIcon,
   ZoomIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
@@ -22,6 +21,7 @@ import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { fetchEventList, fetchHeaderEvents } from "@/stores/calendar";
 import { stopRecord } from "@/stores/record";
+import { resetStoppedSession } from "@/stores/record";
 import { Toast, ToastContextType, ToastType } from "@/types/ui";
 import ToastComponent from "@/components/Toast";
 import RecorderComponents from "@/components/Recorder";
@@ -98,13 +98,7 @@ const menus: MenuItem[] = [
     color: "blue" as const,
     access: "lesson_only",
   },
-  {
-    action: "wondercast" as const,
-    label: "WonderCast",
-    icon: WonderCastIcon,
-    color: "blue" as const,
-    access: "lesson_only",
-  },
+  // WonderCast dihapus karena menyebabkan hang
 ];
 
 const colorMap = {
@@ -259,9 +253,10 @@ const Navbar = React.memo(({ time, activeEvent, isStarted, countdown }: any) => 
 type SidebarProps = {
   isLessonActive: boolean;
   isLessonOrGrace: boolean;
+  hasStoppedSession: boolean;
 };
 
-const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace }: SidebarProps) => {
+const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, hasStoppedSession }: SidebarProps) => {
   const location = useLocation();
 
   /* ================= WHITEBOARD ================= */
@@ -274,10 +269,6 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace }: SidebarProps) =
     window.ipcRenderer.invoke('open-zoom');
   };
 
-  const openWonderCast = () => {
-    window.ipcRenderer.invoke('open-wondercast');
-  };
-
   /* ================= MINIMIZE ================= */
 
   const minimizeApp = () => {
@@ -285,12 +276,12 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace }: SidebarProps) =
   };
 
   /* ================= ACCESS RESOLVER ================= */
-
+  // Ketika session sudah di-stop manual, lesson_only harus disable
   const isMenuEnabled = (access: MenuAccess): boolean => {
     switch (access) {
       case "always":         return true;
       case "lesson_plus_15": return isLessonOrGrace;
-      case "lesson_only":    return isLessonActive;
+      case "lesson_only":    return isLessonActive && !hasStoppedSession;
       default:               return false;
     }
   };
@@ -336,15 +327,6 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace }: SidebarProps) =
               if (!enabled) return disabledWrapper(iconEl);
               return (
                 <button key={menu.label} type="button" onClick={openZoom}>
-                  {iconEl}
-                </button>
-              );
-            }
-
-            if (menu.action === "wondercast") {
-              if (!enabled) return disabledWrapper(iconEl);
-              return (
-                <button key={menu.label} type="button" onClick={openWonderCast}>
                   {iconEl}
                 </button>
               );
@@ -414,7 +396,7 @@ const MainLayoutContent = () => {
   const { showToast } = useToast();
   
   const { error, loading, isFullScreen } = useSelector((state: RootState) => state.ui);
-  const { isRecording, session_id } = useSelector((state: RootState) => state.record);
+  const { isRecording, session_id, hasStoppedSession } = useSelector((state: RootState) => state.record);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
 
   const [activeEvent, setActiveEvent] = useState<any>(null);
@@ -532,11 +514,17 @@ const MainLayoutContent = () => {
     // Hindari re-render jika event-nya sama (sampe ID-nya sama)
     if (!activeEvent || activeEvent.id !== current?.id) {
        setActiveEvent(current || null);
+       // Reset stopped-session flag ketika event baru terdeteksi
+       if (current && activeEvent && current.id !== activeEvent?.id) {
+         dispatch(resetStoppedSession());
+       }
     }
   }, [headerEvents, time, activeEvent]);
 
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
+    // Jangan tampilkan notifikasi jika sesi sudah dihentikan manual
+    if (hasStoppedSession) return;
     if (isStarted && !isRecording) {
       showToast(
         "Kelas telah dimulai, silakan klik tombol Mulai untuk memulai kelas.",
@@ -551,7 +539,7 @@ const MainLayoutContent = () => {
 
       return () => clearInterval(interval);
     }
-  }, [isStarted, isRecording, showToast]);
+  }, [isStarted, isRecording, hasStoppedSession, showToast]);
 
   /* ================= AUTO STOP RECORD ================= */
   useEffect(() => {
@@ -685,7 +673,7 @@ const MainLayoutContent = () => {
         </main>
       </div>
 
-      {!isFullScreen && <Sidebar isLessonActive={isLessonActive} isLessonOrGrace={isLessonOrGrace} />}
+      {!isFullScreen && <Sidebar isLessonActive={isLessonActive} isLessonOrGrace={isLessonOrGrace} hasStoppedSession={hasStoppedSession} />}
       {loading && <Loading />}
     </div>
   );

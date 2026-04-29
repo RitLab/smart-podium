@@ -14,6 +14,8 @@ export type RecordState = {
   duration: number; // dalam detik
   loading: boolean;
   error: string | null;
+  /** true setelah stopRecord berhasil, reset saat event baru/start baru */
+  hasStoppedSession: boolean;
 };
 
 /* =====================================================
@@ -34,10 +36,10 @@ const loadPersistedState = (): Partial<RecordState> => {
 
 const savePersistedState = (state: RecordState) => {
   try {
-    const { isRecording, session_id, startTime } = state;
+    const { isRecording, session_id, startTime, hasStoppedSession } = state;
     localStorage.setItem(
       RECOVERY_KEY,
-      JSON.stringify({ isRecording, session_id, startTime })
+      JSON.stringify({ isRecording, session_id, startTime, hasStoppedSession })
     );
   } catch (err) {
     // ignore
@@ -55,6 +57,7 @@ const initialState: RecordState = {
     : 0,
   loading: false,
   error: null,
+  hasStoppedSession: persisted.hasStoppedSession ?? false,
 };
 
 /* =====================================================
@@ -113,6 +116,13 @@ const recordSlice = createSlice({
       state.duration = 0;
       state.error = null;
       state.loading = false;
+      state.hasStoppedSession = false;
+      savePersistedState(state);
+    },
+
+    /** Dipanggil saat event baru terdeteksi → reset flag session selesai */
+    resetStoppedSession(state) {
+      state.hasStoppedSession = false;
       savePersistedState(state);
     },
 
@@ -145,6 +155,7 @@ const recordSlice = createSlice({
         state.session_id = action.payload.session_id;
         state.startTime = Date.now();
         state.duration = 0;
+        state.hasStoppedSession = false; // reset saat mulai rekaman baru
         savePersistedState(state);
       })
       .addCase(startRecord.rejected, (state, action) => {
@@ -168,6 +179,7 @@ const recordSlice = createSlice({
         state.session_id = null;
         state.startTime = null;
         state.duration = 0;
+        state.hasStoppedSession = true; // flag: sesi ini sudah dihentikan
         savePersistedState(state);
       })
       .addCase(stopRecord.rejected, (state, action) => {
@@ -184,7 +196,7 @@ const recordSlice = createSlice({
    EXPORT
 ===================================================== */
 
-export const { resetRecord, tick, clearError } =
+export const { resetRecord, resetStoppedSession, tick, clearError } =
   recordSlice.actions;
 
 export default recordSlice.reducer;

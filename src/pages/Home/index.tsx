@@ -12,7 +12,6 @@ import {
   WhiteboardIcon,
   ZoomIcon
 } from "@/components/Icon";
-import WonderCastImg from "@/assets/images/icon-wondercast.png";
 import { Image } from "@/components/Image";
 
 import { formattedDate, formattedTime } from "@/utils";
@@ -82,13 +81,7 @@ const menus: MenuItem[] = [
     color: "blue",
     access: "lesson_only",
   },
-  {
-    action: "wondercast",
-    label: "WonderCast",
-    image: WonderCastImg,
-    color: "blue",
-    access: "lesson_only",
-  },
+  // WonderCast dihapus karena menyebabkan hang
 ];
 
 /* ================= COLOR MAP ================= */
@@ -129,7 +122,7 @@ const Home = () => {
   const { showToast } = useToast();
 
   const { rawEvents } = useSelector((state: RootState) => state.calendar);
-  const { isRecording, session_id, error } = useSelector(
+  const { isRecording, session_id, error, hasStoppedSession } = useSelector(
     (state: RootState) => state.record,
   );
 
@@ -216,10 +209,8 @@ const Home = () => {
   const [countdown, setCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
 
-  // Stop confirmation & button visibility
+  // Stop confirmation dialog
   const [showStopConfirm, setShowStopConfirm] = useState(false);
-  const [hasStoppedCurrentEvent, setHasStoppedCurrentEvent] = useState(false);
-  const prevIsRecordingRef = useRef(false);
   /* ================= DEBUG LOGIC ================= */
 
   const clickCountRef = useRef(0);
@@ -288,9 +279,6 @@ const Home = () => {
     window.ipcRenderer.invoke("open-zoom");
   };
 
-  const openWonderCast = () => {
-    window.ipcRenderer.invoke("open-wondercast");
-  };
 
   /* ================= ERROR TOAST ================= */
   // Moved to MainLayout for centralized handling
@@ -377,22 +365,6 @@ const Home = () => {
     dispatch(fetchUser());
   }, [dispatch]);
 
-  /* ================= DETECT RECORDING STOP ================= */
-
-  // Detect ketika isRecording berubah dari true → false (manual maupun auto-stop dari MainLayout)
-  useEffect(() => {
-    if (prevIsRecordingRef.current && !isRecording) {
-      setHasStoppedCurrentEvent(true);
-    }
-    prevIsRecordingRef.current = isRecording;
-  }, [isRecording]);
-
-  // Reset saat event baru muncul (pelajaran berikutnya)
-  useEffect(() => {
-    setHasStoppedCurrentEvent(false);
-    setShowStopConfirm(false);
-  }, [activeEvent?.id]);
-
   /* ================= START / STOP RECORD ================= */
 
   const handleRecordToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -442,12 +414,12 @@ const Home = () => {
 
 
   /* ================= ACCESS RESOLVER ================= */
-
+  // lesson_only juga disable jika session sudah dihentikan
   const isMenuEnabled = (access: MenuAccess): boolean => {
     switch (access) {
       case "always":       return true;
       case "lesson_plus_15": return isLessonOrGrace;
-      case "lesson_only":  return isLessonActive;
+      case "lesson_only":  return isLessonActive && !hasStoppedSession;
       default:             return false;
     }
   };
@@ -508,7 +480,7 @@ const Home = () => {
             </div>
 
             {/* Tombol Mulai / Stop / Countdown */}
-            {hasStoppedCurrentEvent ? (
+            {hasStoppedSession ? (
               // Sesi sudah selesai — sembunyikan tombol hingga pelajaran berikutnya
               <div className="flex flex-col items-center gap-1 px-4 py-2 text-center">
                 <div className="text-xs text-gray-400 font-medium">Sesi Selesai</div>
@@ -609,13 +581,7 @@ const Home = () => {
             );
           }
 
-          if (menu.action === "wondercast") {
-            return (
-              <button key={menu.label} type="button" onClick={openWonderCast} className="outline-none">
-                {renderMenuInner}
-              </button>
-            );
-          }
+          // wondercast dihapus
 
           return (
             <NavLink key={menu.label} to={menu.path || "/"}>
