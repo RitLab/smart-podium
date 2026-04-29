@@ -216,8 +216,10 @@ const Home = () => {
   const [countdown, setCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
 
-
-
+  // Stop confirmation & button visibility
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+  const [hasStoppedCurrentEvent, setHasStoppedCurrentEvent] = useState(false);
+  const prevIsRecordingRef = useRef(false);
   /* ================= DEBUG LOGIC ================= */
 
   const clickCountRef = useRef(0);
@@ -375,31 +377,66 @@ const Home = () => {
     dispatch(fetchUser());
   }, [dispatch]);
 
+  /* ================= DETECT RECORDING STOP ================= */
+
+  // Detect ketika isRecording berubah dari true → false (manual maupun auto-stop dari MainLayout)
+  useEffect(() => {
+    if (prevIsRecordingRef.current && !isRecording) {
+      setHasStoppedCurrentEvent(true);
+    }
+    prevIsRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  // Reset saat event baru muncul (pelajaran berikutnya)
+  useEffect(() => {
+    setHasStoppedCurrentEvent(false);
+    setShowStopConfirm(false);
+  }, [activeEvent?.id]);
+
   /* ================= START / STOP RECORD ================= */
 
   const handleRecordToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-
     if (!activeEvent) return;
 
-    try {
-      if (!isRecording) {
+    if (!isRecording) {
+      // START
+      try {
         await dispatch(startRecord({ id: String(activeEvent.id) })).unwrap();
-
         navigate("/module");
-      } else {
-        if (!session_id) return;
-
-        await dispatch(
-          stopRecord({
-            session_id,
-            event_id: String(activeEvent.id),
-          }),
-        ).unwrap();
+      } catch (err) {
+        console.error("Start record error:", err);
       }
-    } catch (err) {
-      console.error("Record error:", err);
+    } else {
+      // STOP — cek apakah pelajaran masih berjalan
+      if (isLessonActive) {
+        // Masih dalam waktu pelajaran → minta konfirmasi
+        setShowStopConfirm(true);
+      } else {
+        // Pelajaran sudah selesai waktu → stop langsung
+        await performStop();
+      }
     }
+  };
+
+  const performStop = async () => {
+    if (!session_id || !activeEvent) return;
+    try {
+      await dispatch(
+        stopRecord({ session_id, event_id: String(activeEvent.id) }),
+      ).unwrap();
+    } catch (err) {
+      console.error("Stop record error:", err);
+    }
+  };
+
+  const handleConfirmStop = async () => {
+    setShowStopConfirm(false);
+    await performStop();
+  };
+
+  const handleCancelStop = () => {
+    setShowStopConfirm(false);
   };
 
 
@@ -470,7 +507,14 @@ const Home = () => {
               </div>
             </div>
 
-            {isStarted ? (
+            {/* Tombol Mulai / Stop / Countdown */}
+            {hasStoppedCurrentEvent ? (
+              // Sesi sudah selesai — sembunyikan tombol hingga pelajaran berikutnya
+              <div className="flex flex-col items-center gap-1 px-4 py-2 text-center">
+                <div className="text-xs text-gray-400 font-medium">Sesi Selesai</div>
+                <div className="text-[10px] text-gray-300">Tunggu jadwal berikutnya</div>
+              </div>
+            ) : isStarted ? (
               <button
                 onClick={handleRecordToggle}
                 className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white ${
@@ -496,6 +540,14 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+      {/* STOP CONFIRMATION DIALOG */}
+      <StopConfirmDialog
+        open={showStopConfirm}
+        onConfirm={handleConfirmStop}
+        onCancel={handleCancelStop}
+        endTime={activeEvent?.end_time}
+      />
 
       {/* MAIN MENUS */}
       <div className="grid grid-cols-7 gap-x-10 gap-y-10 text-center max-w-6xl px-8">
@@ -577,3 +629,45 @@ const Home = () => {
 };
 
 export default Home;
+
+/* ================= STOP CONFIRMATION DIALOG ================= */
+
+type StopConfirmDialogProps = {
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  endTime?: string;
+};
+
+const StopConfirmDialog = ({ open, onConfirm, onCancel, endTime }: StopConfirmDialogProps) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-xl font-bold text-gray-800">Akhiri Pelajaran?</h2>
+          {endTime && (
+            <p className="text-xs text-amber-500 font-medium">Jadwal masih berjalan hingga pukul {endTime}</p>
+          )}
+          <p className="text-gray-500 text-sm mt-1">
+            Pelajaran belum selesai. Yakin ingin menghentikan sesi sekarang?
+          </p>
+        </div>
+        <div className="flex gap-3 mt-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+          >
+            Lanjutkan
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold transition-all"
+          >
+            Ya, Stop
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
