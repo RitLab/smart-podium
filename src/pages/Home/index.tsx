@@ -25,6 +25,8 @@ import { useToast } from "@/components/ToastProvider";
 
 /* ================= MENU TYPE ================= */
 
+type MenuAccess = "always" | "lesson_plus_15" | "lesson_only" | "outside_only";
+
 type MenuItem = {
   label: string;
   icon?: any;
@@ -32,6 +34,7 @@ type MenuItem = {
   color: keyof typeof colorMap;
   path?: string;
   action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
+  access: MenuAccess;
 };
 
 /* ================= MENU LIST ================= */
@@ -42,42 +45,49 @@ const menus: MenuItem[] = [
     label: "Kalender Akademik",
     icon: CalendarIcon,
     color: "blue",
+    access: "always",
   },
   {
     path: "/student",
     label: "Manajemen Peserta Didik",
     icon: UsersIcon,
     color: "green",
+    access: "lesson_plus_15",
   },
   {
     path: "/module",
     label: "Materi Pelajaran",
     icon: BookIcon,
     color: "yellow",
+    access: "lesson_plus_15",
   },
   {
     path: "/internet",
     label: "Penampil Web",
     icon: WebIcon,
     color: "red",
+    access: "lesson_only",
   },
   {
     action: "whiteboard",
     label: "Whiteboard",
     icon: WhiteboardIcon,
     color: "green",
+    access: "lesson_only",
   },
   {
     action: "zoom",
     label: "Zoom",
     icon: ZoomIcon,
     color: "blue",
+    access: "lesson_only",
   },
   {
     action: "wondercast",
     label: "WonderCast",
     image: WonderCastImg,
     color: "blue",
+    access: "lesson_only",
   },
 ];
 
@@ -125,6 +135,12 @@ const Home = () => {
 
   const [time, setTime] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<any>(null);
+
+  /* ================= ACCESS STATE ================= */
+  // isLessonActive  : pelajaran sedang berjalan (exact)
+  // isLessonOrGrace : pelajaran berjalan ATAU dalam 15 menit setelah selesai
+  const [isLessonActive, setIsLessonActive] = useState(false);
+  const [isLessonOrGrace, setIsLessonOrGrace] = useState(false);
 
   /* ================= FETCH EVENTS ================= */
 
@@ -288,22 +304,31 @@ const Home = () => {
     return date.getTime();
   };
 
-  /* ================= COUNTDOWN START ================= */
+  /* ================= COUNTDOWN + ACCESS STATE ================= */
 
   useEffect(() => {
     if (!activeEvent?.start_time) {
       setIsStarted(false);
       setCountdown(null);
+      setIsLessonActive(false);
+      setIsLessonOrGrace(false);
       return;
     }
 
     const startTime = getTimeToday(activeEvent.start_time);
     const endTime = getTimeToday(activeEvent.end_time);
+    const graceEnd = endTime + 15 * 60 * 1000; // +15 menit grace period
 
-    const interval = setInterval(() => {
+    const update = () => {
       const now = Date.now();
-      
-      if (now >= startTime && now < endTime) {
+
+      const lessonActive = now >= startTime && now < endTime;
+      const lessonOrGrace = now >= startTime && now < graceEnd;
+
+      setIsLessonActive(lessonActive);
+      setIsLessonOrGrace(lessonOrGrace);
+
+      if (lessonActive) {
         setIsStarted(true);
         setCountdown(null);
       } else if (now < startTime) {
@@ -324,11 +349,14 @@ const Home = () => {
           );
         }
       } else {
+        // Pelajaran selesai — tapi grace period mungkin masih aktif
         setIsStarted(false);
         setCountdown(null);
       }
-    }, 1000);
+    };
 
+    update();
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, [activeEvent]);
 
@@ -375,6 +403,17 @@ const Home = () => {
   };
 
 
+
+  /* ================= ACCESS RESOLVER ================= */
+
+  const isMenuEnabled = (access: MenuAccess): boolean => {
+    switch (access) {
+      case "always":       return true;
+      case "lesson_plus_15": return isLessonOrGrace;
+      case "lesson_only":  return isLessonActive;
+      default:             return false;
+    }
+  };
 
   /* ================= RENDER ================= */
 
@@ -462,11 +501,18 @@ const Home = () => {
       <div className="grid grid-cols-7 gap-x-10 gap-y-10 text-center max-w-6xl px-8">
         {menus.map((menu) => {
           const Icon = menu.icon;
+          const enabled = isMenuEnabled(menu.access);
 
-          const renderMenu = (
-            <div key={menu.label} className="group flex flex-col items-center">
+          const renderMenuInner = (
+            <div key={menu.label} className={`group flex flex-col items-center transition-all duration-300 ${
+              enabled ? "" : "opacity-35 grayscale pointer-events-none"
+            }`}>
               <div
-                className={`h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-xl shadow-gray-200 overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-2 group-active:scale-95 ${
+                className={`h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-xl shadow-gray-200 overflow-hidden transition-all duration-300 ${
+                  enabled
+                    ? "group-hover:scale-110 group-hover:-translate-y-2 group-active:scale-95"
+                    : ""
+                } ${
                   menu.image ? "" : `bg-gradient-to-b ${colorMap[menu.color]}`
                 }`}
               >
@@ -476,16 +522,29 @@ const Home = () => {
                   <Icon width={52} height={52} className="text-white drop-shadow-md" />
                 )}
               </div>
-              <p className="mt-4 text-sm text-gray-700 font-bold tracking-tight opacity-90 group-hover:opacity-100 group-hover:text-blue-600 transition-all">
+              <p className={`mt-4 text-sm font-bold tracking-tight transition-all ${
+                enabled
+                  ? "text-gray-700 opacity-90 group-hover:opacity-100 group-hover:text-blue-600"
+                  : "text-gray-400"
+              }`}>
                 {menu.label}
               </p>
             </div>
           );
 
+          // Disabled → wrapper non-interactive
+          if (!enabled) {
+            return (
+              <div key={menu.label} className="cursor-not-allowed select-none" title="Tidak tersedia di luar jadwal pelajaran">
+                {renderMenuInner}
+              </div>
+            );
+          }
+
           if (menu.action === "whiteboard") {
             return (
               <button key={menu.label} type="button" onClick={openWhiteboard} className="outline-none">
-                {renderMenu}
+                {renderMenuInner}
               </button>
             );
           }
@@ -493,7 +552,7 @@ const Home = () => {
           if (menu.action === "zoom") {
             return (
               <button key={menu.label} type="button" onClick={openZoom} className="outline-none">
-                {renderMenu}
+                {renderMenuInner}
               </button>
             );
           }
@@ -501,14 +560,14 @@ const Home = () => {
           if (menu.action === "wondercast") {
             return (
               <button key={menu.label} type="button" onClick={openWonderCast} className="outline-none">
-                {renderMenu}
+                {renderMenuInner}
               </button>
             );
           }
 
           return (
             <NavLink key={menu.label} to={menu.path || "/"}>
-              {renderMenu}
+              {renderMenuInner}
             </NavLink>
           );
         })}

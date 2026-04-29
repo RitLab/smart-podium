@@ -44,12 +44,15 @@ import { useToast } from "@/components/ToastProvider";
 //   { path: "/internet", icon: WebIcon, color: "blue" },
 // ] as const;
 
+type MenuAccess = "always" | "lesson_plus_15" | "lesson_only";
+
 type MenuItem = {
   label: string;
   icon: any;
   color: keyof typeof colorMap;
   path?: string;
   action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
+  access: MenuAccess;
 };
 
 const menus: MenuItem[] = [
@@ -58,42 +61,49 @@ const menus: MenuItem[] = [
     label: "Kalender Akademik",
     icon: CalendarIcon,
     color: "blue",
+    access: "always",
   },
   {
     path: "/student",
     label: "Manajemen Peserta Didik",
     icon: UsersIcon,
     color: "green",
+    access: "lesson_plus_15",
   },
   {
     path: "/module",
     label: "Materi Pelajaran",
     icon: BookIcon,
     color: "yellow",
+    access: "lesson_plus_15",
   },
   {
     path: "/internet",
     label: "Penampil Web",
     icon: WebIcon,
     color: "red",
+    access: "lesson_only",
   },
   {
     action: "whiteboard",
     label: "Whiteboard",
     icon: WhiteboardIcon,
     color: "green",
+    access: "lesson_only",
   },
   {
     action: "zoom" as const,
     label: "Zoom",
     icon: ZoomIcon,
     color: "blue" as const,
+    access: "lesson_only",
   },
   {
     action: "wondercast" as const,
     label: "WonderCast",
     icon: WonderCastIcon,
     color: "blue" as const,
+    access: "lesson_only",
   },
 ];
 
@@ -246,7 +256,12 @@ const Navbar = React.memo(({ time, activeEvent, isStarted, countdown }: any) => 
    SIDEBAR
 ===================================================== */
 
-const Sidebar = React.memo(() => {
+type SidebarProps = {
+  isLessonActive: boolean;
+  isLessonOrGrace: boolean;
+};
+
+const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace }: SidebarProps) => {
   const location = useLocation();
 
   /* ================= WHITEBOARD ================= */
@@ -256,17 +271,28 @@ const Sidebar = React.memo(() => {
   };
 
   const openZoom = () => {
-    window.ipcRenderer.invoke('open-zoom')
-  }
+    window.ipcRenderer.invoke('open-zoom');
+  };
 
   const openWonderCast = () => {
-    window.ipcRenderer.invoke('open-wondercast')
-  }
+    window.ipcRenderer.invoke('open-wondercast');
+  };
 
   /* ================= MINIMIZE ================= */
 
   const minimizeApp = () => {
     window.ipcRenderer.invoke("minimize-window");
+  };
+
+  /* ================= ACCESS RESOLVER ================= */
+
+  const isMenuEnabled = (access: MenuAccess): boolean => {
+    switch (access) {
+      case "always":         return true;
+      case "lesson_plus_15": return isLessonOrGrace;
+      case "lesson_only":    return isLessonActive;
+      default:               return false;
+    }
   };
 
   return (
@@ -275,52 +301,51 @@ const Sidebar = React.memo(() => {
         {menus.map((menu) => {
           const Icon = menu.icon;
           const color = colorMap[menu.color];
+          const enabled = isMenuEnabled(menu.access);
+
+          // Disabled wrapper — tampil redup, tidak bisa diklik
+          const disabledWrapper = (child: React.ReactNode) => (
+            <div
+              key={menu.label}
+              className="opacity-30 grayscale cursor-not-allowed"
+              title="Tidak tersedia di luar jadwal pelajaran"
+            >
+              {child}
+            </div>
+          );
+
+          const iconEl = (
+            <div
+              className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
+            >
+              <Icon width={24} height={24} className={color.iconInactive} />
+            </div>
+          );
 
           if ("action" in menu) {
             if (menu.action === "whiteboard") {
+              if (!enabled) return disabledWrapper(iconEl);
               return (
                 <button key={menu.label} type="button" onClick={openWhiteboard}>
-                  <div
-                    className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
-                  >
-                    <Icon
-                      width={24}
-                      height={24}
-                      className={color.iconInactive}
-                    />
-                  </div>
+                  {iconEl}
                 </button>
               );
             }
 
             if (menu.action === "zoom") {
+              if (!enabled) return disabledWrapper(iconEl);
               return (
                 <button key={menu.label} type="button" onClick={openZoom}>
-                  <div
-                    className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
-                  >
-                    <Icon
-                      width={24}
-                      height={24}
-                      className={color.iconInactive}
-                    />
-                  </div>
+                  {iconEl}
                 </button>
               );
             }
 
             if (menu.action === "wondercast") {
+              if (!enabled) return disabledWrapper(iconEl);
               return (
                 <button key={menu.label} type="button" onClick={openWonderCast}>
-                  <div
-                    className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
-                  >
-                    <Icon
-                      width={24}
-                      height={24}
-                      className={color.iconInactive}
-                    />
-                  </div>
+                  {iconEl}
                 </button>
               );
             }
@@ -328,35 +353,32 @@ const Sidebar = React.memo(() => {
             if (menu.action === "minimize") {
               return (
                 <button key={menu.label} type="button" onClick={minimizeApp}>
-                  <div
-                    className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${color.inactive}`}
-                  >
-                    <Icon
-                      width={24}
-                      height={24}
-                      className={color.iconInactive}
-                    />
-                  </div>
+                  {iconEl}
                 </button>
               );
             }
           }
 
           const isActive = location.pathname === menu.path;
+          const activeIconEl = (
+            <div
+              className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${
+                isActive ? color.active : color.inactive
+              }`}
+            >
+              <Icon
+                width={24}
+                height={24}
+                className={isActive ? color.iconActive : color.iconInactive}
+              />
+            </div>
+          );
+
+          if (!enabled) return disabledWrapper(activeIconEl);
 
           return (
             <NavLink key={menu.path} to={menu.path!}>
-              <div
-                className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${
-                  isActive ? color.active : color.inactive
-                }`}
-              >
-                <Icon
-                  width={24}
-                  height={24}
-                  className={isActive ? color.iconActive : color.iconInactive}
-                />
-              </div>
+              {activeIconEl}
             </NavLink>
           );
         })}
@@ -400,6 +422,10 @@ const MainLayoutContent = () => {
   const [time, setTime] = useState(new Date());
   const [countdown, setCountdown] = useState("00:00:00");
 
+  // Access control states untuk sidebar
+  const [isLessonActive, setIsLessonActive] = useState(false);
+  const [isLessonOrGrace, setIsLessonOrGrace] = useState(false);
+
   const hasAutoStoppedRef = useRef(false);
 
   // 1. Fetch data on mount and interval
@@ -430,6 +456,8 @@ const MainLayoutContent = () => {
       if (!activeEvent?.start_time) {
         setCountdown("00:00:00");
         setIsStarted(false);
+        setIsLessonActive(false);
+        setIsLessonOrGrace(false);
         return;
       }
 
@@ -442,7 +470,12 @@ const MainLayoutContent = () => {
 
       const startTime = getTimeToday(activeEvent.start_time);
       const endTime = getTimeToday(activeEvent.end_time);
+      const graceEnd = endTime + 15 * 60 * 1000;
       const currentTime = now.getTime();
+
+      // Update access control states
+      setIsLessonActive(currentTime >= startTime && currentTime < endTime);
+      setIsLessonOrGrace(currentTime >= startTime && currentTime < graceEnd);
 
       let targetTime = 0;
       if (currentTime >= startTime && currentTime < endTime) {
@@ -652,7 +685,7 @@ const MainLayoutContent = () => {
         </main>
       </div>
 
-      {!isFullScreen && <Sidebar />}
+      {!isFullScreen && <Sidebar isLessonActive={isLessonActive} isLessonOrGrace={isLessonOrGrace} />}
       {loading && <Loading />}
     </div>
   );
