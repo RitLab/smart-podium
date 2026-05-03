@@ -156,9 +156,13 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
 
       {/* day list */}
       <div className="grid grid-cols-7 bg-blue-800 shrink-0 border-t border-white/10">
-        {dayList.map((day) => {
+        {dayList.map((day, i) => {
           return (
-            <div className="py-1.5 text-center text-[10px] uppercase tracking-wider opacity-80" key={day}>
+            <div
+              // className="py-1.5 text-center text-[10px] uppercase tracking-wider opacity-80"
+              className={`text-center py-1.5 ${i === 6 ? "text-red-300" : ""}`}
+              key={day}
+            >
               {day}
             </div>
           );
@@ -168,41 +172,60 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
       {/* calendary date */}
       <div className="text-blue-600 grid grid-cols-7 grid-rows-6 w-full flex-1">
         {monthData.calendar.map((cell, idx) => {
-          const isSelected = selectedDate && 
-            selectedDate.day === cell.day && 
-            selectedDate.month === monthData.month && 
-            selectedDate.year === monthData.year && 
+          const isSunday = idx % 7 === 6;
+
+          const isSelected =
+            selectedDate &&
+            selectedDate.day === cell.day &&
+            selectedDate.month === monthData.month &&
+            selectedDate.year === monthData.year &&
             cell.currentMonth;
+
+          const key = `${monthData.year}-${monthData.month}-${cell.day}`;
+          const items = eventMap[key] || [];
+
+          // 🔥 detect hari libur nasional
+          const holidayItems = items.filter((i) => i.type === "red");
+          const isHoliday = holidayItems.length > 0;
 
           return (
             <div
               className={`${cell.currentMonth ? "" : "text-gray-500"} ${
                 idx === 35 ? "rounded-bl-md" : ""
-              } ${
-                idx === 41 ? "rounded-br-md" : ""
-              } ${
-                isSelected 
-                  ? "bg-blue-500 text-white border-blue-600 z-10" 
+              } ${idx === 41 ? "rounded-br-md" : ""} ${
+                isSelected
+                  ? "bg-blue-500 text-white border-blue-600 z-10"
                   : "bg-white border-gray-100 hover:bg-blue-50 hover:text-blue-600"
               } border cursor-pointer text-sm relative p-1 transition-colors`}
               key={idx}
-            onClick={() => {
-              if (cell.currentMonth && monthData.year && monthData.month) {
-                onDateClick?.({
-                  year: monthData.year,
-                  month: monthData.month,
-                  day: cell.day,
-                });
-              }
-            }}
-          >
-            {cell.day && (
-              <>
-                <div className="px-2">
-                  <div className="font-semibold">{cell.day}</div>
-                  {cell.currentMonth && monthData.year && monthData.month && (
-                    <>
-                      {/* {eventMap[
+              onClick={() => {
+                if (cell.currentMonth && monthData.year && monthData.month) {
+                  onDateClick?.({
+                    year: monthData.year,
+                    month: monthData.month,
+                    day: cell.day,
+                  });
+                }
+              }}
+            >
+              {cell.day && (
+                <>
+                  <div className="px-2">
+                    {/* <div className="font-semibold">{cell.day}</div> */}
+                    <div
+                      className={`font-semibold ${
+                        !isSelected &&
+                        cell.currentMonth &&
+                        (isSunday || isHoliday)
+                          ? "text-red-500"
+                          : ""
+                      }`}
+                    >
+                      {cell.day}
+                    </div>
+                    {cell.currentMonth && monthData.year && monthData.month && (
+                      <>
+                        {/* {eventMap[
                       `${monthData.year}-${monthData.month}-${cell.day}`
                     ]?.map((item) => (
                       <div
@@ -220,59 +243,60 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
                         {item.name}
                       </div>
                     ))} */}
-                      {(() => {
-                        const items =
-                          eventMap[
-                            `${monthData.year}-${monthData.month}-${cell.day}`
-                          ] || [];
+                        {(() => {
+                          const items =
+                            eventMap[
+                              `${monthData.year}-${monthData.month}-${cell.day}`
+                            ] || [];
 
-                        const MAX_VISIBLE = 2;
-                        const visibleItems = items.slice(0, MAX_VISIBLE);
-                        const remainingCount = items.length - MAX_VISIBLE;
+                          const MAX_VISIBLE = 2;
+                          const visibleItems = items.slice(0, MAX_VISIBLE);
+                          const remainingCount = items.length - MAX_VISIBLE;
 
-                        return (
-                          <>
-                            {visibleItems.map((item) => (
-                              <div
-                                key={item.id}
-                                className={`mt-1.5 text-[10px] font-bold leading-tight rounded-full px-3 py-1 w-[90%] mx-auto text-center ${
-                                  item.type === "red"
-                                    ? "bg-red-100 text-red-600"
-                                    : item.type === "blue"
-                                    ? "bg-blue-100 text-blue-600"
-                                    : item.type === "orange"
-                                    ? "bg-orange-100 text-orange-600"
-                                    : item.type === "green"
-                                    ? "bg-green-100 text-green-600"
-                                    : item.type === "purple"
-                                    ? "bg-purple-100 text-purple-600"
-                                    : "bg-gray-100 text-gray-500"
-                                }`}
-                              >
-                                <span className="truncate block">{item.name}</span>
-                              </div>
-                            ))}
+                          return (
+                            <>
+                              {visibleItems.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className={`mt-1.5 text-[10px] font-bold leading-tight rounded-full px-3 py-1 w-[90%] mx-auto text-center ${
+                                    item.type === "red"
+                                      ? "bg-red-100 text-red-600"
+                                      : item.type === "blue"
+                                        ? "bg-blue-100 text-blue-600"
+                                        : item.type === "orange"
+                                          ? "bg-orange-100 text-orange-600"
+                                          : item.type === "green"
+                                            ? "bg-green-100 text-green-600"
+                                            : item.type === "purple"
+                                              ? "bg-purple-100 text-purple-600"
+                                              : "bg-gray-100 text-gray-500"
+                                  }`}
+                                >
+                                  <span className="truncate block">
+                                    {item.name}
+                                  </span>
+                                </div>
+                              ))}
 
-                            {remainingCount > 0 && (
-                              <div className="mt-0.5 text-[8px] text-gray-400 font-medium pl-1 italic">
-                                +{remainingCount} lainnya
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </>
-                  )}
-                </div>
-              </>
-              )
-            }
-          </div>
-        )
-      })}
+                              {remainingCount > 0 && (
+                                <div className="mt-0.5 text-[8px] text-gray-400 font-medium pl-1 italic">
+                                  +{remainingCount} lainnya
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
-  </div>
-)
-}
+  );
+};
 
 export default CalendarComponents;
