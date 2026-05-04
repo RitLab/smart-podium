@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import CalendarComponents from "@/components/Calendar";
 import type { AppDispatch, RootState } from "@/stores";
-import { fetchEventList } from "@/stores/calendar";
+import { fetchEventList, fetchHolidays } from "@/stores/calendar";
 import type { DateClick } from "@/types/event";
 
 /* ================= TYPES ================= */
@@ -22,17 +22,10 @@ type EventGroup = {
   items: EventItem[];
 };
 
-type HolidayAPI = {
-  date: string;
-  name: string;
-};
-
 /* ================= COMPONENT ================= */
 const Calendar = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { events, error } = useSelector(
-    (state: RootState) => state.calendar
-  );
+  const { events, error } = useSelector((state: RootState) => state.calendar);
 
   const [dateClick, setDateClick] = useState<{
     year: number;
@@ -40,36 +33,21 @@ const Calendar = () => {
     day: number;
   }>();
 
-  const [holidays, setHolidays] = useState<HolidayAPI[]>([]);
-
   /* ================= INIT DATE ================= */
   useEffect(() => {
     const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+
     setDateClick({
-      year: today.getFullYear(),
-      month: today.getMonth() + 1,
+      year,
+      month,
       day: today.getDate(),
     });
-  }, []);
 
-  /* ================= FETCH HOLIDAYS ================= */
-  useEffect(() => {
-    const fetchHolidays = async () => {
-      const year = new Date().getFullYear();
-
-      try {
-        const res = await fetch(
-          `https://libur.deno.dev/api?year=${year}`
-        );
-        const data = await res.json();
-        setHolidays(data);
-      } catch (err) {
-        console.error("Failed to fetch holidays", err);
-      }
-    };
-
-    fetchHolidays();
-  }, []);
+    // 🔥 cukup trigger event list (calendar akan call onMonthChange juga)
+    dispatch(fetchEventList({ month, year }));
+  }, [dispatch]);
 
   /* ================= FETCH EVENTS ================= */
   const lastFetchRef = useRef<string>("");
@@ -80,9 +58,11 @@ const Calendar = () => {
       if (lastFetchRef.current === fetchKey) return;
 
       lastFetchRef.current = fetchKey;
+
+      dispatch(fetchHolidays({ month, year }));
       dispatch(fetchEventList({ month, year }));
     },
-    [dispatch]
+    [dispatch],
   );
 
   /* ================= UTILS ================= */
@@ -101,63 +81,14 @@ const Calendar = () => {
     12: "Desember",
   };
 
-  const formatHoliday = (holiday: HolidayAPI): EventGroup => {
-    const dateObj = new Date(holiday.date);
-
-    const dayName = dateObj.toLocaleDateString("id-ID", {
-      weekday: "long",
-    });
-
-    const day =
-      dayName.charAt(0).toUpperCase() + dayName.slice(1);
-
-    const dayNum = dateObj.getDate();
-    const month = dateObj.getMonth() + 1;
-    const year = dateObj.getFullYear();
-
-    return {
-      date: `${dayNum} ${monthMap[month]} ${year}`,
-      day,
-      items: [
-        {
-          id: `holiday-${holiday.date}`,
-          name: holiday.name,
-          type: "red",
-        },
-      ],
-    };
-  };
-
-  /* ================= MERGE EVENTS ================= */
-  const holidayEvents: EventGroup[] = holidays.map(formatHoliday);
-
-  const mergedEvents: EventGroup[] = [...events];
-
-  holidayEvents.forEach((h) => {
-    const index = mergedEvents.findIndex(
-      (e) => e.date === h.date
-    );
-
-    if (index !== -1) {
-      mergedEvents[index] = {
-        ...mergedEvents[index],
-        items: [...mergedEvents[index].items, ...h.items],
-      };
-    } else {
-      mergedEvents.push(h);
-    }
-  });
-
   /* ================= FILTER ================= */
   const selectedDateString = dateClick
     ? `${dateClick.day} ${monthMap[dateClick.month]} ${dateClick.year}`
     : null;
 
   const filteredEvents = selectedDateString
-    ? mergedEvents.filter(
-        (ev) => ev.date === selectedDateString
-      )
-    : mergedEvents;
+    ? events.filter((ev) => ev.date === selectedDateString)
+    : events;
 
   /* ================= UI ================= */
   const colorMap: Record<string, string> = {
@@ -189,7 +120,7 @@ const Calendar = () => {
       {/* Calendar */}
       <div className="col-span-2 shadow-sm h-full bg-white rounded-2xl overflow-hidden border border-gray-100">
         <CalendarComponents
-          events={mergedEvents}
+          events={events} // ✅ langsung dari redux (sudah include holiday)
           onDateClick={onDateClick}
           onMonthChange={handleMonthChange}
           selectedDate={dateClick}
@@ -237,9 +168,7 @@ const Calendar = () => {
 
           {filteredEvents.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20">
-              <p className="text-sm font-medium">
-                Tidak ada kegiatan
-              </p>
+              <p className="text-sm font-medium">Tidak ada kegiatan</p>
             </div>
           )}
         </div>

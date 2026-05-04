@@ -15,6 +15,7 @@ import type {
 type CalendarState = {
   events: EventGroup[];
   rawEvents: EventList[];
+  holidays: EventList[];
   headerEvents: EventList[];
   loading: boolean;
   error: string | null;
@@ -24,29 +25,38 @@ type CalendarState = {
 const initialState: CalendarState = {
   events: [],
   rawEvents: [],
+  holidays: [],
   headerEvents: [],
   loading: false,
   error: null,
   eventList: null,
 };
 
+/* ================= UTILS ================= */
 const groupEventsByDate = (events: EventList[]): EventGroup[] => {
   const map = new Map<string, EventGroup>();
 
   events.forEach((event) => {
-    const date = event.event_date;
+    const dateObj = new Date(event.event_date);
+    if (isNaN(dateObj.getTime())) return;
 
-    if (!map.has(date)) {
-      map.set(date, {
-        date,
-        day: new Date(date).toLocaleDateString("id-ID", {
+    const formattedDate = dateObj.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    if (!map.has(formattedDate)) {
+      map.set(formattedDate, {
+        date: formattedDate,
+        day: dateObj.toLocaleDateString("id-ID", {
           weekday: "long",
         }),
         items: [],
       });
     }
 
-    map.get(date)!.items.push({
+    map.get(formattedDate)!.items.push({
       id: event.id,
       name: event.course_name,
       type: event.color || "grey",
@@ -57,10 +67,15 @@ const groupEventsByDate = (events: EventList[]): EventGroup[] => {
     });
   });
 
-  const data = Array.from(map.values());
-  return data;
+  // 🔥 INI KUNCINYA: SORT BERDASARKAN TANGGAL
+  return Array.from(map.values()).sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA.getTime() - dateB.getTime();
+  });
 };
 
+/* ================= THUNKS ================= */
 export const fetchHeaderEvents = createAsyncThunk<
   EventList[],
   EventListPayload
@@ -68,10 +83,13 @@ export const fetchHeaderEvents = createAsyncThunk<
   try {
     const response: EventListResponse =
       await eventService.getEventList(payload);
+
     const CLASSROOM_ID = localStorage.getItem("class_id");
+
     const filtered = response.data.events.filter(
       (ev) => ev.class_room_id === CLASSROOM_ID,
     );
+
     return filtered.map((event) => {
       const date = new Date(event.event_date);
       return {
@@ -109,27 +127,41 @@ export const fetchEventList = createAsyncThunk<EventList[], EventListPayload>(
 
       const CLASSROOM_ID = localStorage.getItem("class_id");
 
-      const filtered = response.data.events.filter(
+      return response.data.events.filter(
         (ev) => ev.class_room_id === CLASSROOM_ID,
       );
-
-      return filtered.map((event) => {
-        const date = new Date(event.event_date);
-
-        return {
-          ...event,
-          event_date: date.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          }),
-        };
-      });
     } catch (error: any) {
       return rejectWithValue(error?.message || "Failed to fetch event list");
     }
   },
 );
+
+export const fetchHolidays = createAsyncThunk<
+  EventList[],
+  { month: number; year: number }
+>("calendar/fetchHolidays", async ({ month, year }, { rejectWithValue }) => {
+  try {
+    const res = await fetch(`https://libur.deno.dev/api?year=${year}`);
+    const data = await res.json();
+
+    const filtered = data.filter((h: any) => {
+      const date = new Date(h.date);
+      return date.getMonth() + 1 === month && date.getFullYear() === year;
+    });
+
+    return filtered.map((h: any) => ({
+      id: `holiday-${h.date}`,
+      course_name: h.name,
+      event_date: h.date,
+      start_time: "",
+      end_time: "",
+      color: "red",
+      class_room_id: null,
+    }));
+  } catch (err: any) {
+    return rejectWithValue("Failed to fetch holidays");
+  }
+});
 
 export const fetchEventByClassroomDate = createAsyncThunk<
   EventList | null,
@@ -143,22 +175,16 @@ export const fetchEventByClassroomDate = createAsyncThunk<
 
       const CLASSROOM_ID = localStorage.getItem("class_id");
 
-      // const filteredByClassroomId = response.data.events.find(
-      //   (ev) => ev.class_room_id === CLASSROOM_ID,
-      // );
-
       const now = new Date();
       const currentTime = now.toTimeString().slice(0, 5);
 
-      const filteredByClassroomId = response.data.events.find(
+      const filtered = response.data.events.find(
         (ev) => ev.class_room_id === CLASSROOM_ID && ev.end_time < currentTime,
       );
 
-      if (!filteredByClassroomId) return null;
+      if (!filtered) return null;
 
-      console.log("filteredCl: ", filteredByClassroomId);
-
-      return filteredByClassroomId;
+      return filtered;
     } catch (error: any) {
       return rejectWithValue(
         error?.message || "Failed to fetch event list by classroom date",
@@ -167,40 +193,15 @@ export const fetchEventByClassroomDate = createAsyncThunk<
   },
 );
 
-// const calendarSlice = createSlice({
-//   name: "calendar",
-//   initialState,
-//   reducers: {
-//     setEvents: (state, action: PayloadAction<EventGroup[]>) => {
-//       state.events = action.payload;
-//     },
-//   },
-//   extraReducers: (builder) => {
-//     builder
-//       .addCase(fetchEvents.pending, (state) => {
-//         state.loading = true;
-//         state.error = null;
-//       })
-//       .addCase(fetchEvents.fulfilled, (state, action) => {
-//         state.loading = false;
-//         state.events = action.payload;
-//       })
-//       .addCase(fetchEvents.rejected, (state, action) => {
-//         state.loading = false;
-//         state.error = action.payload as string;
-//       });
-//   },
-// });
-
+/* ================= SLICE ================= */
 const calendarSlice = createSlice({
   name: "calendar",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
+    /* ===== EVENT LIST ===== */
     builder
       .addCase(fetchEventList.pending, (state) => {
-        // Only show loading spinner on first fetch (when no data yet)
-        // Background refreshes should NOT trigger loading to prevent flickering
         if (state.rawEvents.length === 0) {
           state.loading = true;
         }
@@ -208,18 +209,22 @@ const calendarSlice = createSlice({
       })
       .addCase(fetchEventList.fulfilled, (state, action) => {
         state.loading = false;
-        state.events = groupEventsByDate(action.payload);
         state.rawEvents = action.payload;
+        const merged = [...action.payload, ...state.holidays];
+
+        state.events = groupEventsByDate(merged);
       })
       .addCase(fetchEventList.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
 
+    /* ===== HEADER EVENTS (TETAP ADA) ===== */
     builder.addCase(fetchHeaderEvents.fulfilled, (state, action) => {
       state.headerEvents = action.payload;
     });
 
+    /* ===== EVENT BY DATE ===== */
     builder
       .addCase(fetchEventByClassroomDate.pending, (state) => {
         if (state.eventList === null) {
@@ -233,6 +238,22 @@ const calendarSlice = createSlice({
       })
       .addCase(fetchEventByClassroomDate.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    /* ===== HOLIDAYS ===== */
+    builder
+      .addCase(fetchHolidays.pending, (state) => {
+        state.holidays = []; // ✅ reset biar ga nyampur bulan
+      })
+      .addCase(fetchHolidays.fulfilled, (state, action) => {
+        state.holidays = action.payload;
+
+        // ✅ RE-MERGE ulang dengan event
+        const merged = [...state.rawEvents, ...action.payload];
+        state.events = groupEventsByDate(merged);
+      })
+      .addCase(fetchHolidays.rejected, (state, action) => {
         state.error = action.payload as string;
       });
   },

@@ -40,10 +40,19 @@ const CalendarComponents: React.FC<CalendarComponentsProps> = ({
   ];
 
   const eventMap: Record<string, EventItem[]> = {};
+
   events.forEach((ev) => {
     const [day, monthName, year] = ev.date.split(" ");
+
     const monthIndex = MONTH_NAME.indexOf(monthName) + 1;
-    const key = `${year}-${monthIndex}-${day}`;
+
+    const d = Number(day);
+    const m = Number(monthIndex);
+    const y = Number(year);
+
+    if (!d || !m || !y) return;
+
+    const key = `${y}-${m}-${d}`;
 
     eventMap[key] = ev.items;
   });
