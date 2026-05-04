@@ -522,12 +522,12 @@ const Home = () => {
                 )}
 
                 {/* TOMBOL RESET KHUSUS DEBUG */}
-                {/* <button
+                <button
                   onClick={() => dispatch(resetRecord())}
                   className="mt-2 text-[9px] text-blue-500 hover:text-blue-700 underline cursor-pointer active:scale-95 transition-all"
                 >
                   (Debug: Reset State)
-                </button> */}
+                </button>
               </div>
             ) : isRecording ? (
               <button

@@ -119,13 +119,13 @@ export const verifyPin = createAsyncThunk<
 ===================================================== */
 
 export const stopRecord = createAsyncThunk<
-  void,
-  { session_id: string; event_id: string },
+  { isAuto?: boolean },
+  { session_id: string; event_id: string; isAuto?: boolean },
   { rejectValue: string }
 >("record/stop", async (payload, { rejectWithValue }) => {
   try {
     await recordApi.stop(payload);
-    return;
+    return { isAuto: payload.isAuto };
   } catch (err: any) {
     return rejectWithValue(
       err?.response?.data?.message ||
@@ -224,15 +224,23 @@ const recordSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(stopRecord.fulfilled, (state) => {
+      .addCase(stopRecord.fulfilled, (state, action) => {
         state.loading = false;
         state.isRecording = false;
         state.session_id = null;
         state.startTime = null;
         state.duration = 0;
-        state.hasStoppedSession = true;
-        state.stoppedAt = Date.now(); // Catat waktu berhenti untuk grace period
-        state.showSummary = true; // Langsung tampilkan summary setelah stop
+
+        if (action.payload.isAuto) {
+          state.hasStoppedSession = false;
+          state.stoppedAt = null;
+          state.showSummary = false;
+          state.finishedEvent = null;
+        } else {
+          state.hasStoppedSession = true;
+          state.stoppedAt = Date.now();
+          state.showSummary = true;
+        }
         savePersistedState(state);
       })
       .addCase(stopRecord.rejected, (state, action) => {

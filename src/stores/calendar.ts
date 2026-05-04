@@ -1,7 +1,6 @@
 import {
   createAsyncThunk,
   createSlice,
-  type PayloadAction,
 } from "@reduxjs/toolkit";
 import { eventService } from "@/services/event";
 import type {
@@ -67,7 +66,7 @@ const groupEventsByDate = (events: EventList[]): EventGroup[] => {
     });
   });
 
-  // 🔥 INI KUNCINYA: SORT BERDASARKAN TANGGAL
+  // SORT BERDASARKAN TANGGAL
   return Array.from(map.values()).sort((a, b) => {
     const dateA = new Date(a.date);
     const dateB = new Date(b.date);
@@ -90,17 +89,7 @@ export const fetchHeaderEvents = createAsyncThunk<
       (ev) => ev.class_room_id === CLASSROOM_ID,
     );
 
-    return filtered.map((event) => {
-      const date = new Date(event.event_date);
-      return {
-        ...event,
-        event_date: date.toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-      };
-    });
+    return filtered;
   } catch (error: any) {
     return rejectWithValue(error?.message || "Failed to fetch header events");
   }
@@ -127,9 +116,11 @@ export const fetchEventList = createAsyncThunk<EventList[], EventListPayload>(
 
       const CLASSROOM_ID = localStorage.getItem("class_id");
 
-      return response.data.events.filter(
+      const filtered = response.data.events.filter(
         (ev) => ev.class_room_id === CLASSROOM_ID,
       );
+
+      return filtered;
     } catch (error: any) {
       return rejectWithValue(error?.message || "Failed to fetch event list");
     }
@@ -209,9 +200,22 @@ const calendarSlice = createSlice({
       })
       .addCase(fetchEventList.fulfilled, (state, action) => {
         state.loading = false;
-        state.rawEvents = action.payload;
-        const merged = [...action.payload, ...state.holidays];
+        
+        // Simpan rawEvents yang diformat untuk Home
+        state.rawEvents = action.payload.map((event) => {
+          const date = new Date(event.event_date);
+          return {
+            ...event,
+            event_date: date.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }),
+          };
+        });
 
+        // Gabungkan dengan hari libur untuk tampilan Kalender
+        const merged = [...action.payload, ...state.holidays];
         state.events = groupEventsByDate(merged);
       })
       .addCase(fetchEventList.rejected, (state, action) => {
@@ -219,12 +223,27 @@ const calendarSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    /* ===== HEADER EVENTS (TETAP ADA) ===== */
+    /* ===== HEADER EVENTS ===== */
     builder.addCase(fetchHeaderEvents.fulfilled, (state, action) => {
-      state.headerEvents = action.payload;
+      state.headerEvents = action.payload.map((event) => {
+        const date = new Date(event.event_date);
+        return {
+          ...event,
+          event_date: date.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }),
+        };
+      });
     });
 
-    /* ===== EVENT BY DATE ===== */
+    /* ===== HOLIDAYS ===== */
+    builder.addCase(fetchHolidays.fulfilled, (state, action) => {
+      state.holidays = action.payload;
+    });
+
+    /* ===== CLASSROOM DATE EVENT ===== */
     builder
       .addCase(fetchEventByClassroomDate.pending, (state) => {
         if (state.eventList === null) {
@@ -238,22 +257,6 @@ const calendarSlice = createSlice({
       })
       .addCase(fetchEventByClassroomDate.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
-      });
-
-    /* ===== HOLIDAYS ===== */
-    builder
-      .addCase(fetchHolidays.pending, (state) => {
-        state.holidays = []; // ✅ reset biar ga nyampur bulan
-      })
-      .addCase(fetchHolidays.fulfilled, (state, action) => {
-        state.holidays = action.payload;
-
-        // ✅ RE-MERGE ulang dengan event
-        const merged = [...state.rawEvents, ...action.payload];
-        state.events = groupEventsByDate(merged);
-      })
-      .addCase(fetchHolidays.rejected, (state, action) => {
         state.error = action.payload as string;
       });
   },
