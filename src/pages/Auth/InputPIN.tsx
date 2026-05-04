@@ -1,5 +1,5 @@
 import { Lock } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import type { AppDispatch, RootState } from "@/stores";
@@ -14,6 +14,11 @@ const InputPIN = () => {
   const { errorPin, loading } = useSelector((state: RootState) => state.auth);
 
   const [pin, setPin] = useState("");
+
+  useEffect(() => {
+    // Pastikan session bersih pas masuk ke sini
+    sessionStorage.removeItem("token");
+  }, []);
 
   const handlePress = async (num: string) => {
     dispatch(setErrorPin(""));

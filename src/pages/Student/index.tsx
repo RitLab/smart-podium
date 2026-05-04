@@ -19,7 +19,9 @@ const Student = () => {
   const { attendanceList, teacher, loading } = useSelector(
     (state: RootState) => state.student,
   );
+  const { hasStoppedSession, stoppedAt } = useSelector((state: RootState) => state.record);
   const [attendance, setAttendance] = useState<Attendance>({} as Attendance);
+  const [graceCountdown, setGraceCountdown] = useState<string | null>(null);
 
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
@@ -99,6 +101,31 @@ const Student = () => {
     }
   };
 
+  /* ================= GRACE PERIOD COUNTDOWN ================= */
+  useEffect(() => {
+    const update = () => {
+      const now = Date.now();
+      if (hasStoppedSession && stoppedAt) {
+        const graceEnd = stoppedAt + 15 * 60 * 1000;
+        const diff = graceEnd - now;
+
+        if (diff > 0) {
+          const mm = Math.floor(diff / 1000 / 60);
+          const ss = Math.floor((diff / 1000) % 60);
+          setGraceCountdown(`${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`);
+        } else {
+          setGraceCountdown(null);
+        }
+      } else {
+        setGraceCountdown(null);
+      }
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [hasStoppedSession, stoppedAt]);
+
   // const fetchData = async (event_id: string) => {
   //   await dispatch(fetchAttendance({ event_id })).unwrap();
 
@@ -165,13 +192,31 @@ const Student = () => {
   }
 
   return (
-    <div className="w-full flex gap-12">
-      <div
-        className={
-          (Object.keys(attendance).length === 0 ? "w-full" : "w-4/5") +
-          " transition-all"
-        }
-      >
+    <div className="w-full flex flex-col gap-8">
+      {graceCountdown && (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-pulse">
+          <div className="flex items-center gap-3 text-orange-700">
+            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide">Waktu Jeda Tersisa</p>
+              <p className="text-xs opacity-80">Selesaikan presensi sebelum waktu habis</p>
+            </div>
+          </div>
+          <div className="text-3xl font-black text-orange-600 tabular-nums tracking-tighter">
+            {graceCountdown}
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-12">
+        <div
+          className={
+            (Object.keys(attendance).length === 0 ? "w-full" : "w-4/5") +
+            " transition-all"
+          }
+        >
         <div className="grid grid-cols-5 grid-rows-2 gap-6">
           {filterAttendanceList?.map((item) => (
             <ItemStudent
@@ -207,6 +252,7 @@ const Student = () => {
         />
       </div>
     </div>
+  </div>
   );
 };
 

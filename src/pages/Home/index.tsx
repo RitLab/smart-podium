@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react"; // Home Page Component
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router";
-import { LogOut, Minus } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 import Logo from "@/assets/images/logo.png";
 import {
@@ -18,9 +18,10 @@ import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { fetchEventList } from "@/stores/calendar";
-import { startRecord, stopRecord, clearError } from "@/stores/record";
+import { startRecord, stopRecord, clearError, resetRecord, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
 
 import { useToast } from "@/components/ToastProvider";
+import PINModal from "@/components/PINModal";
 
 /* ================= MENU TYPE ================= */
 
@@ -104,9 +105,8 @@ type MenuCardProps = {
 const MenuCard = ({ Icon, menu }: MenuCardProps) => (
   <div className="flex flex-col items-center hover:scale-105">
     <div
-      className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${
-        colorMap[menu.color]
-      }`}
+      className={`h-24 w-24 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-b ${colorMap[menu.color]
+        }`}
     >
       <Icon width={58} height={58} className="text-white" />
     </div>
@@ -122,12 +122,14 @@ const Home = () => {
   const { showToast } = useToast();
 
   const { rawEvents } = useSelector((state: RootState) => state.calendar);
-  const { isRecording, session_id, error, hasStoppedSession } = useSelector(
+  const { isRecording, session_id, error, hasStoppedSession, stoppedAt, finishedEvent } = useSelector(
     (state: RootState) => state.record,
   );
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const [time, setTime] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<any>(null);
+  const [showPIN, setShowPIN] = useState(false);
 
   /* ================= ACCESS STATE ================= */
   // isLessonActive  : pelajaran sedang berjalan (exact)
@@ -161,7 +163,7 @@ const Home = () => {
     if (!rawEvents || rawEvents.length === 0) return;
 
     const now = new Date();
-    
+
     const todayStr = now.toLocaleDateString("id-ID", {
       day: "numeric", month: "long", year: "numeric",
     });
@@ -170,15 +172,26 @@ const Home = () => {
       hour: "2-digit", minute: "2-digit", hour12: false
     }).replace(".", ":");
 
-    const todayEvents = rawEvents.filter(ev => ev.event_date === todayStr);
+    const todayEvents = rawEvents.filter(ev => {
+      if (ev.event_date !== todayStr) return false;
+      // Exclude finishedEvent saat user memilih Keluar (hasStoppedSession=false tapi finishedEvent ada)
+      if (finishedEvent && String(ev.id) === String(finishedEvent.id) && !hasStoppedSession) return false;
+      return true;
+    });
 
     if (todayEvents.length === 0) {
       setActiveEvent(null);
       return;
     }
 
+    // Prioritas 0: Jika baru stop dan masih dalam grace period (Periksa Absensi), tetap tampilkan event yang baru selesai
+    if (hasStoppedSession && finishedEvent) {
+      setActiveEvent(finishedEvent);
+      return;
+    }
+
     // 1. Cari yang sedang jalan sekarang
-    let current = todayEvents.find(ev => 
+    let current = todayEvents.find(ev =>
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
 
@@ -191,7 +204,7 @@ const Home = () => {
 
     // Jika tidak ada yang sedang jalan dan tidak ada upcoming → semua selesai, kosongkan
     setActiveEvent(current || null);
-  }, [rawEvents, time]);
+  }, [rawEvents, time, finishedEvent, hasStoppedSession]);
 
   /* ================= UPDATE LISTENER ================= */
 
@@ -207,10 +220,10 @@ const Home = () => {
   }, [showToast]);
 
   const [countdown, setCountdown] = useState<string | null>(null);
+  const [graceCountdown, setGraceCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
 
-  // Stop confirmation dialog
-  const [showStopConfirm, setShowStopConfirm] = useState(false);
+
   /* ================= DEBUG LOGIC ================= */
 
   const clickCountRef = useRef(0);
@@ -297,23 +310,42 @@ const Home = () => {
   /* ================= COUNTDOWN + ACCESS STATE ================= */
 
   useEffect(() => {
-    if (!activeEvent?.start_time) {
-      setIsStarted(false);
-      setCountdown(null);
-      setIsLessonActive(false);
-      setIsLessonOrGrace(false);
-      return;
-    }
-
-    const startTime = getTimeToday(activeEvent.start_time);
-    const endTime = getTimeToday(activeEvent.end_time);
-    const graceEnd = endTime + 15 * 60 * 1000; // +15 menit grace period
-
     const update = () => {
       const now = Date.now();
 
+      // Grace Countdown (15 min after stop) - Pindahkan ke atas agar tetap jalan meski activeEvent null
+      if (hasStoppedSession && stoppedAt) {
+        const graceEndLocal = stoppedAt + 15 * 60 * 1000;
+        const diff = graceEndLocal - now;
+        if (diff > 0) {
+          const totalSec = Math.floor(diff / 1000);
+          const mm = Math.floor(totalSec / 60);
+          const ss = totalSec % 60;
+          setGraceCountdown(`${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`);
+        } else {
+          setGraceCountdown(null);
+        }
+      } else {
+        setGraceCountdown(null);
+      }
+
+      if (!activeEvent?.start_time) {
+        setIsStarted(false);
+        setCountdown(null);
+        setIsLessonActive(false);
+        setIsLessonOrGrace(false);
+        return;
+      }
+
+      const startTime = getTimeToday(activeEvent.start_time);
+      const endTime = getTimeToday(activeEvent.end_time);
+      const graceEnd = endTime + 15 * 60 * 1000; // +15 menit grace period
+
+      const startThreshold = startTime - 15 * 60 * 1000; // 15 minutes before start
+
       const lessonActive = now >= startTime && now < endTime;
       const lessonOrGrace = now >= startTime && now < graceEnd;
+      const isUpcomingSoon = now >= startThreshold && now < startTime;
 
       setIsLessonActive(lessonActive);
       setIsLessonOrGrace(lessonOrGrace);
@@ -322,7 +354,7 @@ const Home = () => {
         setIsStarted(true);
         setCountdown(null);
       } else if (now < startTime) {
-        setIsStarted(false);
+        setIsStarted(isUpcomingSoon);
         const diff = startTime - now;
         const totalSeconds = Math.floor(diff / 1000);
         const minutes = Math.floor((totalSeconds / 60) % 60);
@@ -348,9 +380,9 @@ const Home = () => {
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [activeEvent]);
+  }, [activeEvent, hasStoppedSession, stoppedAt]);
 
-  /* ================= AUTO STOP RECORD ================= */
+
 
   /* ================= REALTIME CLOCK ================= */
 
@@ -367,67 +399,62 @@ const Home = () => {
 
   /* ================= START / STOP RECORD ================= */
 
-  const handleRecordToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    if (!activeEvent) return;
+  const handleRecordToggle = async () => {
+    if (!activeEvent) {
+      showToast("Gagal: Tidak ada jadwal aktif", "error");
+      return;
+    }
 
     if (!isRecording) {
-      // START
-      try {
-        await dispatch(startRecord({ id: String(activeEvent.id) })).unwrap();
-        navigate("/module");
-      } catch (err) {
-        console.error("Start record error:", err);
-      }
+      // START - Tampilkan verifikasi PIN dulu
+      setShowPIN(true);
     } else {
-      // STOP — cek apakah pelajaran masih berjalan
-      if (isLessonActive) {
-        // Masih dalam waktu pelajaran → minta konfirmasi
-        setShowStopConfirm(true);
-      } else {
-        // Pelajaran sudah selesai waktu → stop langsung
-        await performStop();
-      }
+      // STOP — selalu tampilkan konfirmasi via Redux (MainLayout handles modal)
+      dispatch(setShowStopConfirm(true));
     }
   };
 
-  const performStop = async () => {
-    if (!session_id || !activeEvent) return;
+  const onPINSuccess = async () => {
+    setShowPIN(false);
+    if (!activeEvent) return;
+
     try {
-      await dispatch(
-        stopRecord({ session_id, event_id: String(activeEvent.id) }),
-      ).unwrap();
-    } catch (err) {
-      console.error("Stop record error:", err);
+      await dispatch(startRecord({ id: String(activeEvent.id) })).unwrap();
+      showToast("Sesi belajar dimulai", "success");
+      navigate("/module");
+    } catch (err: any) {
+      console.error("Start record error:", err);
+      showToast(err || "Gagal memulai sesi belajar", "error");
     }
   };
 
-  const handleConfirmStop = async () => {
-    setShowStopConfirm(false);
-    await performStop();
-  };
 
-  const handleCancelStop = () => {
-    setShowStopConfirm(false);
-  };
 
 
 
   /* ================= ACCESS RESOLVER ================= */
   // lesson_only juga disable jika session sudah dihentikan
   const isMenuEnabled = (access: MenuAccess): boolean => {
-    switch (access) {
-      case "always":       return true;
-      case "lesson_plus_15": return isLessonOrGrace;
-      case "lesson_only":  return isLessonActive && !hasStoppedSession;
-      default:             return false;
+    if (isRecording) {
+      return access !== "outside_only";
     }
+
+    if (hasStoppedSession && stoppedAt) {
+      const graceEndLocal = stoppedAt + 15 * 60 * 1000;
+      const isWithinGrace = Date.now() < graceEndLocal;
+
+      if (access === "always") return true;
+      if (access === "lesson_plus_15") return isWithinGrace;
+      return false;
+    }
+
+    return access === "always";
   };
 
   /* ================= RENDER ================= */
 
   return (
-    <div className="relative h-full flex flex-col items-center justify-between py-24">
+    <div className="relative h-full flex flex-col items-center justify-center gap-12 py-12">
       <div>
         <p
           className="text-xs text-gray-400 text-center mb-2 cursor-pointer select-none"
@@ -467,8 +494,8 @@ const Home = () => {
                   {activeEvent?.teacher_name || "Tidak ada jadwal"}
                 </h3>
                 <p className="text-sm text-gray-500 leading-snug break-words">
-                  {activeEvent?.course_name 
-                    ? <span className="font-semibold text-blue-600">{activeEvent.course_name}</span> 
+                  {activeEvent?.course_name
+                    ? <span className="font-semibold text-blue-600">{activeEvent.course_name}</span>
                     : "Silakan cek kalender untuk jadwal lainnya"}
                 </p>
                 {activeEvent?.class_room_name && (
@@ -481,22 +508,42 @@ const Home = () => {
 
             {/* Tombol Mulai / Stop / Countdown */}
             {hasStoppedSession ? (
-              // Sesi sudah selesai — sembunyikan tombol hingga pelajaran berikutnya
-              <div className="flex flex-col items-center gap-1 px-4 py-2 text-center">
-                <div className="text-xs text-gray-400 font-medium">Sesi Selesai</div>
-                <div className="text-[10px] text-gray-300">Tunggu jadwal berikutnya</div>
+              // Sesi sudah selesai — tampilkan countdown grace period jika ada
+              <div className="flex flex-col items-center gap-1 px-4 py-2 text-center min-w-[120px]">
+                <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                  {graceCountdown ? "Waktu Jeda" : "Sesi Selesai"}
+                </div>
+                {graceCountdown ? (
+                  <div className="text-xl font-bold text-orange-500 tabular-nums">
+                    {graceCountdown}
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-gray-300">Tunggu jadwal berikutnya</div>
+                )}
+
+                {/* TOMBOL RESET KHUSUS DEBUG */}
+                {/* <button
+                  onClick={() => dispatch(resetRecord())}
+                  className="mt-2 text-[9px] text-blue-500 hover:text-blue-700 underline cursor-pointer active:scale-95 transition-all"
+                >
+                  (Debug: Reset State)
+                </button> */}
               </div>
-            ) : isStarted ? (
+            ) : isRecording ? (
               <button
                 onClick={handleRecordToggle}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white ${
-                  isRecording
-                    ? "bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
-                    : "bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 animate-pulse ring-4 ring-emerald-500/50"
-                }`}
+                className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white cursor-pointer active:scale-95 bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
               >
                 <LogOut size={18} />
-                <div>{isRecording ? "Stop" : "Mulai"}</div>
+                <div>Stop</div>
+              </button>
+            ) : isLessonActive ? (
+              <button
+                onClick={handleRecordToggle}
+                className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg font-medium text-sm transition text-white cursor-pointer active:scale-95 bg-gradient-to-b from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 animate-pulse ring-4 ring-emerald-500/50"
+              >
+                <LogOut size={18} />
+                <div>Mulai</div>
               </button>
             ) : (
               <button
@@ -513,32 +560,23 @@ const Home = () => {
         </div>
       </div>
 
-      {/* STOP CONFIRMATION DIALOG */}
-      <StopConfirmDialog
-        open={showStopConfirm}
-        onConfirm={handleConfirmStop}
-        onCancel={handleCancelStop}
-        endTime={activeEvent?.end_time}
-      />
+
 
       {/* MAIN MENUS */}
-      <div className="grid grid-cols-7 gap-x-10 gap-y-10 text-center max-w-6xl px-8">
+      <div className="grid grid-cols-6 gap-x-12 gap-y-8 text-center max-w-6xl">
         {menus.map((menu) => {
           const Icon = menu.icon;
           const enabled = isMenuEnabled(menu.access);
 
           const renderMenuInner = (
-            <div key={menu.label} className={`group flex flex-col items-center transition-all duration-300 ${
-              enabled ? "" : "opacity-35 grayscale pointer-events-none"
-            }`}>
+            <div key={menu.label} className={`group flex flex-col items-center transition-all duration-300 ${enabled ? "" : "opacity-35 grayscale pointer-events-none"
+              }`}>
               <div
-                className={`h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-xl shadow-gray-200 overflow-hidden transition-all duration-300 ${
-                  enabled
-                    ? "group-hover:scale-110 group-hover:-translate-y-2 group-active:scale-95"
-                    : ""
-                } ${
-                  menu.image ? "" : `bg-gradient-to-b ${colorMap[menu.color]}`
-                }`}
+                className={`h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-xl shadow-gray-200 overflow-hidden transition-all duration-300 ${enabled
+                  ? "group-hover:scale-110 group-hover:-translate-y-2 group-active:scale-95"
+                  : ""
+                  } ${menu.image ? "" : `bg-gradient-to-b ${colorMap[menu.color]}`
+                  }`}
               >
                 {menu.image ? (
                   <img src={menu.image} alt={menu.label} className="w-full h-full object-cover" />
@@ -546,11 +584,10 @@ const Home = () => {
                   <Icon width={52} height={52} className="text-white drop-shadow-md" />
                 )}
               </div>
-              <p className={`mt-4 text-sm font-bold tracking-tight transition-all ${
-                enabled
-                  ? "text-gray-700 opacity-90 group-hover:opacity-100 group-hover:text-blue-600"
-                  : "text-gray-400"
-              }`}>
+              <p className={`mt-4 text-sm font-bold tracking-tight transition-all ${enabled
+                ? "text-gray-700 opacity-90 group-hover:opacity-100 group-hover:text-blue-600"
+                : "text-gray-400"
+                }`}>
                 {menu.label}
               </p>
             </div>
@@ -590,50 +627,16 @@ const Home = () => {
           );
         })}
       </div>
+
+      {/* PIN Verification Modal */}
+      <PINModal
+        isOpen={showPIN}
+        onClose={() => setShowPIN(false)}
+        onSuccess={onPINSuccess}
+        teacherId={activeEvent?.teacher_id || ""}
+      />
     </div>
   );
 };
 
 export default Home;
-
-/* ================= STOP CONFIRMATION DIALOG ================= */
-
-type StopConfirmDialogProps = {
-  open: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  endTime?: string;
-};
-
-const StopConfirmDialog = ({ open, onConfirm, onCancel, endTime }: StopConfirmDialogProps) => {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-bold text-gray-800">Akhiri Pelajaran?</h2>
-          {endTime && (
-            <p className="text-xs text-amber-500 font-medium">Jadwal masih berjalan hingga pukul {endTime}</p>
-          )}
-          <p className="text-gray-500 text-sm mt-1">
-            Pelajaran belum selesai. Yakin ingin menghentikan sesi sekarang?
-          </p>
-        </div>
-        <div className="flex gap-3 mt-2">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
-          >
-            Lanjutkan
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 py-2.5 rounded-xl bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold transition-all"
-          >
-            Ya, Stop
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};

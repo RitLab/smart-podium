@@ -32,11 +32,6 @@ export const getToken = createAsyncThunk<TokenResponse, Token>(
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const correctPin = localStorage.getItem("pin");
-      if (correctPin !== payload.pin) {
-        return rejectWithValue("Invalid PIN");
-      }
-
       const payloadData: TokenPayload = {
         pin: payload.pin,
         class_id: payload.classId || localStorage.getItem("class_id") || "",
@@ -45,8 +40,9 @@ export const getToken = createAsyncThunk<TokenResponse, Token>(
       const data = await authService.getToken(payloadData);
       return data;
     } catch (error: any) {
-      console.error(error);
-      return rejectWithValue(error.message || "Failed to login");
+      console.error("Login Error:", error);
+      const message = error.response?.data?.message || error.message || "Failed to login";
+      return rejectWithValue(message);
     }
   }
 );

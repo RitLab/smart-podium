@@ -32,4 +32,15 @@ export const recordApi = {
       data: {};
       status: number;
     }>(`${baseWhisperUrl}/portal/video/stop`, body),
+
+  /**
+   * Check teacher PIN
+   */
+  checkPin: (body: { teacher_id: string; pin: string }) => {
+    return handler.post<{
+      message: string;
+      data: any;
+      status: number;
+    }>(`${baseWhisperUrl}/portal/teacher/pin/check`, body);
+  },
 };

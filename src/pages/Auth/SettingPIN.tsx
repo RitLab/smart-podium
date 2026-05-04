@@ -5,10 +5,9 @@ import { useNavigate } from "react-router";
 
 import type { AppDispatch, RootState } from "@/stores";
 import Logo from "@/assets/images/logo.png";
-import Input from "@/components/Input";
 import Select from "@/components/Select";
 import { setError, setLoading } from "@/stores/ui";
-import { fetchClass, getToken } from "@/stores/auth";
+import { fetchClass } from "@/stores/auth";
 
 const SettingPIN = () => {
   const navigate = useNavigate();
@@ -16,12 +15,11 @@ const SettingPIN = () => {
   const { error, loading } = useSelector((state: RootState) => state.ui);
   const { classList } = useSelector((state: RootState) => state.auth);
 
-  const [pin, setPin] = useState("");
   const [classId, setClassId] = useState("");
 
   const disabled = useMemo(() => {
-    return loading || pin.length < 6 || classId === "";
-  }, [loading, pin, classId]);
+    return loading || classId === "";
+  }, [loading, classId]);
 
   useEffect(() => {
     dispatch(fetchClass());
@@ -31,16 +29,14 @@ const SettingPIN = () => {
     e.preventDefault();
     dispatch(setLoading(true));
 
-    localStorage.setItem("pin", pin);
     localStorage.setItem("class_id", classId);
 
     try {
       dispatch(setError(""));
-      await dispatch(getToken({ pin: pin, classId: classId })).unwrap();
       navigate("/home");
     } catch (err) {
       console.error(err);
-      dispatch(setError("Failed to set PIN"));
+      dispatch(setError("Gagal memilih kelas"));
     } finally {
       dispatch(setLoading(false));
     }
@@ -52,23 +48,14 @@ const SettingPIN = () => {
       <div className="relative bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-xl min-h-1/2 h-auto w-full max-w-sm">
         <img src={Logo} alt="Logo" className="h-18 w-96 object-contain" />
 
-        <h2 className="text-2xl text-bold text-center mb-6 mt-6">Atur PIN</h2>
-        {loading}
+        <h2 className="text-2xl text-bold text-center mb-6 mt-6">Masuk Kelas</h2>
 
         <form className="space-y-4 mt-6" onSubmit={handleSubmit}>
-          <Input
-            placeholder="PIN"
-            variant="number"
-            maxLength={6}
-            value={pin}
-            onChange={(value) => setPin(value)}
-          />
-
           <Select
             placeholder="Pilih Kelas"
             value={classId}
             onChange={(value) => setClassId(String(value))}
-            options={classList.map((cls) => ({
+            options={(Array.isArray(classList) ? classList : []).map((cls) => ({
               label: cls.name,
               value: cls.id,
             }))}
@@ -90,7 +77,7 @@ const SettingPIN = () => {
               {loading && (
                 <LoaderCircle size={16} className="animate-spin mr-2" />
               )}
-              <div>Kirim</div>
+              <div>Masuk</div>
             </button>
           </div>
         </form>

@@ -66,10 +66,12 @@ axios.interceptors.request.use(
         config.baseURL || window.location.origin
       );
 
-      const pathOnly = urlObject.pathname;
-
+      let pathOnly = urlObject.pathname;
+      
+      // Bersihkan path dari double slashes
+      pathOnly = pathOnly.replace(/\/+/g, "/");
+      
       const hash = await generateHmacSha256(pathOnly, secret);
-
       config.headers["X-Api-Key"] = hash;
     }
 

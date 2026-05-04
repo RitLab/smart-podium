@@ -1,7 +1,7 @@
-import { Clock9, LogOut, Minimize, Timer } from "lucide-react";
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { CheckCircle2, Clock9, LogOut, Timer } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Navigate, NavLink, Outlet, useLocation } from "react-router";
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
 import bgImage from "@/assets/images/bg-solid.png";
 import Logo from "@/assets/images/logo.png";
@@ -16,15 +16,13 @@ import {
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 import Loading from "@/components/Loading";
-import { formatDuration, formattedDate, formattedTime } from "@/utils";
+import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
-import { fetchEventList, fetchHeaderEvents } from "@/stores/calendar";
-import { stopRecord } from "@/stores/record";
-import { resetStoppedSession } from "@/stores/record";
-import { Toast, ToastContextType, ToastType } from "@/types/ui";
-import ToastComponent from "@/components/Toast";
+import { fetchHeaderEvents } from "@/stores/calendar";
+import { stopRecord, resetStoppedSession, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
 import RecorderComponents from "@/components/Recorder";
+import PINModal from "@/components/PINModal";
 
 /* =====================================================
    TOAST CONTEXT
@@ -35,14 +33,6 @@ import { useToast } from "@/components/ToastProvider";
 /* =====================================================
    MENUS
 ===================================================== */
-
-// const menus = [
-//   { path: "/calendar", icon: CalendarIcon, color: "blue" },
-//   { path: "/student", icon: UsersIcon, color: "green" },
-//   { path: "/module", icon: BookIcon, color: "yellow" },
-//   { path: "/internet", icon: WebIcon, color: "red" },
-//   { path: "/internet", icon: WebIcon, color: "blue" },
-// ] as const;
 
 type MenuAccess = "always" | "lesson_plus_15" | "lesson_only";
 
@@ -98,7 +88,6 @@ const menus: MenuItem[] = [
     color: "blue" as const,
     access: "lesson_only",
   },
-  // WonderCast dihapus karena menyebabkan hang
 ];
 
 const colorMap = {
@@ -134,7 +123,7 @@ const colorMap = {
 /* =====================================================
    NAVBAR
 ===================================================== */
-const Navbar = React.memo(({ time, activeEvent, isStarted, countdown }: any) => {
+const Navbar = React.memo(({ time, activeEvent, isStarted, isLessonActive, countdown, hasStoppedSession, graceCountdown }: any) => {
   return (
     <header className="flex items-center justify-between relative">
       <img src={Logo} alt="Logo" className="h-28 w-96 object-contain" />
@@ -164,10 +153,14 @@ const Navbar = React.memo(({ time, activeEvent, isStarted, countdown }: any) => 
           </div>
 
           <div className="p-4">
-            <p className="text-sm">{isStarted ? "Sisa Waktu" : "Mulai Dalam"}</p>
+            <p className="text-sm">
+              {hasStoppedSession && graceCountdown ? "Waktu Jeda" : isLessonActive ? "Sisa Waktu" : "Mulai Dalam"}
+            </p>
             <div className="flex items-center gap-2 mt-1">
               <Timer size={16} />
-              <span className="text-lg font-bold">{countdown}</span>
+              <span className={`text-lg font-bold tabular-nums ${hasStoppedSession && graceCountdown ? "text-orange-400 animate-pulse" : ""}`}>
+                {hasStoppedSession && graceCountdown ? graceCountdown : countdown}
+              </span>
             </div>
           </div>
         </div>
@@ -176,76 +169,6 @@ const Navbar = React.memo(({ time, activeEvent, isStarted, countdown }: any) => 
   );
 });
 
-
-// const Navbar = () => {
-//   const dispatch = useDispatch<AppDispatch>();
-//   const { eventList } = useSelector(
-//     (state: RootState) => state.calendar
-//   );
-
-//   const [time, setTime] = useState(new Date());
-//   const [studySeconds, setStudySeconds] = useState(0);
-
-//   useEffect(() => {
-//     dispatch(fetchUser());
-//   }, [dispatch]);
-
-//   useEffect(() => {
-//     const timer = setInterval(() => {
-//       setTime(new Date());
-//       setStudySeconds((prev) => prev + 1);
-//     }, 1000);
-
-//     return () => clearInterval(timer);
-//   }, []);
-
-//   return (
-//     <header className="flex items-center justify-between relative">
-//       <img src={Logo} alt="Logo" className="h-28 w-96 object-contain" />
-
-//       <div className="flex items-center gap-6">
-//         <div className="flex items-center bg-white shadow-md rounded-md p-4">
-//           <Image
-//             src={eventList?.teacher_image}
-//             alt={eventList?.teacher_name}
-//             className="h-14 w-14"
-//           />
-//           <div className="mx-3">
-//             <h3 className="font-semibold text-gray-900">
-//               {eventList?.teacher_name}
-//             </h3>
-//             <p className="text-sm text-gray-600">
-//               {eventList?.course_name}
-//             </p>
-//           </div>
-//         </div>
-
-//         <div className="flex bg-gradient-to-r from-blue-900 to-blue-700 text-white rounded-md shadow-md">
-//           <div className="p-4 border-r border-white/30">
-//             <p className="text-sm">{formattedDate(time)}</p>
-//             <div className="flex items-center gap-2 mt-1">
-//               <Clock9 size={16} />
-//               <span className="text-lg font-bold">
-//                 {formattedTime(time)}
-//               </span>
-//             </div>
-//           </div>
-
-//           <div className="p-4">
-//             <p className="text-sm">Waktu Belajar</p>
-//             <div className="flex items-center gap-2 mt-1">
-//               <Timer size={16} />
-//               <span className="text-lg font-bold">
-//                 {formatDuration(studySeconds)}
-//               </span>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </header>
-//   );
-// };
-
 /* =====================================================
    SIDEBAR
 ===================================================== */
@@ -253,13 +176,13 @@ const Navbar = React.memo(({ time, activeEvent, isStarted, countdown }: any) => 
 type SidebarProps = {
   isLessonActive: boolean;
   isLessonOrGrace: boolean;
+  isRecording: boolean;
   hasStoppedSession: boolean;
+  stoppedAt: number | null;
 };
 
-const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, hasStoppedSession }: SidebarProps) => {
+const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasStoppedSession, stoppedAt }: SidebarProps) => {
   const location = useLocation();
-
-  /* ================= WHITEBOARD ================= */
 
   const openWhiteboard = () => {
     window.ipcRenderer.invoke("open-whiteboard");
@@ -269,32 +192,35 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, hasStoppedSession
     window.ipcRenderer.invoke('open-zoom');
   };
 
-  /* ================= MINIMIZE ================= */
-
   const minimizeApp = () => {
     window.ipcRenderer.invoke("minimize-window");
   };
 
-  /* ================= ACCESS RESOLVER ================= */
-  // Ketika session sudah di-stop manual, lesson_only harus disable
   const isMenuEnabled = (access: MenuAccess): boolean => {
-    switch (access) {
-      case "always":         return true;
-      case "lesson_plus_15": return isLessonOrGrace;
-      case "lesson_only":    return isLessonActive && !hasStoppedSession;
-      default:               return false;
+    if (isRecording) {
+      return true;
     }
+
+    if (hasStoppedSession && stoppedAt) {
+      const graceEndLocal = stoppedAt + 15 * 60 * 1000;
+      const isWithinGrace = Date.now() < graceEndLocal;
+
+      if (access === "always") return true;
+      if (access === "lesson_plus_15") return isWithinGrace;
+      return false;
+    }
+
+    return access === "always";
   };
 
   return (
-    <aside className="flex flex-col justify-center">
-      <div className="w-20 flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
+    <aside className="flex flex-col h-full">
+      <div className="w-20 flex-1 flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
         {menus.map((menu) => {
           const Icon = menu.icon;
           const color = colorMap[menu.color];
           const enabled = isMenuEnabled(menu.access);
 
-          // Disabled wrapper — tampil redup, tidak bisa diklik
           const disabledWrapper = (child: React.ReactNode) => (
             <div
               key={menu.label}
@@ -344,9 +270,7 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, hasStoppedSession
           const isActive = location.pathname === menu.path;
           const activeIconEl = (
             <div
-              className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${
-                isActive ? color.active : color.inactive
-              }`}
+              className={`h-12 w-12 flex items-center justify-center rounded-lg transition ${isActive ? color.active : color.inactive} bg-gradient-to-b`}
             >
               <Icon
                 width={24}
@@ -365,7 +289,7 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, hasStoppedSession
           );
         })}
 
-        <div className="mt-20 flex flex-col gap-4 items-center">
+        <div className="mt-auto flex flex-col gap-4 items-center">
           <NavLink to="/home">
             <HomeIcon width={24} height={24} className="text-orange-600" />
           </NavLink>
@@ -390,50 +314,130 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, hasStoppedSession
    MAIN LAYOUT CORE
 ===================================================== */
 
-const MainLayoutContent = () => {
+function MainLayoutContent() {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
   const { showToast } = useToast();
-  
-  const { error, loading, isFullScreen } = useSelector((state: RootState) => state.ui);
-  const { isRecording, session_id, hasStoppedSession } = useSelector((state: RootState) => state.record);
+  const navigate = useNavigate();
+
+  const { loading, isFullScreen } = useSelector((state: RootState) => state.ui);
+  const { isRecording, session_id, hasStoppedSession, stoppedAt, showSummary, showStopConfirm, finishedEvent } = useSelector((state: RootState) => state.record);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
+  const { errorPin: authError } = useSelector((state: RootState) => state.auth);
 
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [isStarted, setIsStarted] = useState(false);
   const [time, setTime] = useState(new Date());
   const [countdown, setCountdown] = useState("00:00:00");
+  const [graceCountdown, setGraceCountdown] = useState<string | null>(null);
+  const [showStopPIN, setShowStopPIN] = useState(false);
 
-  // Access control states untuk sidebar
   const [isLessonActive, setIsLessonActive] = useState(false);
   const [isLessonOrGrace, setIsLessonOrGrace] = useState(false);
 
   const hasAutoStoppedRef = useRef(false);
+  const recordingEventRef = useRef<any>(null);
 
-  // 1. Fetch data on mount and interval
+  // Sync recordingEventRef — HANYA set saat recording mulai, jangan update saat activeEvent berubah
+  // Kalau ref diupdate tiap activeEvent berubah, saat endTime tepat tercapai activeEvent jadi null
+  // dan ref juga null → auto-stop crash / tidak jalan
+  useEffect(() => {
+    if (isRecording) {
+      // Set ref hanya jika belum diset (saat recording baru mulai)
+      if (!recordingEventRef.current && activeEvent) {
+        recordingEventRef.current = activeEvent;
+      }
+    } else {
+      // Clear saat recording berhenti
+      recordingEventRef.current = null;
+    }
+  }, [isRecording, activeEvent]);
+
+  // 1. Fetch data on mount
   useEffect(() => {
     dispatch(fetchUser());
-
     const fetchData = () => {
       const now = new Date();
-      dispatch(
-        fetchHeaderEvents({
-          month: now.getMonth() + 1,
-          year: now.getFullYear(),
-        }),
-      );
+      dispatch(fetchHeaderEvents({
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+      }));
     };
-
     fetchData();
-    const interval = setInterval(fetchData, 10000); // Background refresh every 10s
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [dispatch]);
 
-  // 2. Update time every second and calculate countdown
+  // Reset auto-stop flag when recording starts
+  useEffect(() => {
+    if (isRecording) {
+      hasAutoStoppedRef.current = false;
+    }
+  }, [isRecording]);
+
+  /* ================= AUTO STOP RECORD LOGIC ================= */
+  useEffect(() => {
+    if (!isRecording) return;
+
+    const checkInterval = setInterval(() => {
+      if (!recordingEventRef.current?.end_time || hasAutoStoppedRef.current) return;
+
+      const getTimeTodayLocal = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(":").map(Number);
+        const d = new Date();
+        d.setHours(hours, minutes, 0, 0);
+        return d.getTime();
+      };
+
+      const now = Date.now();
+      const endTime = getTimeTodayLocal(recordingEventRef.current.end_time);
+
+      if (now >= endTime && !hasAutoStoppedRef.current) {
+        hasAutoStoppedRef.current = true;
+        const finished = recordingEventRef.current;
+
+        // Safety check — pastikan event masih valid
+        if (!finished) {
+          console.warn("[AutoStop] recordingEventRef is null saat auto-stop, skip.");
+          return;
+        }
+
+        dispatch(setFinishedEvent(finished));
+        dispatch(stopRecord({ session_id: session_id || "", event_id: String(finished.id) }));
+        showToast("Waktu pelajaran habis, sesi dihentikan otomatis", "info");
+
+        // Navigate ke /home agar SummaryModal muncul
+        if (window.location.pathname !== "/home") {
+          navigate("/home");
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(checkInterval);
+  }, [isRecording, session_id, dispatch, navigate, showToast]);
+
+  // 2. Update time and countdown
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
+      const currentTime = now.getTime();
       setTime(now);
+
+      // Grace countdown calculation - moved up to avoid early return
+      if (hasStoppedSession && stoppedAt) {
+        const graceEndLocal = stoppedAt + 15 * 60 * 1000;
+        const diffGrace = graceEndLocal - currentTime;
+        if (diffGrace > 0) {
+          const mm = Math.floor(diffGrace / 1000 / 60);
+          const ss = Math.floor((diffGrace / 1000) % 60);
+          setGraceCountdown(`${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`);
+        } else {
+          setGraceCountdown(null);
+          dispatch(resetStoppedSession());
+        }
+      } else {
+        setGraceCountdown(null);
+      }
 
       if (!activeEvent?.start_time) {
         setCountdown("00:00:00");
@@ -453,9 +457,8 @@ const MainLayoutContent = () => {
       const startTime = getTimeToday(activeEvent.start_time);
       const endTime = getTimeToday(activeEvent.end_time);
       const graceEnd = endTime + 15 * 60 * 1000;
-      const currentTime = now.getTime();
+      const startThreshold = startTime - 15 * 60 * 1000;
 
-      // Update access control states
       setIsLessonActive(currentTime >= startTime && currentTime < endTime);
       setIsLessonOrGrace(currentTime >= startTime && currentTime < graceEnd);
 
@@ -463,7 +466,10 @@ const MainLayoutContent = () => {
       if (currentTime >= startTime && currentTime < endTime) {
         setIsStarted(true);
         targetTime = endTime;
-      } else if (currentTime < startTime) {
+      } else if (currentTime >= startThreshold && currentTime < startTime) {
+        setIsStarted(true);
+        targetTime = startTime; // Prep window → hitung mundur ke waktu MULAI, bukan selesai
+      } else if (currentTime < startThreshold) {
         setIsStarted(false);
         targetTime = startTime;
       } else {
@@ -473,150 +479,82 @@ const MainLayoutContent = () => {
       }
 
       const diff = targetTime - currentTime;
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      setCountdown(
-        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
-      );
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeEvent]);
+  }, [activeEvent, hasStoppedSession, stoppedAt, dispatch]);
 
   // 3. Logic cari event
   useEffect(() => {
     if (!headerEvents || headerEvents.length === 0) return;
     const now = new Date();
-    const todayStr = now.toLocaleDateString("id-ID", {
-      day: "numeric", month: "long", year: "numeric",
+    const todayStr = now.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const currentTimeStr = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(".", ":");
+
+    const todayEvents = headerEvents.filter(ev => {
+      if (ev.event_date !== todayStr) return false;
+      // Exclude finishedEvent saat user memilih Keluar (hasStoppedSession=false)
+      if (finishedEvent && String(ev.id) === String(finishedEvent.id) && !hasStoppedSession) return false;
+      return true;
     });
-    const currentTimeStr = now.toLocaleTimeString("id-ID", {
-      hour: "2-digit", minute: "2-digit", hour12: false
-    }).replace(".", ":");
+    let current;
+    // Prioritas 0: Jika baru stop dan masih dalam grace period (Periksa Absensi), tetap tampilkan event yang baru selesai
+    if (hasStoppedSession && finishedEvent) {
+      current = finishedEvent;
+    } else {
+      current = todayEvents.find(ev => ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr);
 
-    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
-    
-    // 1. Cari yang sedang jalan sekarang
-    let current = todayEvents.find(ev => 
-      ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
-    );
-
-    // 2. Jika tidak ada yang sedang jalan, cari yang akan datang (upcoming)
-    if (!current) {
-      current = todayEvents
-        .filter(ev => ev.start_time > currentTimeStr)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+      if (!current) {
+        current = todayEvents
+          .filter(ev => ev.start_time > currentTimeStr)
+          .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
+      }
     }
 
-    // Jika tidak ada yang jalan dan tidak ada upcoming → semua selesai, kosongkan header
-    // Hindari re-render jika event-nya sama (sampe ID-nya sama)
     if (!activeEvent || activeEvent.id !== current?.id) {
-       setActiveEvent(current || null);
-       // Reset stopped-session flag ketika event baru terdeteksi
-       if (current && activeEvent && current.id !== activeEvent?.id) {
-         dispatch(resetStoppedSession());
-       }
+      setActiveEvent(current || null);
     }
-  }, [headerEvents, time, activeEvent]);
+  }, [headerEvents, time, activeEvent, finishedEvent, hasStoppedSession]);
 
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
-    // Jangan tampilkan notifikasi jika sesi sudah dihentikan manual
+    // Jangan tampilkan notifikasi jika:
+    // - Sedang dalam grace period
+    // - Baru selesai sesi (finishedEvent ada) tapi belum mulai sesi baru
+    // - Tidak sedang di waktu kelas aktif
     if (hasStoppedSession) return;
-    if (isStarted && !isRecording) {
-      showToast(
-        "Kelas telah dimulai, silakan klik tombol Mulai untuk memulai kelas.",
-        "info"
-      );
+    if (finishedEvent && !isRecording) return; // Baru keluar dari sesi, jangan notif
+    if (isLessonActive && !isRecording) {
+      showToast("Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.", "info");
       const interval = setInterval(() => {
-        showToast(
-          "Kelas telah dimulai, silakan klik tombol Mulai untuk memulai kelas.",
-          "info"
-        );
+        showToast("Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.", "info");
       }, 10000);
-
       return () => clearInterval(interval);
     }
-  }, [isStarted, isRecording, hasStoppedSession, showToast]);
+  }, [isLessonActive, isRecording, hasStoppedSession, finishedEvent, showToast]);
 
-  /* ================= AUTO STOP RECORD ================= */
   useEffect(() => {
-    if (!activeEvent?.end_time) return;
-    if (!isRecording) {
-      hasAutoStoppedRef.current = false;
-      return;
-    }
-    if (!session_id) return;
-
-    const getTimeToday = (timeStr: string) => {
-      const [hours, minutes] = timeStr.split(":").map(Number);
-      const d = new Date();
-      d.setHours(hours, minutes, 0, 0);
-      return d.getTime();
-    };
-
-    const endTime = getTimeToday(activeEvent.end_time);
-
-    const interval = setInterval(async () => {
-      const now = Date.now();
-
-      if (now >= endTime && !hasAutoStoppedRef.current) {
-        hasAutoStoppedRef.current = true;
-
-        try {
-          await dispatch(
-            stopRecord({
-              session_id,
-              event_id: String(activeEvent.id),
-            }),
-          ).unwrap();
-
-          console.log("Recording auto stopped (end time reached)");
-        } catch (err) {
-          console.error("Auto stop failed:", err);
-        }
-
-        clearInterval(interval);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [activeEvent, isRecording, session_id, dispatch]);
+    if (authError) showToast(authError, "error");
+  }, [authError, showToast]);
 
   const clickCountRef = useRef(0);
-
-  const isHome = location.pathname === "/home";
-  const isInternet = location.pathname === "/internet";
-
-  const minimizeApp = () => {
-    window.ipcRenderer.invoke("minimize-window");
-  };
-
   const handleMinimizeOrClose = () => {
     clickCountRef.current += 1;
-
     if (clickCountRef.current === 5) {
       clickCountRef.current = 0;
       window.ipcRenderer.invoke("show-quit-dialog");
     } else {
-      minimizeApp();
+      window.ipcRenderer.invoke("minimize-window");
     }
-
-    setTimeout(() => {
-      clickCountRef.current = 0;
-    }, 2000);
+    setTimeout(() => { clickCountRef.current = 0; }, 2000);
   };
 
-
-  useEffect(() => {
-    if (error) {
-      showToast(error, "error");
-      // Prevent infinite loops or redundant toasts by clearing if needed
-      // dispatch(clearError()); 
-    }
-  }, [error, showToast]);
+  const isHome = location.pathname === "/home";
+  const isInternet = location.pathname === "/internet";
 
   if (isHome) {
     return (
@@ -629,15 +567,44 @@ const MainLayoutContent = () => {
             <RecorderComponents />
           </div>
         )}
-
         <button
           type="button"
           onClick={handleMinimizeOrClose}
           className="absolute top-0 right-0 w-16 h-16 opacity-0 cursor-default z-50"
         />
-
         <Outlet />
+
         {loading && <Loading />}
+
+        <SummaryModal
+          open={showSummary}
+          onClose={() => {
+            dispatch(resetStoppedSession());
+            dispatch(setShowSummary(false));
+          }}
+          onCheckAttendance={() => {
+            dispatch(setShowSummary(false));
+            navigate("/student");
+          }}
+          event={finishedEvent || activeEvent}
+        />
+
+        <StopConfirmDialog
+          open={showStopConfirm}
+          onConfirm={() => {
+            dispatch(setShowStopConfirm(false));
+            dispatch(setFinishedEvent(activeEvent));
+            dispatch(stopRecord({
+              session_id: session_id || "",
+              event_id: String(activeEvent?.id || "")
+            }));
+            showToast("Sesi belajar selesai", "success");
+            if (window.location.pathname !== "/") {
+              navigate("/");
+            }
+          }}
+          onCancel={() => dispatch(setShowStopConfirm(false))}
+        />
       </div>
     );
   }
@@ -654,51 +621,223 @@ const MainLayoutContent = () => {
       )}
 
       <div
-        className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-500 ${
-          isFullScreen ? "p-0 m-0" : isInternet ? "p-8" : "pt-6 pl-12 pr-12 pb-6"
-        }`}
+        className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-500 ${isFullScreen ? "p-0 m-0" : isInternet ? "pt-8 pl-8 pb-8 pr-0" : "pt-6 pl-12 pr-0 pb-6"
+          }`}
       >
         {!isInternet && !isFullScreen && (
-          <Navbar 
-            time={time} 
-            activeEvent={activeEvent} 
-            isStarted={isStarted} 
-            countdown={countdown} 
-          />
+          <div className="pr-12">
+            <Navbar
+              time={time}
+              activeEvent={activeEvent}
+              isStarted={isStarted}
+              isLessonActive={isLessonActive}
+              countdown={countdown}
+              hasStoppedSession={hasStoppedSession}
+              graceCountdown={graceCountdown}
+            />
+          </div>
         )}
 
-
-        <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : "m-0"}`}>
-          <Outlet />
-        </main>
+        <div className={`flex-1 flex min-h-0 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : ""}`}>
+          <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${isInternet ? "pr-8" : "pr-12"}`}>
+            <Outlet />
+          </main>
+          {!isFullScreen && (
+            <Sidebar
+              isLessonActive={isLessonActive}
+              isLessonOrGrace={isLessonOrGrace}
+              isRecording={isRecording}
+              hasStoppedSession={hasStoppedSession}
+              stoppedAt={stoppedAt}
+            />
+          )}
+        </div>
       </div>
 
-      {!isFullScreen && <Sidebar isLessonActive={isLessonActive} isLessonOrGrace={isLessonOrGrace} hasStoppedSession={hasStoppedSession} />}
       {loading && <Loading />}
+
+      <SummaryModal
+        open={showSummary}
+        onClose={() => {
+          dispatch(resetStoppedSession());
+          dispatch(setShowSummary(false));
+        }}
+        onCheckAttendance={() => {
+          dispatch(setShowSummary(false));
+          navigate("/student");
+        }}
+        event={finishedEvent || activeEvent}
+      />
+
+      <StopConfirmDialog
+        open={showStopConfirm}
+        onConfirm={() => {
+          dispatch(setShowStopConfirm(false));
+          dispatch(setFinishedEvent(activeEvent));
+          dispatch(stopRecord({
+            session_id: session_id || "",
+            event_id: String(activeEvent?.id || "")
+          }));
+          showToast("Sesi belajar selesai", "success");
+          if (window.location.pathname !== "/") {
+            navigate("/");
+          }
+        }}
+        onCancel={() => dispatch(setShowStopConfirm(false))}
+      />
+    </div>
+  );
+}
+
+const MainLayout = () => {
+  const class_id = localStorage.getItem("class_id") || "";
+  const token = sessionStorage.getItem("token") || "";
+
+  if (!class_id) return <Navigate to="/setting-pin" replace />;
+  // Remove token check here as per user request to go straight to dashboard
+  return <MainLayoutContent />;
+};
+
+export default MainLayout;
+
+/* ================= MODALS ================= */
+
+type SummaryModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onCheckAttendance: () => void;
+  event: any;
+};
+
+const SummaryModal = ({ open, onClose, onCheckAttendance, event }: { open: boolean; onClose: () => void; onCheckAttendance: () => void; event: any }) => {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-md">
+      <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden relative border border-white/20" style={{ width: 360 }}>
+        {/* Premium Glow Effect */}
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-emerald-50/50 to-transparent pointer-events-none" />
+
+        {/* Success Icon Section */}
+        <div className="pt-8 pb-2 flex flex-col items-center relative z-10">
+          <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100 shadow-sm">
+            <CheckCircle2 size={32} className="text-emerald-500" />
+          </div>
+          <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Sesi Selesai</h2>
+          <p className="mt-2 text-[12px] text-gray-400 text-center px-6">Pilih tindakan selanjutnya</p>
+        </div>
+
+        {/* Data Section */}
+        <div className="px-7 pb-8 space-y-4 relative z-10">
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 mb-1.5 block uppercase tracking-widest">Waktu & Tanggal</label>
+              <div className="w-full px-4 py-3 bg-gray-50/80 rounded-2xl text-[13px] font-bold text-gray-700 border border-gray-100 cursor-default flex items-center justify-between">
+                <span>{formattedDate(new Date())}</span>
+                <span className="text-gray-400 font-medium">|</span>
+                <span>{formattedTime(new Date())}</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 mb-1.5 block uppercase tracking-widest">Tenaga Pengajar</label>
+              <div className="w-full px-4 py-3 bg-gray-50/80 rounded-2xl text-[13px] font-bold text-gray-700 border border-gray-100 cursor-default truncate">
+                {event?.teacher_name || "Dr. Hadi Suyoto Ardia"}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 mb-1.5 block uppercase tracking-widest">Materi Pelajaran</label>
+              <div className="w-full px-4 py-3 bg-gray-50/80 rounded-2xl text-[13px] font-bold text-gray-700 border border-gray-100 cursor-default min-h-[60px] max-h-[100px] overflow-y-auto leading-relaxed">
+                {event?.course_name || "Materi Pembelajaran"}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-4 flex flex-col gap-3">
+            <button
+              onClick={onCheckAttendance}
+              className="w-full py-4 bg-[#1a4fff] hover:bg-[#0037ff] text-white font-extrabold text-sm rounded-2xl transition-all active:scale-[0.97] shadow-xl shadow-blue-500/25 flex flex-col items-center justify-center gap-0.5"
+            >
+              <div className="flex items-center gap-2">
+                <UsersIcon width={18} height={18} />
+                Periksa Absensi
+              </div>
+              <span className="text-[10px] font-medium text-blue-200">+15 menit akses menu</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full py-4 bg-white hover:bg-gray-50 text-gray-600 font-bold text-sm rounded-2xl transition-all active:scale-[0.97] border border-gray-200 flex flex-col items-center gap-0.5"
+            >
+              <span>Keluar</span>
+              <span className="text-[10px] font-normal text-gray-400">Langsung ke kelas berikutnya</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-/* =====================================================
-   MAIN LAYOUT WRAPPER
-===================================================== */
 
-const MainLayout = () => {
-  const class_id = localStorage.getItem("class_id") || "";
-  const pin = localStorage.getItem("pin") || "";
-  const token = sessionStorage.getItem("token") || "";
-
-  if (!class_id || !pin) {
-    return <Navigate to="/setting-pin" replace />;
-  }
-
-  if (!token) {
-    return <Navigate to="/lock-screen" replace />;
-  }
-
-  return (
-    <MainLayoutContent />
-  );
+type StopConfirmDialogProps = {
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
 };
 
-export default MainLayout;
+const StopConfirmDialog = ({ open, onConfirm, onCancel }: StopConfirmDialogProps) => {
+  const [countdown, setCountdown] = useState(3);
+
+  useEffect(() => {
+    let timer: any;
+    if (open && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [open, countdown]);
+
+  useEffect(() => {
+    if (!open) setCountdown(3);
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 backdrop-blur-md">
+      <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden relative p-8 text-center" style={{ width: 360 }}>
+        {/* Header Icon */}
+        <div className="mx-auto w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6 border border-red-100">
+          <LogOut size={32} className="text-red-500" />
+        </div>
+
+        <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-2">Selesai</h2>
+        <p className="text-gray-500 text-sm mb-10 leading-relaxed font-medium">
+          Apakah anda ingin menyelesaikan<br />sesi belajar ini?
+        </p>
+
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={onConfirm}
+            disabled={countdown > 0}
+            className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.97] shadow-xl ${countdown > 0
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none border border-gray-200/50"
+              : "bg-[#1a4fff] text-white hover:bg-blue-700 shadow-blue-500/20"
+              }`}
+          >
+            Konfirmasi {countdown > 0 ? `(${countdown})` : ""}
+          </button>
+          <button
+            onClick={onCancel}
+            className="w-full py-4 bg-white hover:bg-gray-50 text-gray-500 font-bold text-sm rounded-2xl transition-all active:scale-[0.97] border-2 border-gray-100"
+          >
+            Batal
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

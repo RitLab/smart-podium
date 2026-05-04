@@ -59,7 +59,7 @@ const LockScreen = () => {
     if (!rawEvents || rawEvents.length === 0) return;
 
     const now = new Date();
-    
+
     const todayStr = now.toLocaleDateString("id-ID", {
       day: "numeric", month: "long", year: "numeric",
     });
@@ -76,7 +76,7 @@ const LockScreen = () => {
     }
 
     // 1. Cari yang sedang jalan
-    let current = todayEvents.find(ev => 
+    let current = todayEvents.find(ev =>
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
 
@@ -124,12 +124,12 @@ const LockScreen = () => {
   useEffect(() => {
     if (isStarted && !isRecording) {
       showToast(
-        "Kelas telah dimulai, silakan klik tombol Mulai untuk memulai kelas.",
+        "Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.",
         "info"
       );
       const interval = setInterval(() => {
         showToast(
-          "Kelas telah dimulai, silakan klik tombol Mulai untuk memulai kelas.",
+          "Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.",
           "info"
         );
       }, 10000);
@@ -145,14 +145,14 @@ const LockScreen = () => {
         <p className="text-white/70 text-sm max-w-xs text-center">{error}</p>
       </div>
       <div className="flex gap-3">
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           className="bg-white hover:bg-gray-100 px-6 py-2 text-black font-medium rounded-lg transition-all active:scale-95 shadow-lg"
         >
           Reload
         </button>
-        <button 
-          onClick={() => window.ipcRenderer.invoke('show-quit-dialog')} 
+        <button
+          onClick={() => window.ipcRenderer.invoke('show-quit-dialog')}
           className="bg-red-600 hover:bg-red-700 px-6 py-2 text-white font-medium rounded-lg transition-all active:scale-95 shadow-lg"
         >
           Keluar

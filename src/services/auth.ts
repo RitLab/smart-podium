@@ -4,11 +4,8 @@ import { baseURL, handler } from "./hash";
 
 export const authService = {
   // USE MOCK
-  getToken: async (_: TokenPayload): Promise<TokenResponse> => {
-    // return await handler.get<TokenResponse>(`${authURL}/get-token`, payload);
-    return {
-      token: "123134123123",
-    };
+  getToken: async (payload: TokenPayload): Promise<TokenResponse> => {
+    return await handler.post<TokenResponse>(`${baseURL}/portal/teacher/pin/check`, payload);
   },
   getCLass: async (): Promise<Class[]> => {
     // return await handler.get<Class[]>(`${authURL}/class`);

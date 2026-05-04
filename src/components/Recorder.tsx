@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { tick, resetRecord } from "@/stores/record";
+import { tick, setShowStopConfirm } from "@/stores/record";
 import { RootState } from "@/stores";
 
 const RecorderComponents: React.FC = () => {
@@ -33,9 +33,7 @@ const RecorderComponents: React.FC = () => {
 
   const handleStop = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm("Apakah Anda yakin ingin menghentikan rekaman ini?")) {
-      dispatch(resetRecord());
-    }
+    dispatch(setShowStopConfirm(true));
   };
 
   if (!isRecording) return null;

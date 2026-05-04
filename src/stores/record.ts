@@ -16,6 +16,10 @@ export type RecordState = {
   error: string | null;
   /** true setelah stopRecord berhasil, reset saat event baru/start baru */
   hasStoppedSession: boolean;
+  stoppedAt: number | null; // timestamp (ms)
+  showSummary: boolean;
+  showStopConfirm: boolean;
+  finishedEvent: any | null;
 };
 
 /* =====================================================
@@ -36,10 +40,10 @@ const loadPersistedState = (): Partial<RecordState> => {
 
 const savePersistedState = (state: RecordState) => {
   try {
-    const { isRecording, session_id, startTime, hasStoppedSession } = state;
+    const { isRecording, session_id, startTime, hasStoppedSession, stoppedAt } = state;
     localStorage.setItem(
       RECOVERY_KEY,
-      JSON.stringify({ isRecording, session_id, startTime, hasStoppedSession })
+      JSON.stringify({ isRecording, session_id, startTime, hasStoppedSession, stoppedAt })
     );
   } catch (err) {
     // ignore
@@ -58,6 +62,10 @@ const initialState: RecordState = {
   loading: false,
   error: null,
   hasStoppedSession: persisted.hasStoppedSession ?? false,
+  stoppedAt: persisted.stoppedAt ?? null,
+  showSummary: false,
+  showStopConfirm: false,
+  finishedEvent: null,
 };
 
 /* =====================================================
@@ -75,8 +83,33 @@ export const startRecord = createAsyncThunk<
   } catch (err: any) {
     return rejectWithValue(
       err?.response?.data?.message ||
-        err?.message ||
-        "Gagal memulai recording"
+      err?.message ||
+      "Gagal memulai recording"
+    );
+  }
+});
+
+/* =====================================================
+   VERIFY PIN
+===================================================== */
+
+export const verifyPin = createAsyncThunk<
+  void,
+  { teacher_id: string; pin: string },
+  { rejectValue: string }
+>("record/verifyPin", async (payload, { rejectWithValue }) => {
+  try {
+    const res = await recordApi.checkPin(payload);
+    // Based on user curl, we check status or handle success
+    if (res.status !== 200) {
+      return rejectWithValue(res.message || "PIN salah");
+    }
+    return;
+  } catch (err: any) {
+    return rejectWithValue(
+      err?.response?.data?.message ||
+      err?.message ||
+      "Gagal memverifikasi PIN"
     );
   }
 });
@@ -92,11 +125,12 @@ export const stopRecord = createAsyncThunk<
 >("record/stop", async (payload, { rejectWithValue }) => {
   try {
     await recordApi.stop(payload);
+    return;
   } catch (err: any) {
     return rejectWithValue(
       err?.response?.data?.message ||
-        err?.message ||
-        "Gagal menghentikan recording"
+      err?.message ||
+      "Gagal menghentikan recording"
     );
   }
 });
@@ -117,12 +151,27 @@ const recordSlice = createSlice({
       state.error = null;
       state.loading = false;
       state.hasStoppedSession = false;
+      state.stoppedAt = null;
+      state.showSummary = false;
+      state.showStopConfirm = false;
+      state.finishedEvent = null;
       savePersistedState(state);
+    },
+
+    setShowSummary(state, action) {
+      state.showSummary = action.payload;
+    },
+    setShowStopConfirm(state, action) {
+      state.showStopConfirm = action.payload;
+    },
+    setFinishedEvent(state, action) {
+      state.finishedEvent = action.payload;
     },
 
     /** Dipanggil saat event baru terdeteksi → reset flag session selesai */
     resetStoppedSession(state) {
       state.hasStoppedSession = false;
+      state.stoppedAt = null;
       savePersistedState(state);
     },
 
@@ -156,6 +205,8 @@ const recordSlice = createSlice({
         state.startTime = Date.now();
         state.duration = 0;
         state.hasStoppedSession = false; // reset saat mulai rekaman baru
+        state.showSummary = false;
+        state.showStopConfirm = false;
         savePersistedState(state);
       })
       .addCase(startRecord.rejected, (state, action) => {
@@ -179,7 +230,9 @@ const recordSlice = createSlice({
         state.session_id = null;
         state.startTime = null;
         state.duration = 0;
-        state.hasStoppedSession = true; // flag: sesi ini sudah dihentikan
+        state.hasStoppedSession = true;
+        state.stoppedAt = Date.now(); // Catat waktu berhenti untuk grace period
+        state.showSummary = true; // Langsung tampilkan summary setelah stop
         savePersistedState(state);
       })
       .addCase(stopRecord.rejected, (state, action) => {
@@ -188,15 +241,27 @@ const recordSlice = createSlice({
           action.payload ??
           action.error.message ??
           "Stop recording gagal";
+      })
+      // VERIFY PIN
+      .addCase(verifyPin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyPin.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(verifyPin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload ?? "Verifikasi PIN gagal";
       });
   },
 });
 
 /* =====================================================
    EXPORT
-===================================================== */
+==================================================== */
 
-export const { resetRecord, resetStoppedSession, tick, clearError } =
+export const { resetRecord, resetStoppedSession, tick, clearError, setShowSummary, setShowStopConfirm, setFinishedEvent } =
   recordSlice.actions;
 
 export default recordSlice.reducer;

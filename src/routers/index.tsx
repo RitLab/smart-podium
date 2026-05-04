@@ -25,8 +25,8 @@ export default () => {
     <ToastProvider>
       <Routes>
         <Route element={<AuthLayout />}>
-          <Route path="/lock-screen" element={<LockScreen />} />
-          <Route path="/input-pin" element={<InputPIN />} />
+          <Route path="/lock-screen" element={<Navigate to="/home" replace />} />
+          <Route path="/input-pin" element={<Navigate to="/home" replace />} />
           <Route path="/setting-pin" element={<SettingPIN />} />
           <Route path="/license" element={<LicenseKey />} />
         </Route>
@@ -50,7 +50,7 @@ export default () => {
         </Route>
 
         {/* catch all */}
-        <Route path="*" element={<Navigate to="/lock-screen" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </ToastProvider>
   );
