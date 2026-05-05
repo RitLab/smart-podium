@@ -10,7 +10,8 @@ import {
   UsersIcon,
   WebIcon,
   WhiteboardIcon,
-  ZoomIcon
+  ZoomIcon,
+  VoicemeeterIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 
@@ -33,7 +34,7 @@ type MenuItem = {
   image?: string;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
+  action?: "whiteboard" | "minimize" | "zoom" | "wondercast" | "voicemeeter";
   access: MenuAccess;
 };
 
@@ -82,6 +83,13 @@ const menus: MenuItem[] = [
     color: "blue",
     access: "lesson_only",
   },
+  {
+    action: "voicemeeter",
+    label: "VB Voicemeeter",
+    icon: VoicemeeterIcon,
+    color: "green",
+    access: "lesson_only"
+  }
   // WonderCast dihapus karena menyebabkan hang
 ];
 
@@ -290,6 +298,10 @@ const Home = () => {
 
   const openZoom = () => {
     window.ipcRenderer.invoke("open-zoom");
+  };
+
+  const openVoicemeeter = () => {
+    window.ipcRenderer.invoke("open-voicemeeter");
   };
 
 
@@ -563,7 +575,7 @@ const Home = () => {
 
 
       {/* MAIN MENUS */}
-      <div className="grid grid-cols-6 gap-x-12 gap-y-8 text-center max-w-6xl">
+      <div className="grid grid-cols-7 gap-x-12 gap-y-8 text-center max-w-6xl">
         {menus.map((menu) => {
           const Icon = menu.icon;
           const enabled = isMenuEnabled(menu.access);
@@ -613,6 +625,14 @@ const Home = () => {
           if (menu.action === "zoom") {
             return (
               <button key={menu.label} type="button" onClick={openZoom} className="outline-none">
+                {renderMenuInner}
+              </button>
+            );
+          }
+
+          if (menu.action === "voicemeeter") {
+            return (
+              <button key={menu.label} type="button" onClick={openVoicemeeter} className="outline-none">
                 {renderMenuInner}
               </button>
             );

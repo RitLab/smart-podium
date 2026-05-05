@@ -1,4 +1,12 @@
-import { app, BrowserWindow, shell, ipcMain, session, Menu, dialog } from "electron";
+import {
+  app,
+  BrowserWindow,
+  shell,
+  ipcMain,
+  session,
+  Menu,
+  dialog,
+} from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -53,7 +61,7 @@ function openWhiteboard() {
 
 function openZoom() {
   const exePath =
-    "C:\\Users\\Smartclass\\AppData\\Roaming\\Zoom\\bin\\Zoom.exe"
+    "C:\\Users\\Smartclass\\AppData\\Roaming\\Zoom\\bin\\Zoom.exe";
 
   try {
     spawn(exePath, [], {
@@ -66,8 +74,7 @@ function openZoom() {
 }
 
 function openWonderCast() {
-  const exePath =
-    "C:\\Program Files (x86)\\WonderCast\\WonderCast.exe";
+  const exePath = "C:\\Program Files (x86)\\WonderCast\\WonderCast.exe";
 
   try {
     spawn(exePath, [], {
@@ -76,6 +83,19 @@ function openWonderCast() {
     }).unref();
   } catch (error) {
     console.error("Failed to open WonderCast:", error);
+  }
+}
+
+function openVoicemeeter() {
+  const exePath = "C\\Program Files (x86)\\VB\\Voicemeeter\\voicemeeter.exe";
+
+  try {
+    spawn(exePath, [], {
+      detached: true,
+      stdio: "ignore",
+    }).unref();
+  } catch (error) {
+    console.error("Failed to open Voicemeeter:", error);
   }
 }
 
@@ -146,7 +166,7 @@ async function createWindow() {
 // APP READY
 // ===============================
 app.whenReady().then(() => {
-  Menu.setApplicationMenu(null)
+  Menu.setApplicationMenu(null);
   createWindow();
 });
 
@@ -217,6 +237,10 @@ ipcMain.handle("open-zoom", () => {
 
 ipcMain.handle("open-wondercast", () => {
   openWonderCast();
+});
+
+ipcMain.handle("open-voicemeeter", () => {
+  openVoicemeeter();
 });
 
 ipcMain.handle("open-win", (_, arg) => {
