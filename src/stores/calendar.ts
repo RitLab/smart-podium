@@ -232,11 +232,6 @@ const calendarSlice = createSlice({
       });
     });
 
-    /* ===== HOLIDAYS ===== */
-    builder.addCase(fetchHolidays.fulfilled, (state, action) => {
-      state.holidays = action.payload;
-    });
-
     /* ===== CLASSROOM DATE EVENT ===== */
     builder
       .addCase(fetchEventByClassroomDate.pending, (state) => {
