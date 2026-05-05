@@ -152,14 +152,14 @@ const Navbar = React.memo(({ time, activeEvent, isStarted, isLessonActive, count
             </div>
           </div>
 
-          <div className="p-4">
+          <div className="p-4 min-w-[120px]">
             <p className="text-sm">
-              {hasStoppedSession && graceCountdown ? "Waktu Jeda" : isLessonActive ? "Sisa Waktu" : "Mulai Dalam"}
+              {hasStoppedSession ? "Waktu Jeda" : isLessonActive ? "Sisa Waktu" : "Mulai Dalam"}
             </p>
             <div className="flex items-center gap-2 mt-1">
-              <Timer size={16} />
-              <span className={`text-lg font-bold tabular-nums ${hasStoppedSession && graceCountdown ? "text-orange-400 animate-pulse" : ""}`}>
-                {hasStoppedSession && graceCountdown ? graceCountdown : countdown}
+              <Clock9 size={16} className={hasStoppedSession ? "text-orange-400" : "text-white"} />
+              <span className={`text-lg font-bold tabular-nums ${hasStoppedSession ? "text-orange-400" : "text-white"}`}>
+                {hasStoppedSession ? graceCountdown : countdown}
               </span>
             </div>
           </div>
@@ -197,9 +197,7 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
   };
 
   const isMenuEnabled = (access: MenuAccess): boolean => {
-    if (isRecording) {
-      return true;
-    }
+    if (isRecording) return true;
 
     if (hasStoppedSession && stoppedAt) {
       const graceEndLocal = stoppedAt + 15 * 60 * 1000;
@@ -321,7 +319,7 @@ function MainLayoutContent() {
   const navigate = useNavigate();
 
   const { loading, isFullScreen } = useSelector((state: RootState) => state.ui);
-  const { isRecording, session_id, hasStoppedSession, stoppedAt, showSummary, showStopConfirm, finishedEvent } = useSelector((state: RootState) => state.record);
+  const { isRecording, session_id, showStopConfirm, showSummary, hasStoppedSession, stoppedAt, finishedEvent } = useSelector((state: RootState) => state.record);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { errorPin: authError } = useSelector((state: RootState) => state.auth);
 
@@ -402,11 +400,9 @@ function MainLayoutContent() {
           return;
         }
 
-        dispatch(setFinishedEvent(finished));
-        dispatch(stopRecord({ session_id: session_id || "", event_id: String(finished.id) }));
+        dispatch(stopRecord({ session_id: session_id || "", event_id: String(finished.id), isAuto: true }));
         showToast("Waktu pelajaran habis, sesi dihentikan otomatis", "info");
 
-        // Navigate ke /home agar SummaryModal muncul
         if (window.location.pathname !== "/home") {
           navigate("/home");
         }
@@ -423,17 +419,17 @@ function MainLayoutContent() {
       const currentTime = now.getTime();
       setTime(now);
 
-      // Grace countdown calculation - moved up to avoid early return
+      // Grace Countdown (15 min after manual stop)
       if (hasStoppedSession && stoppedAt) {
         const graceEndLocal = stoppedAt + 15 * 60 * 1000;
         const diffGrace = graceEndLocal - currentTime;
         if (diffGrace > 0) {
-          const mm = Math.floor(diffGrace / 1000 / 60);
-          const ss = Math.floor((diffGrace / 1000) % 60);
+          const totalSec = Math.floor(diffGrace / 1000);
+          const mm = Math.floor(totalSec / 60);
+          const ss = totalSec % 60;
           setGraceCountdown(`${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`);
         } else {
           setGraceCountdown(null);
-          dispatch(resetStoppedSession());
         }
       } else {
         setGraceCountdown(null);
@@ -497,22 +493,22 @@ function MainLayoutContent() {
 
     const todayEvents = headerEvents.filter(ev => {
       if (ev.event_date !== todayStr) return false;
-      // Exclude finishedEvent saat user memilih Keluar (hasStoppedSession=false)
+      // Exclude finishedEvent saat user memilih Keluar (hasStoppedSession=false tapi finishedEvent ada)
       if (finishedEvent && String(ev.id) === String(finishedEvent.id) && !hasStoppedSession) return false;
       return true;
     });
-    let current;
-    // Prioritas 0: Jika baru stop dan masih dalam grace period (Periksa Absensi), tetap tampilkan event yang baru selesai
-    if (hasStoppedSession && finishedEvent) {
-      current = finishedEvent;
-    } else {
-      current = todayEvents.find(ev => ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr);
 
-      if (!current) {
-        current = todayEvents
-          .filter(ev => ev.start_time > currentTimeStr)
-          .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
-      }
+    if (hasStoppedSession && finishedEvent) {
+      setActiveEvent(finishedEvent);
+      return;
+    }
+
+    let current = todayEvents.find(ev => ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr);
+
+    if (!current) {
+      current = todayEvents
+        .filter(ev => ev.start_time > currentTimeStr)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
     }
 
     if (!activeEvent || activeEvent.id !== current?.id) {
@@ -522,20 +518,14 @@ function MainLayoutContent() {
 
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
-    // Jangan tampilkan notifikasi jika:
-    // - Sedang dalam grace period
-    // - Baru selesai sesi (finishedEvent ada) tapi belum mulai sesi baru
-    // - Tidak sedang di waktu kelas aktif
-    if (hasStoppedSession) return;
-    if (finishedEvent && !isRecording) return; // Baru keluar dari sesi, jangan notif
-    if (isLessonActive && !isRecording) {
+    if (isLessonActive && !isRecording && !hasStoppedSession) {
       showToast("Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.", "info");
       const interval = setInterval(() => {
         showToast("Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.", "info");
       }, 10000);
       return () => clearInterval(interval);
     }
-  }, [isLessonActive, isRecording, hasStoppedSession, finishedEvent, showToast]);
+  }, [isLessonActive, isRecording, hasStoppedSession, showToast]);
 
   useEffect(() => {
     if (authError) showToast(authError, "error");
@@ -578,15 +568,16 @@ function MainLayoutContent() {
 
         <SummaryModal
           open={showSummary}
+          event={finishedEvent}
           onClose={() => {
-            dispatch(resetStoppedSession());
             dispatch(setShowSummary(false));
+            dispatch(resetStoppedSession());
+            navigate("/home");
           }}
           onCheckAttendance={() => {
             dispatch(setShowSummary(false));
             navigate("/student");
           }}
-          event={finishedEvent || activeEvent}
         />
 
         <StopConfirmDialog
@@ -596,11 +587,12 @@ function MainLayoutContent() {
             dispatch(setFinishedEvent(activeEvent));
             dispatch(stopRecord({
               session_id: session_id || "",
-              event_id: String(activeEvent?.id || "")
+              event_id: String(activeEvent?.id || ""),
+              isAuto: false
             }));
             showToast("Sesi belajar selesai", "success");
-            if (window.location.pathname !== "/") {
-              navigate("/");
+            if (window.location.pathname !== "/home") {
+              navigate("/home");
             }
           }}
           onCancel={() => dispatch(setShowStopConfirm(false))}
@@ -658,15 +650,16 @@ function MainLayoutContent() {
 
       <SummaryModal
         open={showSummary}
+        event={finishedEvent}
         onClose={() => {
-          dispatch(resetStoppedSession());
           dispatch(setShowSummary(false));
+          dispatch(resetStoppedSession());
+          navigate("/home");
         }}
         onCheckAttendance={() => {
           dispatch(setShowSummary(false));
           navigate("/student");
         }}
-        event={finishedEvent || activeEvent}
       />
 
       <StopConfirmDialog
@@ -676,11 +669,12 @@ function MainLayoutContent() {
           dispatch(setFinishedEvent(activeEvent));
           dispatch(stopRecord({
             session_id: session_id || "",
-            event_id: String(activeEvent?.id || "")
+            event_id: String(activeEvent?.id || ""),
+            isAuto: false
           }));
           showToast("Sesi belajar selesai", "success");
-          if (window.location.pathname !== "/") {
-            navigate("/");
+          if (window.location.pathname !== "/home") {
+            navigate("/home");
           }
         }}
         onCancel={() => dispatch(setShowStopConfirm(false))}

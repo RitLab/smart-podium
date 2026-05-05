@@ -1,7 +1,6 @@
 import {
   createAsyncThunk,
   createSlice,
-  type PayloadAction,
 } from "@reduxjs/toolkit";
 import { eventService } from "@/services/event";
 import type {
@@ -88,17 +87,7 @@ export const fetchHeaderEvents = createAsyncThunk<
       (ev) => ev.class_room_id === CLASSROOM_ID,
     );
 
-    return filtered.map((event) => {
-      const date = new Date(event.event_date);
-      return {
-        ...event,
-        event_date: date.toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-      };
-    });
+    return filtered;
   } catch (error: any) {
     return rejectWithValue(error?.message || "Failed to fetch header events");
   }
@@ -205,9 +194,22 @@ const calendarSlice = createSlice({
       })
       .addCase(fetchEventList.fulfilled, (state, action) => {
         state.loading = false;
-        state.rawEvents = action.payload;
-        const merged = [...action.payload, ...state.holidays];
+        
+        // Simpan rawEvents yang diformat untuk Home
+        state.rawEvents = action.payload.map((event) => {
+          const date = new Date(event.event_date);
+          return {
+            ...event,
+            event_date: date.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }),
+          };
+        });
 
+        // Gabungkan dengan hari libur untuk tampilan Kalender
+        const merged = [...action.payload, ...state.holidays];
         state.events = groupEventsByDate(merged);
       })
       .addCase(fetchEventList.rejected, (state, action) => {
@@ -215,12 +217,27 @@ const calendarSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    /* ===== HEADER EVENTS (TETAP ADA) ===== */
+    /* ===== HEADER EVENTS ===== */
     builder.addCase(fetchHeaderEvents.fulfilled, (state, action) => {
-      state.headerEvents = action.payload;
+      state.headerEvents = action.payload.map((event) => {
+        const date = new Date(event.event_date);
+        return {
+          ...event,
+          event_date: date.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }),
+        };
+      });
     });
 
-    /* ===== EVENT BY DATE ===== */
+    /* ===== HOLIDAYS ===== */
+    builder.addCase(fetchHolidays.fulfilled, (state, action) => {
+      state.holidays = action.payload;
+    });
+
+    /* ===== CLASSROOM DATE EVENT ===== */
     builder
       .addCase(fetchEventByClassroomDate.pending, (state) => {
         if (state.eventList === null) {
