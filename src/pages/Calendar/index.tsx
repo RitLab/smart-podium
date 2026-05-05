@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import CalendarComponents from "@/components/Calendar";
 import type { AppDispatch, RootState } from "@/stores";
-import { fetchEventList, fetchHolidays } from "@/stores/calendar";
+import { fetchEventList } from "@/stores/calendar";
 import type { DateClick } from "@/types/event";
 
 /* ================= TYPES ================= */
@@ -59,7 +59,6 @@ const Calendar = () => {
 
       lastFetchRef.current = fetchKey;
 
-      dispatch(fetchHolidays({ month, year }));
       dispatch(fetchEventList({ month, year }));
     },
     [dispatch],

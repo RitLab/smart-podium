@@ -34,7 +34,7 @@ const initialState: CalendarState = {
 
 /* ================= UTILS ================= */
 const groupEventsByDate = (events: EventList[]): EventGroup[] => {
-  const map = new Map<string, EventGroup>();
+  const map = new Map<string, EventGroup & { rawDate: number }>();
 
   events.forEach((event) => {
     const dateObj = new Date(event.event_date);
@@ -53,6 +53,7 @@ const groupEventsByDate = (events: EventList[]): EventGroup[] => {
           weekday: "long",
         }),
         items: [],
+        rawDate: dateObj.getTime(),
       });
     }
 
@@ -67,12 +68,9 @@ const groupEventsByDate = (events: EventList[]): EventGroup[] => {
     });
   });
 
-  // 🔥 INI KUNCINYA: SORT BERDASARKAN TANGGAL
-  return Array.from(map.values()).sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    return dateA.getTime() - dateB.getTime();
-  });
+  return Array.from(map.values())
+    .sort((a, b) => a.rawDate - b.rawDate)
+    .map(({ rawDate, ...rest }) => rest); // optional: buang rawDate
 };
 
 /* ================= THUNKS ================= */
@@ -122,46 +120,44 @@ export const fetchEventList = createAsyncThunk<EventList[], EventListPayload>(
   "calendar/fetchEventList",
   async (payload, { rejectWithValue }) => {
     try {
+      const res = await fetch(
+        `https://libur.deno.dev/api?year=${payload.year}`,
+      );
+      const data = await res.json();
+
+      const filtered = data.filter((h: any) => {
+        const date = new Date(h.date);
+        return (
+          date.getMonth() + 1 === payload.month &&
+          date.getFullYear() === payload.year
+        );
+      });
+
+      const holidays = filtered.map((h: any) => ({
+        id: `holiday-${h.date}`,
+        course_name: h.name,
+        event_date: h.date,
+        start_time: "",
+        end_time: "",
+        color: "red",
+        class_room_id: null,
+      }));
       const response: EventListResponse =
         await eventService.getEventList(payload);
 
       const CLASSROOM_ID = localStorage.getItem("class_id");
 
-      return response.data.events.filter(
+      const filteredDataEvents = response.data.events.filter(
         (ev) => ev.class_room_id === CLASSROOM_ID,
       );
+
+      const merged = [...holidays, ...filteredDataEvents];
+      return merged;
     } catch (error: any) {
       return rejectWithValue(error?.message || "Failed to fetch event list");
     }
   },
 );
-
-export const fetchHolidays = createAsyncThunk<
-  EventList[],
-  { month: number; year: number }
->("calendar/fetchHolidays", async ({ month, year }, { rejectWithValue }) => {
-  try {
-    const res = await fetch(`https://libur.deno.dev/api?year=${year}`);
-    const data = await res.json();
-
-    const filtered = data.filter((h: any) => {
-      const date = new Date(h.date);
-      return date.getMonth() + 1 === month && date.getFullYear() === year;
-    });
-
-    return filtered.map((h: any) => ({
-      id: `holiday-${h.date}`,
-      course_name: h.name,
-      event_date: h.date,
-      start_time: "",
-      end_time: "",
-      color: "red",
-      class_room_id: null,
-    }));
-  } catch (err: any) {
-    return rejectWithValue("Failed to fetch holidays");
-  }
-});
 
 export const fetchEventByClassroomDate = createAsyncThunk<
   EventList | null,
@@ -238,22 +234,6 @@ const calendarSlice = createSlice({
       })
       .addCase(fetchEventByClassroomDate.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
-      });
-
-    /* ===== HOLIDAYS ===== */
-    builder
-      .addCase(fetchHolidays.pending, (state) => {
-        state.holidays = []; // ✅ reset biar ga nyampur bulan
-      })
-      .addCase(fetchHolidays.fulfilled, (state, action) => {
-        state.holidays = action.payload;
-
-        // ✅ RE-MERGE ulang dengan event
-        const merged = [...state.rawEvents, ...action.payload];
-        state.events = groupEventsByDate(merged);
-      })
-      .addCase(fetchHolidays.rejected, (state, action) => {
         state.error = action.payload as string;
       });
   },
