@@ -87,7 +87,7 @@ function openWonderCast() {
 }
 
 function openVoicemeeter() {
-  const exePath = "C\\Program Files (x86)\\VB\\Voicemeeter\\voicemeeter.exe";
+  const exePath = "C:\\Program Files (x86)\\VB\\Voicemeeter\\voicemeeter.exe";
 
   try {
     spawn(exePath, [], {
