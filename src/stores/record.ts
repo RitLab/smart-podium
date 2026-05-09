@@ -249,6 +249,28 @@ const recordSlice = createSlice({
           action.payload ??
           action.error.message ??
           "Stop recording gagal";
+
+        // CRITICAL: Even if the API call fails, we MUST stop the local recording state
+        // otherwise the user gets stuck in a recording UI that can never be stopped.
+        state.isRecording = false;
+        state.session_id = null;
+        state.startTime = null;
+        state.duration = 0;
+
+        // Use the same logic as fulfilled to handle auto vs manual stop
+        const isAuto = action.meta.arg?.isAuto;
+        if (isAuto) {
+          state.hasStoppedSession = false;
+          state.stoppedAt = null;
+          state.showSummary = false;
+          state.finishedEvent = null;
+        } else {
+          state.hasStoppedSession = true;
+          state.stoppedAt = Date.now();
+          state.showSummary = true;
+        }
+
+        savePersistedState(state);
       })
       // VERIFY PIN
       .addCase(verifyPin.pending, (state) => {
