@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Toast, ToastContextType, ToastType } from "@/types/ui";
 import ToastComponent from "@/components/Toast";
 
@@ -14,17 +14,60 @@ export const useToast = () => {
 
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timeoutRef = useRef<number | null>(null);
+  const currentToastIdRef = useRef<number | null>(null);
 
-  const showToast = useCallback((message: string, type: ToastType = "info") => {
-    const id = Date.now();
-    setToasts([{ id, message, type }]); // Only show one toast at a time
-
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 4000);
+  const clearTimer = useCallback(() => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   }, []);
 
-  const value = useMemo(() => ({ showToast }), [showToast]);
+  const dismissToast = useCallback(
+    (id: number) => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+      if (currentToastIdRef.current === id) {
+        currentToastIdRef.current = null;
+        clearTimer();
+      }
+    },
+    [clearTimer]
+  );
+
+  const clearToasts = useCallback(() => {
+    setToasts([]);
+    currentToastIdRef.current = null;
+    clearTimer();
+  }, [clearTimer]);
+
+  const showToast = useCallback(
+    (message: string, type: ToastType = "info") => {
+      const id = Date.now() + Math.floor(Math.random() * 1000);
+      clearTimer();
+      currentToastIdRef.current = id;
+      setToasts([{ id, message, type }]);
+
+      const timeoutId = window.setTimeout(() => {
+        setToasts((prev) => prev.filter((toast) => toast.id !== id));
+        if (currentToastIdRef.current === id) {
+          currentToastIdRef.current = null;
+        }
+        if (timeoutRef.current === timeoutId) {
+          timeoutRef.current = null;
+        }
+      }, 4000);
+
+      timeoutRef.current = timeoutId;
+      return id;
+    },
+    [clearTimer]
+  );
+
+  const value = useMemo(
+    () => ({ showToast, dismissToast, clearToasts }),
+    [showToast, dismissToast, clearToasts]
+  );
 
   return (
     <ToastContext.Provider value={value}>
