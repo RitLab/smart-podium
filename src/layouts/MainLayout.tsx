@@ -1,5 +1,5 @@
-import { CheckCircle2, Clock9, LogOut, Timer } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Clock9, Eye, EyeOff, LogOut, Timer } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -185,6 +185,8 @@ type SidebarProps = {
 
 const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasStoppedSession, stoppedAt }: SidebarProps) => {
   const location = useLocation();
+  const { showToast } = useToast();
+  const [isPrivacyMode, setIsPrivacyMode] = useState(false);
 
   const openWhiteboard = () => {
     window.ipcRenderer.invoke("open-whiteboard");
@@ -200,6 +202,18 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
 
   const minimizeApp = () => {
     window.ipcRenderer.invoke("minimize-window");
+  };
+
+  const togglePrivacyMode = async () => {
+    const next = !isPrivacyMode;
+    const mode = next ? "internal" : "clone";
+    const res = await window.ipcRenderer.invoke("set-display-mode", mode);
+    if (res?.ok) {
+      setIsPrivacyMode(next);
+      showToast(next ? "Screen share dimatikan" : "Screen share dinyalakan", "info");
+      return;
+    }
+    showToast(res?.message || "Gagal mengubah mode display", "error");
   };
 
   const isMenuEnabled = (access: MenuAccess): boolean => {
@@ -303,6 +317,20 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
         })}
 
         <div className="mt-auto flex flex-col gap-4 items-center">
+          <button
+            type="button"
+            onClick={togglePrivacyMode}
+            title={isPrivacyMode ? "Nyalakan screen share" : "Matikan screen share"}
+            className={`h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b ${
+              isPrivacyMode ? "from-red-500 to-red-600" : "from-gray-50 to-gray-100"
+            }`}
+          >
+            {isPrivacyMode ? (
+              <EyeOff width={22} height={22} className="text-white" />
+            ) : (
+              <Eye width={22} height={22} className="text-gray-700" />
+            )}
+          </button>
           <NavLink to="/home">
             <HomeIcon width={24} height={24} className="text-orange-600" />
           </NavLink>
@@ -323,11 +351,13 @@ function MainLayoutContent() {
   const navigate = useNavigate();
 
   const { loading, isFullScreen } = useSelector((state: RootState) => state.ui);
-  const { isRecording, session_id, showStopConfirm, showSummary, hasStoppedSession, stoppedAt, finishedEvent } = useSelector((state: RootState) => state.record);
+  const { isRecording, session_id, recordingEventId, recordingEventEndTime, recordingEventEndAt, showStopConfirm, showSummary, hasStoppedSession, stoppedAt, finishedEvent } = useSelector((state: RootState) => state.record);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { errorPin: authError } = useSelector((state: RootState) => state.auth);
 
   const [activeEvent, setActiveEvent] = useState<any>(null);
+  const [isBooting, setIsBooting] = useState(true);
+
   const [isStarted, setIsStarted] = useState(false);
   const [time, setTime] = useState(new Date());
   const [countdown, setCountdown] = useState("00:00:00");
@@ -340,20 +370,79 @@ function MainLayoutContent() {
   const hasAutoStoppedRef = useRef(false);
   const recordingEventRef = useRef<any>(null);
 
+  const getTimeTodayLocal = useCallback((timeStr: string): number | null => {
+    const normalized = timeStr.trim().replace(".", ":");
+    const [h, m, s] = normalized.split(":").map((p) => p.trim());
+    const hours = Number(h);
+    const minutes = Number(m ?? "0");
+    const seconds = Number(s ?? "0");
+
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds)) {
+      return null;
+    }
+
+    const d = new Date();
+    d.setHours(hours, minutes, seconds, 0);
+    return d.getTime();
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    const run = async () => {
+      const minDelay = new Promise((resolve) => setTimeout(resolve, 900));
+
+      const now = new Date();
+      const fetchInitial = dispatch(fetchHeaderEvents({ month: now.getMonth() + 1, year: now.getFullYear() }))
+        .unwrap()
+        .catch(() => undefined);
+
+      const endTime = recordingEventEndAt ?? (recordingEventEndTime ? getTimeTodayLocal(recordingEventEndTime) : null);
+      const shouldStopOnBoot =
+        isRecording &&
+        !!session_id &&
+        !!recordingEventId &&
+        endTime !== null &&
+        Date.now() >= endTime;
+
+      const stopOnBoot = shouldStopOnBoot
+        ? (async () => {
+            hasAutoStoppedRef.current = true;
+            try {
+              await dispatch(stopRecord({ session_id: session_id!, event_id: String(recordingEventId), isAuto: true })).unwrap();
+            } catch {}
+          })()
+        : Promise.resolve();
+
+      await Promise.all([minDelay, fetchInitial, stopOnBoot]);
+      if (!alive) return;
+      setIsBooting(false);
+    };
+
+    run();
+    return () => {
+      alive = false;
+    };
+  }, [dispatch, getTimeTodayLocal, isRecording, recordingEventEndAt, recordingEventEndTime, recordingEventId, session_id]);
+
   // Sync recordingEventRef — HANYA set saat recording mulai, jangan update saat activeEvent berubah
   // Kalau ref diupdate tiap activeEvent berubah, saat endTime tepat tercapai activeEvent jadi null
   // dan ref juga null → auto-stop crash / tidak jalan
   useEffect(() => {
     if (isRecording) {
       // Set ref hanya jika belum diset (saat recording baru mulai)
-      if (!recordingEventRef.current && activeEvent) {
-        recordingEventRef.current = activeEvent;
+      if (!recordingEventRef.current) {
+        if (recordingEventId && (recordingEventEndAt || recordingEventEndTime)) {
+          recordingEventRef.current = { id: recordingEventId, end_at: recordingEventEndAt, end_time: recordingEventEndTime };
+        } else if (activeEvent) {
+          recordingEventRef.current = activeEvent;
+        }
       }
     } else {
       // Clear saat recording berhenti
       recordingEventRef.current = null;
     }
-  }, [isRecording, activeEvent]);
+  }, [isRecording, activeEvent, recordingEventEndAt, recordingEventId, recordingEventEndTime]);
 
   // 1. Fetch data on mount
   useEffect(() => {
@@ -377,24 +466,39 @@ function MainLayoutContent() {
     }
   }, [isRecording]);
 
+  useEffect(() => {
+    if (!isRecording) return;
+    if (!session_id) return;
+    if (!recordingEventId) return;
+    if (hasAutoStoppedRef.current) return;
+
+    const endTime = recordingEventEndAt ?? (recordingEventEndTime ? getTimeTodayLocal(recordingEventEndTime) : null);
+    if (endTime !== null && Date.now() >= endTime) {
+      hasAutoStoppedRef.current = true;
+      dispatch(stopRecord({ session_id, event_id: String(recordingEventId), isAuto: true }));
+      showToast("Sesi sebelumnya dihentikan otomatis (waktu sudah lewat)", "info");
+      if (window.location.pathname !== "/home") {
+        navigate("/home");
+      }
+    }
+  }, [dispatch, isRecording, navigate, recordingEventEndAt, recordingEventEndTime, recordingEventId, session_id, showToast]);
+
   /* ================= AUTO STOP RECORD LOGIC ================= */
   useEffect(() => {
     if (!isRecording) return;
 
     const checkInterval = setInterval(() => {
-      if (!recordingEventRef.current?.end_time || hasAutoStoppedRef.current) return;
-
-      const getTimeTodayLocal = (timeStr: string) => {
-        const [hours, minutes] = timeStr.split(":").map(Number);
-        const d = new Date();
-        d.setHours(hours, minutes, 0, 0);
-        return d.getTime();
-      };
+      if (hasAutoStoppedRef.current) return;
 
       const now = Date.now();
-      const endTime = getTimeTodayLocal(recordingEventRef.current.end_time);
+      const endTime =
+        typeof recordingEventRef.current?.end_at === "number"
+          ? recordingEventRef.current.end_at
+          : recordingEventRef.current?.end_time
+            ? getTimeTodayLocal(recordingEventRef.current.end_time)
+            : null;
 
-      if (now >= endTime && !hasAutoStoppedRef.current) {
+      if (endTime !== null && now >= endTime && !hasAutoStoppedRef.current) {
         hasAutoStoppedRef.current = true;
         const finished = recordingEventRef.current;
 
@@ -447,15 +551,15 @@ function MainLayoutContent() {
         return;
       }
 
-      const getTimeToday = (timeStr: string) => {
-        const [hours, minutes] = timeStr.split(":").map(Number);
-        const d = new Date();
-        d.setHours(hours, minutes, 0, 0);
-        return d.getTime();
-      };
-
-      const startTime = getTimeToday(activeEvent.start_time);
-      const endTime = getTimeToday(activeEvent.end_time);
+      const startTime = getTimeTodayLocal(activeEvent.start_time);
+      const endTime = getTimeTodayLocal(activeEvent.end_time);
+      if (startTime === null || endTime === null) {
+        setCountdown("00:00:00");
+        setIsStarted(false);
+        setIsLessonActive(false);
+        setIsLessonOrGrace(false);
+        return;
+      }
       const graceEnd = endTime + 15 * 60 * 1000;
       const startThreshold = startTime - 15 * 60 * 1000;
 
@@ -535,6 +639,20 @@ function MainLayoutContent() {
     if (authError) showToast(authError, "error");
   }, [authError, showToast]);
 
+  useEffect(() => {
+    const cleanup = window.ipcRenderer.on("request-stop-record-before-quit", async () => {
+      if (!isRecording) return;
+      if (!session_id) return;
+      if (!recordingEventId) return;
+
+      try {
+        await dispatch(stopRecord({ session_id, event_id: String(recordingEventId), isAuto: true })).unwrap();
+      } catch {}
+    });
+
+    return cleanup;
+  }, [dispatch, isRecording, recordingEventId, session_id]);
+
   const clickCountRef = useRef(0);
   const handleMinimizeOrClose = () => {
     clickCountRef.current += 1;
@@ -557,6 +675,7 @@ function MainLayoutContent() {
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
+        {isBooting && <BootSplash isRecording={isRecording} />}
         {!isFullScreen && (
           <div className="absolute top-4 left-24 z-50">
             <RecorderComponents />
@@ -611,6 +730,7 @@ function MainLayoutContent() {
       className="relative h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
+      {isBooting && <BootSplash isRecording={isRecording} />}
       {!isFullScreen && (
         <div className="absolute top-4 left-24 z-50">
           <RecorderComponents />
@@ -700,6 +820,20 @@ const MainLayout = () => {
 export default MainLayout;
 
 /* ================= MODALS ================= */
+
+const BootSplash = ({ isRecording }: { isRecording: boolean }) => {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white">
+      <div className="flex flex-col items-center gap-6">
+        <img src={Logo} alt="Smart Podium" className="h-14 w-auto object-contain" />
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="text-xs font-semibold text-gray-500 tracking-wide">
+          {isRecording ? "Memulihkan sesi..." : "Memuat sistem..."}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 type SummaryModalProps = {
   open: boolean;

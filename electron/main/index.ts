@@ -43,9 +43,19 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let win: BrowserWindow | null = null;
+let isQuitting = false;
 
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
+
+function requestStopRecordBeforeQuit(target?: BrowserWindow | null) {
+  const windows = target ? [target] : BrowserWindow.getAllWindows();
+  windows.forEach((w) => {
+    try {
+      w.webContents.send("request-stop-record-before-quit");
+    } catch {}
+  });
+}
 
 // ===============================
 // OPEN WHITEBOARD FUNCTION
@@ -118,6 +128,18 @@ async function createWindow() {
     },
   });
 
+  if (process.platform !== "darwin") {
+    win.on("close", (e) => {
+      if (isQuitting) return;
+      e.preventDefault();
+      isQuitting = true;
+      requestStopRecordBeforeQuit(win);
+      setTimeout(() => {
+        app.quit();
+      }, 1500);
+    });
+  }
+
   // ===============================
   // CUSTOM MENU
   // ===============================
@@ -178,6 +200,14 @@ app.whenReady().then(() => {
 // ===============================
 // APP EVENTS
 // ===============================
+app.on("before-quit", (e) => {
+  if (isQuitting) return;
+  e.preventDefault();
+  isQuitting = true;
+  requestStopRecordBeforeQuit();
+  setTimeout(() => app.quit(), 1500);
+});
+
 app.on("window-all-closed", () => {
   win = null;
   if (process.platform !== "darwin") app.quit();
@@ -210,8 +240,11 @@ ipcMain.handle("minimize-window", () => {
   }
 });
 
-ipcMain.handle("close-window", () => {
-  app.quit();
+ipcMain.handle("close-window", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender) ?? BrowserWindow.getFocusedWindow();
+  isQuitting = true;
+  requestStopRecordBeforeQuit(win);
+  setTimeout(() => app.quit(), 1500);
 });
 
 ipcMain.handle("show-quit-dialog", async (event) => {
@@ -228,7 +261,25 @@ ipcMain.handle("show-quit-dialog", async (event) => {
   });
 
   if (result.response === 1) {
-    app.quit();
+    isQuitting = true;
+    requestStopRecordBeforeQuit(win);
+    setTimeout(() => app.quit(), 1500);
+  }
+});
+
+ipcMain.handle("set-display-mode", async (_event, mode: "internal" | "clone" | "extend" | "external") => {
+  if (process.platform !== "win32") {
+    return { ok: false, message: "Fitur ini hanya tersedia di Windows" };
+  }
+
+  const arg = `/${mode}`;
+  const exe = path.join(process.env.WINDIR || "C:\\Windows", "System32", "DisplaySwitch.exe");
+
+  try {
+    spawn(exe, [arg], { detached: true, stdio: "ignore" }).unref();
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, message: e?.message || "Gagal mengubah mode display" };
   }
 });
 

@@ -425,7 +425,19 @@ const Home = () => {
     if (!activeEvent) return;
 
     try {
-      await dispatch(startRecord({ id: String(activeEvent.id) })).unwrap();
+      const endTime = typeof activeEvent.end_time === "string" ? activeEvent.end_time.replace(".", ":") : null;
+      const endAt = (() => {
+        if (!endTime) return null;
+        const parts = endTime.split(":").map((p: string) => p.trim());
+        const hours = Number(parts[0]);
+        const minutes = Number(parts[1] ?? "0");
+        const seconds = Number(parts[2] ?? "0");
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds)) return null;
+        const d = new Date();
+        d.setHours(hours, minutes, seconds, 0);
+        return d.getTime();
+      })();
+      await dispatch(startRecord({ id: String(activeEvent.id), end_time: endTime, end_at: endAt })).unwrap();
       showToast("Sesi belajar dimulai", "success");
       navigate("/internet");
     } catch (err: any) {

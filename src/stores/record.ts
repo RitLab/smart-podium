@@ -10,6 +10,9 @@ import { recordApi } from "@/services/record";
 export type RecordState = {
   isRecording: boolean;
   session_id: string | null;
+  recordingEventId: string | null;
+  recordingEventEndTime: string | null;
+  recordingEventEndAt: number | null;
   startTime: number | null; // timestamp (ms)
   duration: number; // dalam detik
   loading: boolean;
@@ -40,10 +43,28 @@ const loadPersistedState = (): Partial<RecordState> => {
 
 const savePersistedState = (state: RecordState) => {
   try {
-    const { isRecording, session_id, startTime, hasStoppedSession, stoppedAt } = state;
+    const {
+      isRecording,
+      session_id,
+      recordingEventId,
+      recordingEventEndTime,
+      recordingEventEndAt,
+      startTime,
+      hasStoppedSession,
+      stoppedAt,
+    } = state;
     localStorage.setItem(
       RECOVERY_KEY,
-      JSON.stringify({ isRecording, session_id, startTime, hasStoppedSession, stoppedAt })
+      JSON.stringify({
+        isRecording,
+        session_id,
+        recordingEventId,
+        recordingEventEndTime,
+        recordingEventEndAt,
+        startTime,
+        hasStoppedSession,
+        stoppedAt,
+      })
     );
   } catch (err) {
     // ignore
@@ -55,6 +76,9 @@ const persisted = loadPersistedState();
 const initialState: RecordState = {
   isRecording: persisted.isRecording ?? false,
   session_id: persisted.session_id ?? null,
+  recordingEventId: persisted.recordingEventId ?? null,
+  recordingEventEndTime: persisted.recordingEventEndTime ?? null,
+  recordingEventEndAt: persisted.recordingEventEndAt ?? null,
   startTime: persisted.startTime ?? null,
   duration: persisted.startTime
     ? Math.floor((Date.now() - persisted.startTime) / 1000)
@@ -74,7 +98,7 @@ const initialState: RecordState = {
 
 export const startRecord = createAsyncThunk<
   { session_id: string },
-  { id: string },
+  { id: string; end_time?: string | null; end_at?: number | null },
   { rejectValue: string }
 >("record/start", async ({ id }, { rejectWithValue }) => {
   try {
@@ -146,6 +170,9 @@ const recordSlice = createSlice({
     resetRecord(state) {
       state.isRecording = false;
       state.session_id = null;
+      state.recordingEventId = null;
+      state.recordingEventEndTime = null;
+      state.recordingEventEndAt = null;
       state.startTime = null;
       state.duration = 0;
       state.error = null;
@@ -202,6 +229,9 @@ const recordSlice = createSlice({
         state.loading = false;
         state.isRecording = true;
         state.session_id = action.payload.session_id;
+        state.recordingEventId = action.meta.arg.id;
+        state.recordingEventEndTime = action.meta.arg.end_time ?? null;
+        state.recordingEventEndAt = action.meta.arg.end_at ?? null;
         state.startTime = Date.now();
         state.duration = 0;
         state.hasStoppedSession = false; // reset saat mulai rekaman baru
@@ -228,6 +258,9 @@ const recordSlice = createSlice({
         state.loading = false;
         state.isRecording = false;
         state.session_id = null;
+        state.recordingEventId = null;
+        state.recordingEventEndTime = null;
+        state.recordingEventEndAt = null;
         state.startTime = null;
         state.duration = 0;
 
@@ -254,6 +287,9 @@ const recordSlice = createSlice({
         // otherwise the user gets stuck in a recording UI that can never be stopped.
         state.isRecording = false;
         state.session_id = null;
+        state.recordingEventId = null;
+        state.recordingEventEndTime = null;
+        state.recordingEventEndAt = null;
         state.startTime = null;
         state.duration = 0;
 
