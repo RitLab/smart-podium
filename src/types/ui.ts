@@ -7,7 +7,9 @@ export interface Toast {
 }
 
 export interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType) => number;
+  dismissToast: (id: number) => void;
+  clearToasts: () => void;
 }
 
 export type VariantType =

@@ -347,7 +347,7 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
 function MainLayoutContent() {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
-  const { showToast } = useToast();
+  const { showToast, dismissToast } = useToast();
   const navigate = useNavigate();
 
   const { loading, isFullScreen } = useSelector((state: RootState) => state.ui);
@@ -369,6 +369,7 @@ function MainLayoutContent() {
 
   const hasAutoStoppedRef = useRef(false);
   const recordingEventRef = useRef<any>(null);
+  const hasClearedGraceRef = useRef(false);
 
   const getTimeTodayLocal = useCallback((timeStr: string): number | null => {
     const normalized = timeStr.trim().replace(".", ":");
@@ -467,6 +468,12 @@ function MainLayoutContent() {
   }, [isRecording]);
 
   useEffect(() => {
+    if (hasStoppedSession) {
+      hasClearedGraceRef.current = false;
+    }
+  }, [hasStoppedSession]);
+
+  useEffect(() => {
     if (!isRecording) return;
     if (!session_id) return;
     if (!recordingEventId) return;
@@ -538,6 +545,11 @@ function MainLayoutContent() {
           setGraceCountdown(`${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`);
         } else {
           setGraceCountdown(null);
+          if (!hasClearedGraceRef.current) {
+            hasClearedGraceRef.current = true;
+            dispatch(setShowSummary(false));
+            dispatch(resetStoppedSession());
+          }
         }
       } else {
         setGraceCountdown(null);
@@ -627,13 +639,21 @@ function MainLayoutContent() {
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
     if (isLessonActive && !isRecording && !hasStoppedSession) {
-      showToast("Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.", "info");
+      let lastToastId: number | null = null;
+      const fire = () => {
+        lastToastId = showToast("Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.", "info");
+      };
+
+      fire();
       const interval = setInterval(() => {
-        showToast("Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.", "info");
+        fire();
       }, 10000);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        if (lastToastId !== null) dismissToast(lastToastId);
+      };
     }
-  }, [isLessonActive, isRecording, hasStoppedSession, showToast]);
+  }, [dismissToast, hasStoppedSession, isLessonActive, isRecording, showToast]);
 
   useEffect(() => {
     if (authError) showToast(authError, "error");
@@ -641,17 +661,11 @@ function MainLayoutContent() {
 
   useEffect(() => {
     const cleanup = window.ipcRenderer.on("request-stop-record-before-quit", async () => {
-      if (!isRecording) return;
-      if (!session_id) return;
-      if (!recordingEventId) return;
-
-      try {
-        await dispatch(stopRecord({ session_id, event_id: String(recordingEventId), isAuto: true })).unwrap();
-      } catch {}
+      return;
     });
 
     return cleanup;
-  }, [dispatch, isRecording, recordingEventId, session_id]);
+  }, []);
 
   const clickCountRef = useRef(0);
   const handleMinimizeOrClose = () => {

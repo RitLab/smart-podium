@@ -18,7 +18,7 @@ const LockScreen = () => {
     (state: RootState) => state.calendar
   );
 
-  const { showToast } = useToast();
+  const { showToast, dismissToast } = useToast();
   const { isRecording } = useSelector((state: RootState) => state.record);
 
   const [time, setTime] = useState(new Date());
@@ -123,20 +123,25 @@ const LockScreen = () => {
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
     if (isStarted && !isRecording) {
-      showToast(
-        "Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.",
-        "info"
-      );
-      const interval = setInterval(() => {
-        showToast(
+      let lastToastId: number | null = null;
+      const fire = () => {
+        lastToastId = showToast(
           "Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.",
           "info"
         );
+      };
+
+      fire();
+      const interval = setInterval(() => {
+        fire();
       }, 10000);
 
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        if (lastToastId !== null) dismissToast(lastToastId);
+      };
     }
-  }, [isStarted, isRecording, showToast]);
+  }, [dismissToast, isStarted, isRecording, showToast]);
 
   if (error) return (
     <div className="flex flex-col gap-4 justify-center items-center bg-black/50 p-8 rounded-2xl backdrop-blur-sm border border-white/10 shadow-2xl">
