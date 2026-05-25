@@ -367,10 +367,9 @@ function MainLayoutContent() {
   const [showStopPIN, setShowStopPIN] = useState(false);
   const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
   const isEffectiveRecording = isRecording || serverEventStatus === "recording";
+  const canStartFromServerStatus = serverEventStatus === "" || serverEventStatus === "failed";
   const isStartBlockedByServerStatus =
-    serverEventStatus === "stopped" ||
-    serverEventStatus === "reupload_success" ||
-    serverEventStatus === "reupload_failed";
+    serverEventStatus !== null && serverEventStatus !== "recording" && !canStartFromServerStatus;
 
   const [isLessonActive, setIsLessonActive] = useState(false);
   const [isLessonOrGrace, setIsLessonOrGrace] = useState(false);

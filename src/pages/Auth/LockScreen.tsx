@@ -27,10 +27,9 @@ const LockScreen = () => {
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [isStarted, setIsStarted] = useState(false);
   const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
+  const canStartFromServerStatus = serverEventStatus === "" || serverEventStatus === "failed";
   const isStartBlockedByServerStatus =
-    serverEventStatus === "stopped" ||
-    serverEventStatus === "reupload_success" ||
-    serverEventStatus === "reupload_failed";
+    serverEventStatus !== null && serverEventStatus !== "recording" && !canStartFromServerStatus;
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);

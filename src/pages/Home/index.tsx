@@ -136,10 +136,11 @@ const Home = () => {
   const [showPIN, setShowPIN] = useState(false);
   const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
   const isEffectiveRecording = isRecording || serverEventStatus === "recording";
+  const canStartFromServerStatus =
+    serverEventStatus === "" ||
+    serverEventStatus === "failed";
   const isStartBlockedByServerStatus =
-    serverEventStatus === "stopped" ||
-    serverEventStatus === "reupload_success" ||
-    serverEventStatus === "reupload_failed";
+    serverEventStatus !== null && serverEventStatus !== "recording" && !canStartFromServerStatus;
 
   /* ================= ACCESS STATE ================= */
   // isLessonActive  : pelajaran sedang berjalan (exact)
