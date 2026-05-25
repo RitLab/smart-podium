@@ -21,9 +21,11 @@ import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { fetchHeaderEvents } from "@/stores/calendar";
-import { stopRecord, resetStoppedSession, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
+import { stopRecord, clearRecordingOnly, resetStoppedSession, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
 import RecorderComponents from "@/components/Recorder";
 import PINModal from "@/components/PINModal";
+import { eventService } from "@/services/event";
+import type { EventRecordStatus } from "@/types/event";
 
 /* =====================================================
    TOAST CONTEXT
@@ -363,6 +365,12 @@ function MainLayoutContent() {
   const [countdown, setCountdown] = useState("00:00:00");
   const [graceCountdown, setGraceCountdown] = useState<string | null>(null);
   const [showStopPIN, setShowStopPIN] = useState(false);
+  const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
+  const isEffectiveRecording = isRecording || serverEventStatus === "recording";
+  const isStartBlockedByServerStatus =
+    serverEventStatus === "stopped" ||
+    serverEventStatus === "reupload_success" ||
+    serverEventStatus === "reupload_failed";
 
   const [isLessonActive, setIsLessonActive] = useState(false);
   const [isLessonOrGrace, setIsLessonOrGrace] = useState(false);
@@ -426,6 +434,28 @@ function MainLayoutContent() {
     };
   }, [dispatch, getTimeTodayLocal, isRecording, recordingEventEndAt, recordingEventEndTime, recordingEventId, session_id]);
 
+  useEffect(() => {
+    let alive = true;
+
+    const run = async () => {
+      if (!isRecording) return;
+      if (!recordingEventId) return;
+
+      try {
+        const res = await eventService.getEventById(String(recordingEventId));
+        if (!alive) return;
+        if (res.data?.status !== "recording") {
+          dispatch(clearRecordingOnly());
+        }
+      } catch {}
+    };
+
+    run();
+    return () => {
+      alive = false;
+    };
+  }, [dispatch, isRecording, recordingEventId]);
+
   // Sync recordingEventRef — HANYA set saat recording mulai, jangan update saat activeEvent berubah
   // Kalau ref diupdate tiap activeEvent berubah, saat endTime tepat tercapai activeEvent jadi null
   // dan ref juga null → auto-stop crash / tidak jalan
@@ -459,6 +489,38 @@ function MainLayoutContent() {
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [dispatch]);
+
+  useEffect(() => {
+    let alive = true;
+    let interval: number | null = null;
+
+    const run = async () => {
+      if (!activeEvent?.id) {
+        setServerEventStatus(null);
+        return;
+      }
+
+      const fetchStatus = async () => {
+        try {
+          const res = await eventService.getEventById(String(activeEvent.id));
+          if (!alive) return;
+          setServerEventStatus(res.data?.status ?? null);
+        } catch {
+          if (!alive) return;
+          setServerEventStatus(null);
+        }
+      };
+
+      await fetchStatus();
+      interval = window.setInterval(fetchStatus, 10000);
+    };
+
+    run();
+    return () => {
+      alive = false;
+      if (interval !== null) window.clearInterval(interval);
+    };
+  }, [activeEvent?.id]);
 
   // Reset auto-stop flag when recording starts
   useEffect(() => {
@@ -638,7 +700,13 @@ function MainLayoutContent() {
 
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
-    if (isLessonActive && !isRecording && !hasStoppedSession) {
+    if (
+      isLessonActive &&
+      !isRecording &&
+      !hasStoppedSession &&
+      serverEventStatus !== "recording" &&
+      !isStartBlockedByServerStatus
+    ) {
       let lastToastId: number | null = null;
       const fire = () => {
         lastToastId = showToast("Kelas telah dimulai, silakan klik tombol mulai untuk memulai kelas.", "info");
@@ -653,7 +721,7 @@ function MainLayoutContent() {
         if (lastToastId !== null) dismissToast(lastToastId);
       };
     }
-  }, [dismissToast, hasStoppedSession, isLessonActive, isRecording, showToast]);
+  }, [dismissToast, hasStoppedSession, isLessonActive, isRecording, isStartBlockedByServerStatus, serverEventStatus, showToast]);
 
   useEffect(() => {
     if (authError) showToast(authError, "error");
@@ -777,7 +845,7 @@ function MainLayoutContent() {
             <Sidebar
               isLessonActive={isLessonActive}
               isLessonOrGrace={isLessonOrGrace}
-              isRecording={isRecording}
+              isRecording={isEffectiveRecording}
               hasStoppedSession={hasStoppedSession}
               stoppedAt={stoppedAt}
             />

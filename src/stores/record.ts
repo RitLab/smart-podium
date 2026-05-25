@@ -185,6 +185,19 @@ const recordSlice = createSlice({
       savePersistedState(state);
     },
 
+    clearRecordingOnly(state) {
+      state.isRecording = false;
+      state.session_id = null;
+      state.recordingEventId = null;
+      state.recordingEventEndTime = null;
+      state.recordingEventEndAt = null;
+      state.startTime = null;
+      state.duration = 0;
+      state.loading = false;
+      state.error = null;
+      savePersistedState(state);
+    },
+
     setShowSummary(state, action) {
       state.showSummary = action.payload;
     },
@@ -327,7 +340,7 @@ const recordSlice = createSlice({
    EXPORT
 ==================================================== */
 
-export const { resetRecord, resetStoppedSession, tick, clearError, setShowSummary, setShowStopConfirm, setFinishedEvent } =
+export const { resetRecord, clearRecordingOnly, resetStoppedSession, tick, clearError, setShowSummary, setShowStopConfirm, setFinishedEvent } =
   recordSlice.actions;
 
 export default recordSlice.reducer;

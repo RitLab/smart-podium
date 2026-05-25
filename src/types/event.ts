@@ -41,6 +41,41 @@ export interface EventList {
   metadata?: string | null;
 }
 
+export type EventRecordStatus =
+  | ""
+  | "recording"
+  | "failed"
+  | "stopped"
+  | "reupload_failed"
+  | "reupload_success";
+
+export interface EventDetail {
+  id: string;
+  title: string;
+  class_id: string;
+  class_name: string;
+  class_room_id: string;
+  class_room_name: string;
+  course_id: number | string;
+  course_name: string;
+  event_date: string;
+  weekday: number;
+  slot_indexes: number[];
+  start_time: string;
+  end_time: string;
+  teacher_id: string;
+  teacher_name: string;
+  teacher_image: string;
+  color: string;
+  status: EventRecordStatus;
+  is_meeting: boolean;
+  metadata: string | null;
+}
+
+export interface EventDetailResponse extends BaseResponse {
+  data: EventDetail;
+}
+
 export interface EventListPayload {
   month: number;
   year: number;

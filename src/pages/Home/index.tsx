@@ -23,6 +23,8 @@ import { startRecord, stopRecord, clearError, resetRecord, setShowSummary, setSh
 
 import { useToast } from "@/components/ToastProvider";
 import PINModal from "@/components/PINModal";
+import { eventService } from "@/services/event";
+import type { EventRecordStatus } from "@/types/event";
 
 /* ================= MENU TYPE ================= */
 
@@ -132,6 +134,12 @@ const Home = () => {
   const [time, setTime] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [showPIN, setShowPIN] = useState(false);
+  const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
+  const isEffectiveRecording = isRecording || serverEventStatus === "recording";
+  const isStartBlockedByServerStatus =
+    serverEventStatus === "stopped" ||
+    serverEventStatus === "reupload_success" ||
+    serverEventStatus === "reupload_failed";
 
   /* ================= ACCESS STATE ================= */
   // isLessonActive  : pelajaran sedang berjalan (exact)
@@ -207,6 +215,38 @@ const Home = () => {
     // Jika tidak ada yang sedang jalan dan tidak ada upcoming → semua selesai, kosongkan
     setActiveEvent(current || null);
   }, [rawEvents, time, finishedEvent, hasStoppedSession]);
+
+  useEffect(() => {
+    let alive = true;
+    let interval: number | null = null;
+
+    const run = async () => {
+      if (!activeEvent?.id) {
+        setServerEventStatus(null);
+        return;
+      }
+
+      const fetchStatus = async () => {
+        try {
+          const res = await eventService.getEventById(String(activeEvent.id));
+          if (!alive) return;
+          setServerEventStatus(res.data?.status ?? null);
+        } catch {
+          if (!alive) return;
+          setServerEventStatus(null);
+        }
+      };
+
+      await fetchStatus();
+      interval = window.setInterval(fetchStatus, 10000);
+    };
+
+    run();
+    return () => {
+      alive = false;
+      if (interval !== null) window.clearInterval(interval);
+    };
+  }, [activeEvent?.id]);
 
   /* ================= UPDATE LISTENER ================= */
 
@@ -412,6 +452,14 @@ const Home = () => {
     }
 
     if (!isRecording) {
+      if (serverEventStatus === "recording") {
+        showToast("Sesi sedang direkam di server", "info");
+        return;
+      }
+      if (isStartBlockedByServerStatus) {
+        showToast("Sesi selesai, tunggu kelas berikutnya", "info");
+        return;
+      }
       // START - Tampilkan verifikasi PIN dulu
       setShowPIN(true);
     } else {
@@ -453,7 +501,7 @@ const Home = () => {
   /* ================= ACCESS RESOLVER ================= */
   // lesson_only juga disable jika session sudah dihentikan
   const isMenuEnabled = (access: MenuAccess): boolean => {
-    if (isRecording) {
+    if (isEffectiveRecording) {
       return access !== "outside_only";
     }
 
@@ -556,6 +604,20 @@ const Home = () => {
                 <LogOut size={18} />
                 <div>Selesai</div>
               </button>
+            ) : serverEventStatus === "recording" ? (
+              <div className="flex flex-col items-center gap-1 px-4 py-2 text-center min-w-[120px]">
+                <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                  Sedang Rekam
+                </div>
+                <div className="text-[10px] text-gray-400">Terdeteksi dari server</div>
+              </div>
+            ) : isStartBlockedByServerStatus ? (
+              <div className="flex flex-col items-center gap-1 px-4 py-2 text-center min-w-[120px]">
+                <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                  Sesi Selesai
+                </div>
+                <div className="text-[10px] text-gray-400">Tunggu kelas berikutnya</div>
+              </div>
             ) : isLessonActive ? (
               <button
                 onClick={handleRecordToggle}

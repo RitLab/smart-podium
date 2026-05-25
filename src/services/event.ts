@@ -1,5 +1,5 @@
 import { baseWhisperUrl, handler } from "./hash";
-import type { EventGroup, EventListPayload, EventListResponse } from "@/types/event";
+import type { EventDetailResponse, EventGroup, EventListPayload, EventListResponse } from "@/types/event";
 
 export const eventService = {
   getEvents: async (): Promise<EventGroup[]> => {
@@ -96,5 +96,9 @@ export const eventService = {
   getEventList: async (payload: EventListPayload): Promise<EventListResponse> => {
     const url = `${baseWhisperUrl}/portal/event`;
     return await handler.get<EventListResponse>(url, payload);
-  }
+  },
+  getEventById: async (id: string): Promise<EventDetailResponse> => {
+    const url = `${baseWhisperUrl}/portal/event/${id}`;
+    return await handler.get<EventDetailResponse>(url);
+  },
 };

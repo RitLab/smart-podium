@@ -9,6 +9,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/stores";
 import { fetchEventList } from "@/stores/calendar";
 import { useToast } from "@/components/ToastProvider";
+import { eventService } from "@/services/event";
+import type { EventRecordStatus } from "@/types/event";
 
 const LockScreen = () => {
   const navigate = useNavigate();
@@ -24,6 +26,11 @@ const LockScreen = () => {
   const [time, setTime] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [isStarted, setIsStarted] = useState(false);
+  const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
+  const isStartBlockedByServerStatus =
+    serverEventStatus === "stopped" ||
+    serverEventStatus === "reupload_success" ||
+    serverEventStatus === "reupload_failed";
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -120,9 +127,41 @@ const LockScreen = () => {
     return () => clearInterval(interval);
   }, [activeEvent]);
 
+  useEffect(() => {
+    let alive = true;
+    let interval: number | null = null;
+
+    const run = async () => {
+      if (!activeEvent?.id) {
+        setServerEventStatus(null);
+        return;
+      }
+
+      const fetchStatus = async () => {
+        try {
+          const res = await eventService.getEventById(String(activeEvent.id));
+          if (!alive) return;
+          setServerEventStatus(res.data?.status ?? null);
+        } catch {
+          if (!alive) return;
+          setServerEventStatus(null);
+        }
+      };
+
+      await fetchStatus();
+      interval = window.setInterval(fetchStatus, 10000);
+    };
+
+    run();
+    return () => {
+      alive = false;
+      if (interval !== null) window.clearInterval(interval);
+    };
+  }, [activeEvent?.id]);
+
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
-    if (isStarted && !isRecording) {
+    if (isStarted && !isRecording && serverEventStatus !== "recording" && !isStartBlockedByServerStatus) {
       let lastToastId: number | null = null;
       const fire = () => {
         lastToastId = showToast(
@@ -141,7 +180,7 @@ const LockScreen = () => {
         if (lastToastId !== null) dismissToast(lastToastId);
       };
     }
-  }, [dismissToast, isStarted, isRecording, showToast]);
+  }, [dismissToast, isStarted, isRecording, isStartBlockedByServerStatus, serverEventStatus, showToast]);
 
   if (error) return (
     <div className="flex flex-col gap-4 justify-center items-center bg-black/50 p-8 rounded-2xl backdrop-blur-sm border border-white/10 shadow-2xl">
