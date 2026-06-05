@@ -18,7 +18,6 @@ import { Image } from "@/components/Image";
 import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
-import { fetchEventList } from "@/stores/calendar";
 import { startRecord, stopRecord, clearError, resetRecord, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
 
 import { useToast } from "@/components/ToastProvider";
@@ -125,7 +124,7 @@ const Home = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { showToast } = useToast();
 
-  const { rawEvents } = useSelector((state: RootState) => state.calendar);
+  const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { isRecording, session_id, error, hasStoppedSession, stoppedAt, finishedEvent } = useSelector(
     (state: RootState) => state.record,
   );
@@ -148,30 +147,10 @@ const Home = () => {
   const [isLessonActive, setIsLessonActive] = useState(false);
   const [isLessonOrGrace, setIsLessonOrGrace] = useState(false);
 
-  /* ================= FETCH EVENTS ================= */
-
-  useEffect(() => {
-    const fetchData = () => {
-      const now = new Date();
-      dispatch(
-        fetchEventList({
-          month: now.getMonth() + 1,
-          year: now.getFullYear(),
-        }),
-      );
-    };
-
-    fetchData();
-
-    // Refetch every 5 seconds to keep the schedule updated (Real-time feel)
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
-  }, [dispatch]);
-
   /* ================= FIND NEXT EVENT ================= */
 
   useEffect(() => {
-    if (!rawEvents || rawEvents.length === 0) return;
+    if (!headerEvents || headerEvents.length === 0) return;
 
     const now = new Date();
 
@@ -183,7 +162,7 @@ const Home = () => {
       hour: "2-digit", minute: "2-digit", hour12: false
     }).replace(".", ":");
 
-    const todayEvents = rawEvents.filter(ev => {
+    const todayEvents = headerEvents.filter(ev => {
       if (ev.event_date !== todayStr) return false;
       // Exclude finishedEvent saat user memilih Keluar (hasStoppedSession=false tapi finishedEvent ada)
       if (finishedEvent && String(ev.id) === String(finishedEvent.id) && !hasStoppedSession) return false;
@@ -215,7 +194,7 @@ const Home = () => {
 
     // Jika tidak ada yang sedang jalan dan tidak ada upcoming → semua selesai, kosongkan
     setActiveEvent(current || null);
-  }, [rawEvents, time, finishedEvent, hasStoppedSession]);
+  }, [headerEvents, time, finishedEvent, hasStoppedSession]);
 
   useEffect(() => {
     let alive = true;

@@ -1,5 +1,5 @@
 import { Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
 import LogoWhite from "@/assets/images/logo-white.png";
@@ -7,7 +7,7 @@ import { formattedDate, formattedTime } from "@/utils";
 import { Image } from "@/components/Image";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/stores";
-import { fetchEventList } from "@/stores/calendar";
+import { fetchHeaderEvents } from "@/stores/calendar";
 import { useToast } from "@/components/ToastProvider";
 import { eventService } from "@/services/event";
 import type { EventRecordStatus } from "@/types/event";
@@ -16,9 +16,14 @@ const LockScreen = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { loading, error, rawEvents } = useSelector(
+  const { loading, error, headerEvents } = useSelector(
     (state: RootState) => state.calendar
   );
+  const headerEventsRef = useRef(headerEvents);
+
+  useEffect(() => {
+    headerEventsRef.current = headerEvents;
+  }, [headerEvents]);
 
   const { showToast, dismissToast } = useToast();
   const { isRecording } = useSelector((state: RootState) => state.record);
@@ -37,32 +42,112 @@ const LockScreen = () => {
   }, []);
 
   useEffect(() => {
-    const today = new Date();
-    const month = today.getMonth() + 1;
-    const year = today.getFullYear();
+    let alive = true;
+    let timeoutId: number | null = null;
+    const retryAttemptRef = { current: 0 };
+    const isFetchingRef = { current: false };
 
-    dispatch(
-      fetchEventList({
-        month,
-        year,
-      })
-    );
+    const schedule = (delayMs: number) => {
+      if (!alive) return;
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      const safeDelay = Math.max(5000, delayMs);
+      timeoutId = window.setTimeout(() => {
+        void fetchSchedule("scheduled");
+      }, safeDelay);
+    };
 
-    const checkInterval = setInterval(() => {
-      dispatch(
-        fetchEventList({
-          month,
-          year,
-        })
-      );
-    }, 10000); // Check every 10s
+    const getTimeTodayLocal = (timeStr: string): number | null => {
+      const normalized = timeStr.trim().replace(".", ":");
+      const [h, m, s] = normalized.split(":").map((p) => p.trim());
+      const hours = Number(h);
+      const minutes = Number(m ?? "0");
+      const seconds = Number(s ?? "0");
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds)) return null;
+      const d = new Date();
+      d.setHours(hours, minutes, seconds, 0);
+      return d.getTime();
+    };
 
-    return () => clearInterval(checkInterval);
+    const computeNextDelayMs = (events: typeof headerEventsRef.current) => {
+      const nowMs = Date.now();
+      const maxDelayMs = 2 * 60 * 60 * 1000;
+      const todayStr = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+
+      const todayEvents = events.filter((ev) => ev.event_date === todayStr);
+
+      let currentEnd: number | null = null;
+      let nextStart: number | null = null;
+
+      for (const ev of todayEvents) {
+        const start = getTimeTodayLocal(ev.start_time);
+        const end = getTimeTodayLocal(ev.end_time);
+        if (start === null || end === null) continue;
+
+        if (nowMs >= start && nowMs < end) {
+          if (currentEnd === null || end < currentEnd) currentEnd = end;
+        } else if (start > nowMs) {
+          if (nextStart === null || start < nextStart) nextStart = start;
+        }
+      }
+
+      const candidates: number[] = [];
+
+      if (nextStart !== null) {
+        candidates.push(nextStart - 15 * 60 * 1000);
+        candidates.push(nextStart + 2000);
+      }
+      if (currentEnd !== null) {
+        candidates.push(currentEnd + 2000);
+      }
+
+      const midnight = new Date();
+      midnight.setHours(24, 0, 30, 0);
+      candidates.push(midnight.getTime());
+
+      const future = candidates.filter((t) => t > nowMs + 2000);
+      const nextAt = future.length ? Math.min(...future) : nowMs + maxDelayMs;
+
+      return Math.min(nextAt - nowMs, maxDelayMs);
+    };
+
+    const fetchSchedule = async (_reason: "scheduled" | "focus" | "online") => {
+      if (!alive) return;
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+
+      try {
+        const now = new Date();
+        const events = await dispatch(fetchHeaderEvents({ month: now.getMonth() + 1, year: now.getFullYear() })).unwrap();
+        headerEventsRef.current = events;
+        retryAttemptRef.current = 0;
+        schedule(computeNextDelayMs(events));
+      } catch {
+        retryAttemptRef.current += 1;
+        const base = 15000;
+        const cappedAttempt = Math.min(retryAttemptRef.current, 5);
+        schedule(base * Math.pow(2, cappedAttempt - 1));
+      } finally {
+        isFetchingRef.current = false;
+      }
+    };
+
+    void fetchSchedule("scheduled");
+    const onFocus = () => void fetchSchedule("focus");
+    const onOnline = () => void fetchSchedule("online");
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onOnline);
+
+    return () => {
+      alive = false;
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onOnline);
+    };
   }, [dispatch]);
 
   /* ================= FIND NEXT EVENT ================= */
   useEffect(() => {
-    if (!rawEvents || rawEvents.length === 0) return;
+    if (!headerEvents || headerEvents.length === 0) return;
 
     const now = new Date();
 
@@ -74,7 +159,7 @@ const LockScreen = () => {
       hour: "2-digit", minute: "2-digit", hour12: false
     }).replace(".", ":");
 
-    const todayEvents = rawEvents.filter(ev => ev.event_date === todayStr);
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
 
     if (todayEvents.length === 0) {
       setActiveEvent(null);
@@ -95,7 +180,7 @@ const LockScreen = () => {
 
     // Jika semua selesai → kosongkan, jangan tampilkan event terakhir
     setActiveEvent(current || null);
-  }, [rawEvents, time]);
+  }, [headerEvents, time]);
 
   /* ================= CHECK IF STARTED ================= */
   useEffect(() => {

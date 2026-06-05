@@ -356,6 +356,11 @@ function MainLayoutContent() {
   const { isRecording, session_id, recordingEventId, recordingEventEndTime, recordingEventEndAt, showStopConfirm, showSummary, hasStoppedSession, stoppedAt, finishedEvent } = useSelector((state: RootState) => state.record);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { errorPin: authError } = useSelector((state: RootState) => state.auth);
+  const headerEventsRef = useRef(headerEvents);
+
+  useEffect(() => {
+    headerEventsRef.current = headerEvents;
+  }, [headerEvents]);
 
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [isBooting, setIsBooting] = useState(true);
@@ -400,11 +405,6 @@ function MainLayoutContent() {
     const run = async () => {
       const minDelay = new Promise((resolve) => setTimeout(resolve, 900));
 
-      const now = new Date();
-      const fetchInitial = dispatch(fetchHeaderEvents({ month: now.getMonth() + 1, year: now.getFullYear() }))
-        .unwrap()
-        .catch(() => undefined);
-
       const endTime = recordingEventEndAt ?? (recordingEventEndTime ? getTimeTodayLocal(recordingEventEndTime) : null);
       const shouldStopOnBoot =
         isRecording &&
@@ -422,7 +422,7 @@ function MainLayoutContent() {
           })()
         : Promise.resolve();
 
-      await Promise.all([minDelay, fetchInitial, stopOnBoot]);
+      await Promise.all([minDelay, stopOnBoot]);
       if (!alive) return;
       setIsBooting(false);
     };
@@ -477,16 +477,99 @@ function MainLayoutContent() {
   // 1. Fetch data on mount
   useEffect(() => {
     dispatch(fetchUser());
-    const fetchData = () => {
-      const now = new Date();
-      dispatch(fetchHeaderEvents({
-        month: now.getMonth() + 1,
-        year: now.getFullYear(),
-      }));
+    let alive = true;
+    let timeoutId: number | null = null;
+    const retryAttemptRef = { current: 0 };
+    const isFetchingRef = { current: false };
+
+    const schedule = (delayMs: number) => {
+      if (!alive) return;
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      const safeDelay = Math.max(5000, delayMs);
+      timeoutId = window.setTimeout(() => {
+        void fetchSchedule("scheduled");
+      }, safeDelay);
     };
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
+    const getTodayStr = () =>
+      new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+
+    const computeNextDelayMs = (events: typeof headerEventsRef.current) => {
+      const nowMs = Date.now();
+      const maxDelayMs = 2 * 60 * 60 * 1000;
+
+      const todayStr = getTodayStr();
+      const todayEvents = events.filter((ev) => ev.event_date === todayStr);
+
+      let currentEnd: number | null = null;
+      let nextStart: number | null = null;
+
+      for (const ev of todayEvents) {
+        const start = getTimeTodayLocal(ev.start_time);
+        const end = getTimeTodayLocal(ev.end_time);
+        if (start === null || end === null) continue;
+
+        if (nowMs >= start && nowMs < end) {
+          if (currentEnd === null || end < currentEnd) currentEnd = end;
+        } else if (start > nowMs) {
+          if (nextStart === null || start < nextStart) nextStart = start;
+        }
+      }
+
+      const candidates: number[] = [];
+
+      if (nextStart !== null) {
+        candidates.push(nextStart - 15 * 60 * 1000);
+        candidates.push(nextStart + 2000);
+      }
+      if (currentEnd !== null) {
+        candidates.push(currentEnd + 2000);
+      }
+
+      const midnight = new Date();
+      midnight.setHours(24, 0, 30, 0);
+      candidates.push(midnight.getTime());
+
+      const future = candidates.filter((t) => t > nowMs + 2000);
+      const nextAt = future.length ? Math.min(...future) : nowMs + maxDelayMs;
+
+      return Math.min(nextAt - nowMs, maxDelayMs);
+    };
+
+    const fetchSchedule = async (_reason: "scheduled" | "focus" | "online") => {
+      if (!alive) return;
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+
+      try {
+        const now = new Date();
+        const events = await dispatch(fetchHeaderEvents({ month: now.getMonth() + 1, year: now.getFullYear() })).unwrap();
+        headerEventsRef.current = events;
+        retryAttemptRef.current = 0;
+        schedule(computeNextDelayMs(events));
+      } catch {
+        retryAttemptRef.current += 1;
+        const base = 15000;
+        const cappedAttempt = Math.min(retryAttemptRef.current, 5);
+        schedule(base * Math.pow(2, cappedAttempt - 1));
+      } finally {
+        isFetchingRef.current = false;
+      }
+    };
+
+    void fetchSchedule("scheduled");
+
+    const onFocus = () => void fetchSchedule("focus");
+    const onOnline = () => void fetchSchedule("online");
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onOnline);
+
+    return () => {
+      alive = false;
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onOnline);
+    };
   }, [dispatch]);
 
   useEffect(() => {
