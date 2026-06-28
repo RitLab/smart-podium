@@ -22,6 +22,7 @@ import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { fetchHeaderEvents } from "@/stores/calendar";
 import { stopRecord, clearRecordingOnly, resetStoppedSession, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
+import { beginNewBrowserSession } from "@/stores/browser";
 import RecorderComponents from "@/components/Recorder";
 import PINModal from "@/components/PINModal";
 import { eventService } from "@/services/event";
@@ -453,6 +454,14 @@ function MainLayoutContent() {
     return () => {
       alive = false;
     };
+  }, [dispatch, isRecording, recordingEventId]);
+
+  // Associate browser tabs with current lesson session (no reset if same session)
+  // This ensures continuity when recovering a recording session after app restart.
+  useEffect(() => {
+    if (isRecording && recordingEventId) {
+      dispatch(beginNewBrowserSession(String(recordingEventId)));
+    }
   }, [dispatch, isRecording, recordingEventId]);
 
   // Sync recordingEventRef — HANYA set saat recording mulai, jangan update saat activeEvent berubah

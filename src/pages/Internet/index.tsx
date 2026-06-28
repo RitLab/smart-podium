@@ -13,26 +13,18 @@ import {
   Trash2 
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setFullScreen } from "@/stores/ui";
-
-interface Bookmark {
-  id: string;
-  title: string;
-  url: string;
-  isDefault?: boolean;
-}
-
-interface BrowserTab {
-  id: string;
-  url: string;
-  inputUrl: string;
-  isLanding: boolean;
-  title: string;
-  canGoBack: boolean;
-  canGoForward: boolean;
-  isLoading?: boolean;
-}
+import type { AppDispatch, RootState } from "@/stores";
+import type { BrowserTab, Bookmark } from "@/types/browser";
+import {
+  setActiveTabId,
+  updateActiveTab,
+  updateTab,
+  addTab,
+  closeTab,
+  resetBrowser,
+} from "@/stores/browser";
 
 const DEFAULT_BOOKMARKS: Bookmark[] = [
   {
@@ -166,6 +158,7 @@ const WebviewContainer = ({
       <webview
         ref={webviewRef}
         src={url}
+        allowFullScreen
         style={{
           width: "100%",
           height: "100%",
@@ -177,23 +170,11 @@ const WebviewContainer = ({
 };
 
 const Internet = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const webviewRefs = useRef<Record<string, WebviewTag | null>>({});
   
-  // State for Multi-Tabs
-  const [tabs, setTabs] = useState<BrowserTab[]>([
-    {
-      id: "initial-tab",
-      url: "",
-      inputUrl: "",
-      isLanding: true,
-      title: "Tab Baru",
-      canGoBack: false,
-      canGoForward: false,
-      isLoading: false,
-    }
-  ]);
-  const [activeTabId, setActiveTabId] = useState<string>("initial-tab");
+  // Browser state from Redux (persisted across menu switches)
+  const { tabs, activeTabId } = useSelector((state: RootState) => state.browser);
   const [isWebviewFullScreen, setIsWebviewFullScreen] = useState(false);
 
   // State for Bookmarks
@@ -221,27 +202,53 @@ const Internet = () => {
     };
   }, [dispatch]);
 
-  const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
+  // Escape key to force exit webview fullscreen mode (clean video watching)
+  // Also tries to exit any inner video fullscreen (YouTube etc)
+  useEffect(() => {
+    if (!isWebviewFullScreen) return;
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const webview = webviewRefs.current[activeTabId];
+        if (webview) {
+          webview.executeJavaScript('if (document.fullscreenElement) { document.exitFullscreen(); }').catch(() => {});
+        }
+        setIsWebviewFullScreen(false);
+        dispatch(setFullScreen(false));
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isWebviewFullScreen, dispatch]);
+
+  const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0] || {
+    id: "initial-tab",
+    url: "",
+    inputUrl: "",
+    isLanding: true,
+    title: "Tab Baru",
+    canGoBack: false,
+    canGoForward: false,
+    isLoading: false,
+  } as BrowserTab;
   const isLanding = activeTab.isLanding;
   const canGoBack = activeTab.canGoBack || !isLanding;
   const canGoForward = activeTab.canGoForward;
   const inputUrl = activeTab.inputUrl;
   const isBookmarked = !isLanding && bookmarks.some(b => b.url === activeTab.url);
 
-  const updateActiveTab = (updates: Partial<BrowserTab>) => {
-    setTabs(prevTabs => prevTabs.map(tab => 
-      tab.id === activeTabId ? { ...tab, ...updates } : tab
-    ));
+  // These now dispatch to Redux (persisted)
+  const updateActiveTabLocal = (updates: Partial<BrowserTab>) => {
+    dispatch(updateActiveTab(updates));
   };
 
-  const updateTab = (id: string, updates: Partial<BrowserTab>) => {
-    setTabs(prevTabs => prevTabs.map(tab => 
-      tab.id === id ? { ...tab, ...updates } : tab
-    ));
+  const updateTabLocal = (id: string, updates: Partial<BrowserTab>) => {
+    dispatch(updateTab({ id, updates }));
   };
 
   const handleNavigationStateChange = (id: string, url: string, canGoBack: boolean, canGoForward: boolean) => {
-    updateTab(id, {
+    updateTabLocal(id, {
       url,
       inputUrl: url,
       canGoBack,
@@ -250,11 +257,11 @@ const Internet = () => {
   };
 
   const handleTitleChange = (id: string, title: string) => {
-    updateTab(id, { title });
+    updateTabLocal(id, { title });
   };
 
   const handleLoadingChange = (id: string, isLoading: boolean) => {
-    updateTab(id, { isLoading });
+    updateTabLocal(id, { isLoading });
   };
 
   const handleEnterFullScreen = () => {
@@ -265,6 +272,12 @@ const Internet = () => {
   const handleLeaveFullScreen = () => {
     setIsWebviewFullScreen(false);
     dispatch(setFullScreen(false));
+
+    // Try to force exit inner HTML fullscreen (helps with YouTube etc.)
+    const webview = webviewRefs.current[activeTabId];
+    if (webview) {
+      webview.executeJavaScript('if (document.fullscreenElement) { document.exitFullscreen(); }').catch(() => {});
+    }
   };
 
   const handleSearch = (query: string) => {
@@ -279,7 +292,7 @@ const Internet = () => {
       }
     }
     
-    updateActiveTab({
+    updateActiveTabLocal({
       url,
       inputUrl: url,
       isLanding: false,
@@ -294,7 +307,7 @@ const Internet = () => {
     if (webview && webview.canGoBack()) {
       webview.goBack();
     } else {
-      updateActiveTab({
+      updateActiveTabLocal({
         isLanding: true,
         url: "",
         inputUrl: "",
@@ -320,48 +333,12 @@ const Internet = () => {
   };
 
   const handleNewTab = (initialUrl = "") => {
-    const newId = `tab-${Date.now()}`;
-    const newTab: BrowserTab = {
-      id: newId,
-      url: initialUrl,
-      inputUrl: initialUrl,
-      isLanding: initialUrl === "",
-      title: initialUrl ? "Loading..." : "Tab Baru",
-      canGoBack: false,
-      canGoForward: false,
-      isLoading: false,
-    };
-    setTabs([...tabs, newTab]);
-    setActiveTabId(newId);
+    dispatch(addTab({ initialUrl }));
   };
 
   const handleCloseTab = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (tabs.length === 1) {
-      setTabs([
-        {
-          id: "initial-tab",
-          url: "",
-          inputUrl: "",
-          isLanding: true,
-          title: "Tab Baru",
-          canGoBack: false,
-          canGoForward: false,
-          isLoading: false,
-        }
-      ]);
-      setActiveTabId("initial-tab");
-      return;
-    }
-
-    const tabIndex = tabs.findIndex(t => t.id === id);
-    const newTabs = tabs.filter(t => t.id !== id);
-    setTabs(newTabs);
-
-    if (activeTabId === id) {
-      const nextActiveIndex = tabIndex > 0 ? tabIndex - 1 : 0;
-      setActiveTabId(newTabs[nextActiveIndex].id);
-    }
+    dispatch(closeTab(id));
   };
 
   const handleToggleBookmark = () => {
@@ -384,7 +361,7 @@ const Internet = () => {
   };
 
   const handleBookmarkClick = (url: string) => {
-    updateActiveTab({
+    updateActiveTabLocal({
       url,
       inputUrl: url,
       isLanding: false,
@@ -412,7 +389,7 @@ const Internet = () => {
               return (
                 <div
                   key={tab.id}
-                  onClick={() => setActiveTabId(tab.id)}
+                  onClick={() => dispatch(setActiveTabId(tab.id))}
                   className={`group relative flex items-center gap-2 pl-4 pr-10 py-2.5 text-xs font-semibold rounded-t-xl cursor-pointer transition-all duration-200 shrink-0 max-w-[160px] ${
                     isActive 
                       ? "bg-white text-blue-600 shadow-sm border-t border-x border-gray-200" 
@@ -448,6 +425,19 @@ const Internet = () => {
             title="Buka Tab Baru"
           >
             <Plus size={16} />
+          </button>
+
+          {/* Manual reset - safety net */}
+          <button
+            onClick={() => {
+              if (confirm("Bersihkan semua tab browser?")) {
+                dispatch(resetBrowser());
+              }
+            }}
+            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 mb-1 active:scale-95 ml-1"
+            title="Bersihkan Semua Tab"
+          >
+            <Trash2 size={15} />
           </button>
         </div>
       )}
@@ -504,7 +494,7 @@ const Internet = () => {
             <input
               type="text"
               value={inputUrl}
-              onChange={(e) => updateActiveTab({ inputUrl: e.target.value })}
+              onChange={(e) => updateActiveTabLocal({ inputUrl: e.target.value })}
               placeholder="Ketik URL atau cari di Google..."
               className="w-full bg-white border border-gray-200 rounded-full pl-12 pr-12 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-inner"
             />
@@ -581,13 +571,13 @@ const Internet = () => {
                       placeholder="Apa yang ingin Anda cari hari ini?"
                       className="flex-1 px-4 py-4 text-xl outline-none text-gray-700 bg-white"
                       value={activeTab.inputUrl}
-                      onChange={(e) => updateActiveTab({ inputUrl: e.target.value })}
+                      onChange={(e) => updateActiveTabLocal({ inputUrl: e.target.value })}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleSearch(e.currentTarget.value);
                       }}
                     />
                     <button 
-                      onClick={() => handleSearch(activeTab.inputUrl)}
+                      onClick={() => handleSearch(activeTab?.inputUrl || "")}
                       className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-95"
                     >
                       Search

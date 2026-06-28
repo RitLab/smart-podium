@@ -6,6 +6,7 @@ import calendarReducer from "./calendar";
 import studentReducer from "./student";
 import moduleReducer from "./module";
 import recordReducer from "./record";
+import browserReducer from "./browser";
 
 export const store = configureStore({
   reducer: {
@@ -14,7 +15,8 @@ export const store = configureStore({
     calendar: calendarReducer,
     student: studentReducer,
     module: moduleReducer,
-    record: recordReducer
+    record: recordReducer,
+    browser: browserReducer,
   },
 });
 

@@ -19,6 +19,7 @@ import { formattedDate, formattedTime } from "@/utils";
 import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { startRecord, stopRecord, clearError, resetRecord, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
+import { beginNewBrowserSession } from "@/stores/browser";
 
 import { useToast } from "@/components/ToastProvider";
 import PINModal from "@/components/PINModal";
@@ -466,6 +467,12 @@ const Home = () => {
         return d.getTime();
       })();
       await dispatch(startRecord({ id: String(activeEvent.id), end_time: endTime, end_at: endAt })).unwrap();
+
+      // === Browser session handling ===
+      // Only resets tabs if this is a *different* lesson session.
+      // This is the main trigger for keeping browser state during one "session pelajaran".
+      dispatch(beginNewBrowserSession(String(activeEvent.id)));
+
       showToast("Sesi belajar dimulai", "success");
       navigate("/internet");
     } catch (err: any) {
