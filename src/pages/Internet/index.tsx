@@ -10,7 +10,9 @@ import {
   Plus, 
   X, 
   BookOpen, 
-  Trash2 
+  Trash2,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -172,10 +174,12 @@ const WebviewContainer = ({
 const Internet = () => {
   const dispatch = useDispatch<AppDispatch>();
   const webviewRefs = useRef<Record<string, WebviewTag | null>>({});
+  const landingInputRef = useRef<HTMLInputElement>(null);
   
   // Browser state from Redux (persisted across menu switches)
   const { tabs, activeTabId } = useSelector((state: RootState) => state.browser);
   const [isWebviewFullScreen, setIsWebviewFullScreen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // State for Bookmarks
   const [bookmarks, setBookmarks] = useState<Bookmark[]>(() => {
@@ -214,13 +218,13 @@ const Internet = () => {
           webview.executeJavaScript('if (document.fullscreenElement) { document.exitFullscreen(); }').catch(() => {});
         }
         setIsWebviewFullScreen(false);
-        dispatch(setFullScreen(false));
+        dispatch(setFullScreen(isMaximized));
       }
     };
 
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [isWebviewFullScreen, dispatch]);
+  }, [isWebviewFullScreen, isMaximized, dispatch]);
 
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0] || {
     id: "initial-tab",
@@ -237,6 +241,25 @@ const Internet = () => {
   const canGoForward = activeTab.canGoForward;
   const inputUrl = activeTab.inputUrl;
   const isBookmarked = !isLanding && bookmarks.some(b => b.url === activeTab.url);
+
+  // Auto-focus search input when landing page is loaded/active (especially when tab is closed)
+  useEffect(() => {
+    if (isLanding) {
+      const timer = setTimeout(() => {
+        // Safe check and blur current focused element to clean up any Electron webview stuck focus
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        // Force window to regain focus
+        window.focus();
+        // Set focus to the search input
+        if (landingInputRef.current) {
+          landingInputRef.current.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLanding, activeTabId]);
 
   // These now dispatch to Redux (persisted)
   const updateActiveTabLocal = (updates: Partial<BrowserTab>) => {
@@ -271,7 +294,7 @@ const Internet = () => {
 
   const handleLeaveFullScreen = () => {
     setIsWebviewFullScreen(false);
-    dispatch(setFullScreen(false));
+    dispatch(setFullScreen(isMaximized));
 
     // Try to force exit inner HTML fullscreen (helps with YouTube etc.)
     const webview = webviewRefs.current[activeTabId];
@@ -378,7 +401,9 @@ const Internet = () => {
     <div className={`w-full flex-col transition-all duration-300 flex overflow-hidden ${
       isWebviewFullScreen 
         ? "h-screen rounded-none border-0 fixed inset-0 z-[9999]" 
-        : "h-full rounded-3xl shadow-2xl border border-gray-100"
+        : isMaximized
+          ? "h-full rounded-none border-0 shadow-none"
+          : "h-full rounded-3xl shadow-2xl border border-gray-100"
     }`}>
       {/* TAB BAR - Sembunyikan kalau lagi Full Screen */}
       {!isWebviewFullScreen && (
@@ -438,6 +463,19 @@ const Internet = () => {
             title="Bersihkan Semua Tab"
           >
             <Trash2 size={15} />
+          </button>
+
+          {/* Maximize Window button */}
+          <button
+            onClick={() => {
+              const nextState = !isMaximized;
+              setIsMaximized(nextState);
+              dispatch(setFullScreen(nextState));
+            }}
+            className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-lg transition-colors shrink-0 mb-1 active:scale-95 ml-1"
+            title={isMaximized ? "Pulihkan Ukuran Jendela" : "Maksimalkan Jendela"}
+          >
+            {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
         </div>
       )}
@@ -567,6 +605,7 @@ const Internet = () => {
                       <Search size={24} />
                     </div>
                     <input 
+                      ref={landingInputRef}
                       type="text" 
                       placeholder="Apa yang ingin Anda cari hari ini?"
                       className="flex-1 px-4 py-4 text-xl outline-none text-gray-700 bg-white"
