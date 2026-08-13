@@ -181,10 +181,12 @@ const Home = () => {
       return;
     }
 
-    // 1. Cari yang sedang jalan sekarang
-    let current = todayEvents.find(ev =>
+    // 1. Cari yang sedang jalan sekarang — kalau meeting overlap dengan jadwal
+    // belajar, prioritaskan jadwal belajar supaya meeting tidak membayangi kelas
+    const running = todayEvents.filter(ev =>
       ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
+    let current = running.find(ev => !ev.is_meeting) || running[0];
 
     // 2. Jika tidak ada yang sedang jalan, cari yang akan datang (upcoming)
     if (!current) {
@@ -202,14 +204,17 @@ const Home = () => {
     let interval: number | null = null;
 
     const run = async () => {
-      if (!activeEvent?.id) {
+      if (!activeEvent?.id || !activeEvent?.app_name) {
         setServerEventStatus(null);
         return;
       }
 
       const fetchStatus = async () => {
         try {
-          const res = await eventService.getEventById(String(activeEvent.id));
+          const res = await eventService.getEventById(
+            String(activeEvent.id),
+            activeEvent.app_name,
+          );
           if (!alive) return;
           setServerEventStatus(res.data?.status ?? null);
         } catch {
@@ -227,7 +232,7 @@ const Home = () => {
       alive = false;
       if (interval !== null) window.clearInterval(interval);
     };
-  }, [activeEvent?.id]);
+  }, [activeEvent?.id, activeEvent?.app_name]);
 
   /* ================= UPDATE LISTENER ================= */
 
@@ -544,11 +549,11 @@ const Home = () => {
 
               <div className="flex flex-col gap-1 min-w-0">
                 <h3 className="text-2xl font-bold text-gray-800 truncate">
-                  {activeEvent?.teacher_name || "Tidak ada jadwal"}
+                  {activeEvent?.teacher_name || (activeEvent?.is_meeting ? "Meeting" : "Tidak ada jadwal")}
                 </h3>
                 <p className="text-sm text-gray-500 leading-snug break-words">
-                  {activeEvent?.course_name
-                    ? <span className="font-semibold text-blue-600">{activeEvent.course_name}</span>
+                  {(activeEvent?.course_name || activeEvent?.title)
+                    ? <span className="font-semibold text-blue-600">{activeEvent.course_name || activeEvent.title}</span>
                     : "Silakan cek kalender untuk jadwal lainnya"}
                 </p>
                 {activeEvent?.class_room_name && (

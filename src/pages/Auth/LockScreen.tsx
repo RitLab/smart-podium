@@ -33,6 +33,7 @@ const LockScreen = () => {
   const [isStarted, setIsStarted] = useState(false);
   const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
   const canStartFromServerStatus = serverEventStatus === "" || serverEventStatus === "failed";
+  const isMeetingActive = !!activeEvent?.is_meeting;
   const isStartBlockedByServerStatus =
     serverEventStatus !== null && serverEventStatus !== "recording" && !canStartFromServerStatus;
 
@@ -216,14 +217,17 @@ const LockScreen = () => {
     let interval: number | null = null;
 
     const run = async () => {
-      if (!activeEvent?.id) {
+      if (!activeEvent?.id || !activeEvent?.app_name) {
         setServerEventStatus(null);
         return;
       }
 
       const fetchStatus = async () => {
         try {
-          const res = await eventService.getEventById(String(activeEvent.id));
+          const res = await eventService.getEventById(
+            String(activeEvent.id),
+            activeEvent.app_name,
+          );
           if (!alive) return;
           setServerEventStatus(res.data?.status ?? null);
         } catch {
@@ -241,11 +245,11 @@ const LockScreen = () => {
       alive = false;
       if (interval !== null) window.clearInterval(interval);
     };
-  }, [activeEvent?.id]);
+  }, [activeEvent?.id, activeEvent?.app_name]);
 
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
-    if (isStarted && !isRecording && serverEventStatus !== "recording" && !isStartBlockedByServerStatus) {
+    if (isStarted && !isMeetingActive && !isRecording && serverEventStatus !== "recording" && !isStartBlockedByServerStatus) {
       let lastToastId: number | null = null;
       const fire = () => {
         lastToastId = showToast(
@@ -264,7 +268,7 @@ const LockScreen = () => {
         if (lastToastId !== null) dismissToast(lastToastId);
       };
     }
-  }, [dismissToast, isStarted, isRecording, isStartBlockedByServerStatus, serverEventStatus, showToast]);
+  }, [dismissToast, isStarted, isMeetingActive, isRecording, isStartBlockedByServerStatus, serverEventStatus, showToast]);
 
   if (error) return (
     <div className="flex flex-col gap-4 justify-center items-center bg-black/50 p-8 rounded-2xl backdrop-blur-sm border border-white/10 shadow-2xl">
@@ -318,8 +322,8 @@ const LockScreen = () => {
               />
 
               <div className="flex flex-col gap-1 text-white">
-                <h3 className="text-2xl">{activeEvent?.teacher_name}</h3>
-                <p className="text-sm">{activeEvent?.course_name}</p>
+                <h3 className="text-2xl">{activeEvent?.teacher_name || (activeEvent?.is_meeting ? "Meeting" : "")}</h3>
+                <p className="text-sm">{activeEvent?.course_name || activeEvent?.title}</p>
               </div>
             </div>
           )}

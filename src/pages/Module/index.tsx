@@ -43,7 +43,9 @@ const Module = () => {
       hour: "2-digit", minute: "2-digit", hour12: false
     }).replace(".", ":");
 
-    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
+    // Meeting tidak punya course/materi (course_id=0) — keluarkan dari kandidat
+    // supaya halaman Materi tetap menampilkan pelajaran saat ada meeting
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr && !ev.is_meeting);
     
     // 1. Cari yang sedang jalan sekarang (Priority 1)
     let current = todayEvents.find(ev => 

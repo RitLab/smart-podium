@@ -24,7 +24,6 @@ import { fetchHeaderEvents } from "@/stores/calendar";
 import { stopRecord, clearRecordingOnly, resetStoppedSession, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
 import { beginNewBrowserSession } from "@/stores/browser";
 import RecorderComponents from "@/components/Recorder";
-import PINModal from "@/components/PINModal";
 import { eventService } from "@/services/event";
 import type { EventRecordStatus } from "@/types/event";
 
@@ -142,9 +141,9 @@ const Navbar = React.memo(({ time, activeEvent, isStarted, isLessonActive, count
           />
           <div className="mx-3">
             <h3 className="font-semibold text-gray-900">
-              {activeEvent?.teacher_name || "Tidak ada jadwal"}
+              {activeEvent?.teacher_name || (activeEvent?.is_meeting ? "Meeting" : "Tidak ada jadwal")}
             </h3>
-            <p className="text-sm text-gray-600">{activeEvent?.course_name || "Cek kalender"}</p>
+            <p className="text-sm text-gray-600">{activeEvent?.course_name || activeEvent?.title || "Cek kalender"}</p>
           </div>
         </div>
 
@@ -373,6 +372,7 @@ function MainLayoutContent() {
   const [showStopPIN, setShowStopPIN] = useState(false);
   const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
   const isEffectiveRecording = isRecording || serverEventStatus === "recording";
+  const isMeetingActive = !!activeEvent?.is_meeting;
   const canStartFromServerStatus = serverEventStatus === "" || serverEventStatus === "failed";
   const isStartBlockedByServerStatus =
     serverEventStatus !== null && serverEventStatus !== "recording" && !canStartFromServerStatus;
@@ -441,9 +441,20 @@ function MainLayoutContent() {
       if (!isRecording) return;
       if (!recordingEventId) return;
 
+      const recordingEvent = headerEvents.find(
+        (event) => String(event.id) === String(recordingEventId),
+      );
+      if (!recordingEvent?.app_name) return;
+
       try {
-        const res = await eventService.getEventById(String(recordingEventId));
+        const res = await eventService.getEventById(
+          String(recordingEventId),
+          recordingEvent.app_name,
+        );
         if (!alive) return;
+        // Status meeting dari server selalu "" — jangan matikan recording meeting
+        // yang sebenarnya sedang berjalan
+        if (res.data?.is_meeting) return;
         if (res.data?.status !== "recording") {
           dispatch(clearRecordingOnly());
         }
@@ -454,7 +465,7 @@ function MainLayoutContent() {
     return () => {
       alive = false;
     };
-  }, [dispatch, isRecording, recordingEventId]);
+  }, [dispatch, headerEvents, isRecording, recordingEventId]);
 
   // Associate browser tabs with current lesson session (no reset if same session)
   // This ensures continuity when recovering a recording session after app restart.
@@ -586,14 +597,17 @@ function MainLayoutContent() {
     let interval: number | null = null;
 
     const run = async () => {
-      if (!activeEvent?.id) {
+      if (!activeEvent?.id || !activeEvent?.app_name) {
         setServerEventStatus(null);
         return;
       }
 
       const fetchStatus = async () => {
         try {
-          const res = await eventService.getEventById(String(activeEvent.id));
+          const res = await eventService.getEventById(
+            String(activeEvent.id),
+            activeEvent.app_name,
+          );
           if (!alive) return;
           setServerEventStatus(res.data?.status ?? null);
         } catch {
@@ -611,7 +625,7 @@ function MainLayoutContent() {
       alive = false;
       if (interval !== null) window.clearInterval(interval);
     };
-  }, [activeEvent?.id]);
+  }, [activeEvent?.id, activeEvent?.app_name]);
 
   // Reset auto-stop flag when recording starts
   useEffect(() => {
@@ -776,7 +790,9 @@ function MainLayoutContent() {
       return;
     }
 
-    let current = todayEvents.find(ev => ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr);
+    // Kalau meeting overlap dengan jadwal belajar, prioritaskan jadwal belajar
+    const running = todayEvents.filter(ev => ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr);
+    let current = running.find(ev => !ev.is_meeting) || running[0];
 
     if (!current) {
       current = todayEvents
@@ -793,6 +809,7 @@ function MainLayoutContent() {
   useEffect(() => {
     if (
       isLessonActive &&
+      !isMeetingActive &&
       !isRecording &&
       !hasStoppedSession &&
       serverEventStatus !== "recording" &&
@@ -812,7 +829,7 @@ function MainLayoutContent() {
         if (lastToastId !== null) dismissToast(lastToastId);
       };
     }
-  }, [dismissToast, hasStoppedSession, isLessonActive, isRecording, isStartBlockedByServerStatus, serverEventStatus, showToast]);
+  }, [dismissToast, hasStoppedSession, isLessonActive, isMeetingActive, isRecording, isStartBlockedByServerStatus, serverEventStatus, showToast]);
 
   useEffect(() => {
     if (authError) showToast(authError, "error");
@@ -881,10 +898,14 @@ function MainLayoutContent() {
           open={showStopConfirm}
           onConfirm={() => {
             dispatch(setShowStopConfirm(false));
-            dispatch(setFinishedEvent(activeEvent));
+            // Stop event yang benar-benar direkam, bukan activeEvent yang bisa
+            // sudah berganti (mis. ke meeting yang overlap)
+            dispatch(setFinishedEvent(
+              headerEvents.find(ev => String(ev.id) === String(recordingEventId)) || activeEvent
+            ));
             dispatch(stopRecord({
               session_id: session_id || "",
-              event_id: String(activeEvent?.id || ""),
+              event_id: String(recordingEventId || activeEvent?.id || ""),
               isAuto: false
             }));
             showToast("Sesi belajar selesai", "success");
@@ -964,10 +985,14 @@ function MainLayoutContent() {
         open={showStopConfirm}
         onConfirm={() => {
           dispatch(setShowStopConfirm(false));
-          dispatch(setFinishedEvent(activeEvent));
+          // Stop event yang benar-benar direkam, bukan activeEvent yang bisa
+          // sudah berganti (mis. ke meeting yang overlap)
+          dispatch(setFinishedEvent(
+            headerEvents.find(ev => String(ev.id) === String(recordingEventId)) || activeEvent
+          ));
           dispatch(stopRecord({
             session_id: session_id || "",
-            event_id: String(activeEvent?.id || ""),
+            event_id: String(recordingEventId || activeEvent?.id || ""),
             isAuto: false
           }));
           showToast("Sesi belajar selesai", "success");
@@ -1048,14 +1073,14 @@ const SummaryModal = ({ open, onClose, onCheckAttendance, event }: { open: boole
             <div>
               <label className="text-[10px] font-bold text-gray-400 mb-1.5 block uppercase tracking-widest">Tenaga Pengajar</label>
               <div className="w-full px-4 py-3 bg-gray-50/80 rounded-2xl text-[13px] font-bold text-gray-700 border border-gray-100 cursor-default truncate">
-                {event?.teacher_name || "Dr. Hadi Suyoto Ardia"}
+                {event?.teacher_name || "-"}
               </div>
             </div>
 
             <div>
               <label className="text-[10px] font-bold text-gray-400 mb-1.5 block uppercase tracking-widest">Materi Pelajaran</label>
               <div className="w-full px-4 py-3 bg-gray-50/80 rounded-2xl text-[13px] font-bold text-gray-700 border border-gray-100 cursor-default min-h-[60px] max-h-[100px] overflow-y-auto leading-relaxed">
-                {event?.course_name || "Materi Pembelajaran"}
+                {event?.course_name || event?.title || "Materi Pembelajaran"}
               </div>
             </div>
           </div>

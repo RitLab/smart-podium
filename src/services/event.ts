@@ -97,10 +97,10 @@ export const eventService = {
     const url = `${baseWhisperUrl}/portal/event`;
     return await handler.get<EventListResponse>(url, payload);
   },
-  getEventById: async (id: string): Promise<EventDetailResponse> => {
+  getEventById: async (id: string, appName: string): Promise<EventDetailResponse> => {
     const url = `${baseWhisperUrl}/portal/event/${id}`;
     return await handler.get<EventDetailResponse>(url, undefined, {
-      "x-app-name": "sikk",
+      "x-app-name": appName,
     });
   },
 };
