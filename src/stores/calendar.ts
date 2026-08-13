@@ -14,7 +14,6 @@ import type {
 type CalendarState = {
   events: EventGroup[];
   rawEvents: EventList[];
-  holidays: EventList[];
   headerEvents: EventList[];
   loading: boolean;
   error: string | null;
@@ -24,7 +23,6 @@ type CalendarState = {
 const initialState: CalendarState = {
   events: [],
   rawEvents: [],
-  holidays: [],
   headerEvents: [],
   loading: false,
   error: null,
@@ -109,28 +107,6 @@ export const fetchEventList = createAsyncThunk<EventList[], EventListPayload>(
   "calendar/fetchEventList",
   async (payload, { rejectWithValue }) => {
     try {
-      const res = await fetch(
-        `https://libur.deno.dev/api?year=${payload.year}`,
-      );
-      const data = await res.json();
-
-      const filtered = data.filter((h: any) => {
-        const date = new Date(h.date);
-        return (
-          date.getMonth() + 1 === payload.month &&
-          date.getFullYear() === payload.year
-        );
-      });
-
-      const holidays = filtered.map((h: any) => ({
-        id: `holiday-${h.date}`,
-        course_name: h.name,
-        event_date: h.date,
-        start_time: "",
-        end_time: "",
-        color: "red",
-        class_room_id: null,
-      }));
       const response: EventListResponse =
         await eventService.getEventList(payload);
 
@@ -140,8 +116,7 @@ export const fetchEventList = createAsyncThunk<EventList[], EventListPayload>(
         (ev) => ev.class_room_id === CLASSROOM_ID,
       );
 
-      const merged = [...holidays, ...filteredDataEvents];
-      return merged;
+      return filteredDataEvents;
     } catch (error: any) {
       return rejectWithValue(error?.message || "Failed to fetch event list");
     }
@@ -208,9 +183,7 @@ const calendarSlice = createSlice({
           };
         });
 
-        // Gabungkan dengan hari libur untuk tampilan Kalender
-        const merged = [...action.payload, ...state.holidays];
-        state.events = groupEventsByDate(merged);
+        state.events = groupEventsByDate(action.payload);
       })
       .addCase(fetchEventList.rejected, (state, action) => {
         state.loading = false;

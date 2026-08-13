@@ -124,8 +124,8 @@ export const responseBody = <T>(response: AxiosResponse<T>) =>
  * GENERIC HANDLER
  */
 export const handler = {
-  get: <T>(url: string, params?: {}) => {
-    return axios.get<T>(url, { params }).then(responseBody);
+  get: <T>(url: string, params?: {}, headers?: Record<string, string>) => {
+    return axios.get<T>(url, { params, headers }).then(responseBody);
   },
   post: <T>(url: string, body?: {}) => {
     return axios.post<T>(url, body).then(responseBody);

@@ -119,7 +119,7 @@ const Calendar = () => {
       {/* Calendar */}
       <div className="col-span-2 shadow-sm h-full bg-white rounded-2xl overflow-hidden border border-gray-100">
         <CalendarComponents
-          events={events} // ✅ langsung dari redux (sudah include holiday)
+          events={events} // ✅ langsung dari redux
           onDateClick={onDateClick}
           onMonthChange={handleMonthChange}
           selectedDate={dateClick}
