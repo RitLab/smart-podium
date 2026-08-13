@@ -24,6 +24,10 @@ export type DateClick = {
 
 export interface EventList {
   id: string;
+  app_name: string;
+  // Meeting (is_meeting) tidak punya course_name — namanya ada di title
+  title?: string;
+  is_meeting?: boolean;
   class_id: string;
   class_name: string;
   class_room_id: string;

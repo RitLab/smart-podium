@@ -56,8 +56,8 @@ const groupEventsByDate = (events: EventList[]): EventGroup[] => {
 
     map.get(formattedDate)!.items.push({
       id: event.id,
-      name: event.course_name,
-      type: event.color || "grey",
+      name: event.course_name || event.title || "",
+      type: event.color || "gray",
       times: {
         start: event.start_time,
         end: event.end_time,
