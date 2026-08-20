@@ -23,6 +23,7 @@ import { beginNewBrowserSession } from "@/stores/browser";
 
 import { useToast } from "@/components/ToastProvider";
 import PINModal from "@/components/PINModal";
+import AdminPanel from "@/components/AdminPanel";
 import { eventService } from "@/services/event";
 import type { EventRecordStatus } from "@/types/event";
 
@@ -250,64 +251,86 @@ const Home = () => {
   const [countdown, setCountdown] = useState<string | null>(null);
   const [graceCountdown, setGraceCountdown] = useState<string | null>(null);
   const [isStarted, setIsStarted] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
 
-  /* ================= DEBUG LOGIC ================= */
-
-  const clickCountRef = useRef(0);
-  const versionClickCountRef = useRef(0);
-  const clockClickCountRef = useRef(0);
-
-  const handleLogoClick = () => {
-    clickCountRef.current += 1;
-    if (clickCountRef.current === 5) {
-      clickCountRef.current = 0;
-      navigate("/lock-screen");
-    }
-    setTimeout(() => {
-      clickCountRef.current = 0;
-    }, 2000);
-  };
+  /* ================= MENU TEKNISI ================= */
 
   const isExitDialogOpeningRef = useRef(false);
-
-  const handleVersionClick = () => {
-    if (isExitDialogOpeningRef.current) return;
-
-    versionClickCountRef.current += 1;
-    if (versionClickCountRef.current === 5) {
-      versionClickCountRef.current = 0;
-      isExitDialogOpeningRef.current = true;
-
-      window.ipcRenderer.invoke("show-quit-dialog").finally(() => {
-        isExitDialogOpeningRef.current = false;
-      });
-    }
-    setTimeout(() => {
-      versionClickCountRef.current = 0;
-    }, 2000);
-  };
-
   const isUpdateCheckingRef = useRef(false);
 
-  const handleClockClick = () => {
+  const triggerUpdateCheck = () => {
     if (isUpdateCheckingRef.current) return;
+    isUpdateCheckingRef.current = true;
 
-    clockClickCountRef.current += 1;
-    if (clockClickCountRef.current === 5) {
-      clockClickCountRef.current = 0;
-      isUpdateCheckingRef.current = true;
+    window.ipcRenderer.invoke("check-update");
+    showToast("Mengecek pembaruan sistem...", "info");
 
-      window.ipcRenderer.invoke("check-update");
-      showToast("Mengecek pembaruan sistem...", "info");
-
-      setTimeout(() => {
-        isUpdateCheckingRef.current = false;
-      }, 10000);
-    }
     setTimeout(() => {
-      clockClickCountRef.current = 0;
-    }, 2000);
+      isUpdateCheckingRef.current = false;
+    }, 10000);
+  };
+
+  // Tekan lama teks versi untuk membuka menu teknisi. Sengaja bukan tap 5x:
+  // di layar sentuh tap beruntun terlalu gampang kepicu murid tanpa sengaja,
+  // dan sebelumnya tap 5x di sini langsung menutup aplikasi tanpa konfirmasi.
+  // Menu teknisi terkunci selama kelas berjalan atau sedang merekam. Bukan
+  // sekadar tombolnya dimatikan — panelnya tidak bisa dibuka sama sekali,
+  // supaya tidak ada jalan menutup aplikasi atau memindah kelas di tengah
+  // sesi yang sedang berlangsung.
+  const isPodiumBusy =
+    isRecording || serverEventStatus === "recording" || isLessonActive;
+
+  const LONG_PRESS_MS = 3000;
+  const longPressTimerRef = useRef<number | null>(null);
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const startLongPress = () => {
+    if (isPodiumBusy) return;
+
+    cancelLongPress();
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      setShowAdminPanel(true);
+    }, LONG_PRESS_MS);
+  };
+
+  useEffect(() => cancelLongPress, []);
+
+  // Kelas bisa mulai atau rekaman bisa jalan saat panel sudah terbuka
+  // (jadwal bergulir sendiri, status rekaman ikut server) — tutup paksa.
+  useEffect(() => {
+    if (isPodiumBusy) {
+      cancelLongPress();
+      setShowAdminPanel(false);
+    }
+  }, [isPodiumBusy]);
+
+  const handleAdminChangeClass = () => {
+    setShowAdminPanel(false);
+    navigate("/setting-pin");
+  };
+
+  const handleAdminMinimize = () => {
+    setShowAdminPanel(false);
+    window.ipcRenderer.invoke("minimize-window");
+  };
+
+  const handleAdminQuit = () => {
+    if (isExitDialogOpeningRef.current) return;
+
+    isExitDialogOpeningRef.current = true;
+    setShowAdminPanel(false);
+
+    window.ipcRenderer.invoke("show-quit-dialog").finally(() => {
+      isExitDialogOpeningRef.current = false;
+    });
   };
 
   /* ================= WHITEBOARD ================= */
@@ -515,8 +538,15 @@ const Home = () => {
     <div className="relative h-full flex flex-col items-center justify-center gap-12 py-12">
       <div>
         <p
-          className="text-xs text-gray-400 text-center mb-2 cursor-pointer select-none"
-          onClick={handleVersionClick}
+          // touch-none: tanpa ini Chromium menganggap tahan-jari sebagai niat
+          // scroll, menembak pointercancel, dan timer tekan-lama ikut batal —
+          // gesturenya jalan di mouse tapi mati di layar sentuh podium
+          className="text-xs text-gray-400 text-center mb-2 cursor-pointer select-none touch-none"
+          onPointerDown={startLongPress}
+          onPointerUp={cancelLongPress}
+          onPointerLeave={cancelLongPress}
+          onPointerCancel={cancelLongPress}
+          onContextMenu={(e) => e.preventDefault()}
         >
           Smart Podium v{__APP_VERSION__}
         </p>
@@ -525,15 +555,11 @@ const Home = () => {
           <img
             src={Logo}
             alt="Logo"
-            className="h-18 w-96 object-contain cursor-pointer"
-            onClick={handleLogoClick}
+            className="h-18 w-96 object-contain"
           />
 
           <div className="text-center">
-            <h1
-              className="text-7xl font-bold text-gray-800 cursor-pointer select-none"
-              onClick={handleClockClick}
-            >
+            <h1 className="text-7xl font-bold text-gray-800 select-none">
               {formattedTime(time)}
             </h1>
             <p className="text-2xl text-gray-600 mt-4">{formattedDate(time)}</p>
@@ -718,6 +744,16 @@ const Home = () => {
         onClose={() => setShowPIN(false)}
         onSuccess={onPINSuccess}
         teacherId={activeEvent?.teacher_id || ""}
+      />
+
+      {/* Menu Teknisi — dibuka dengan menekan lama teks versi */}
+      <AdminPanel
+        open={showAdminPanel}
+        onClose={() => setShowAdminPanel(false)}
+        onChangeClass={handleAdminChangeClass}
+        onMinimize={handleAdminMinimize}
+        onCheckUpdate={triggerUpdateCheck}
+        onQuit={handleAdminQuit}
       />
     </div>
   );
