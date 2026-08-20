@@ -274,12 +274,11 @@ const Home = () => {
   // Tekan lama teks versi untuk membuka menu teknisi. Sengaja bukan tap 5x:
   // di layar sentuh tap beruntun terlalu gampang kepicu murid tanpa sengaja,
   // dan sebelumnya tap 5x di sini langsung menutup aplikasi tanpa konfirmasi.
-  // Menu teknisi terkunci selama kelas berjalan atau sedang merekam. Bukan
-  // sekadar tombolnya dimatikan — panelnya tidak bisa dibuka sama sekali,
-  // supaya tidak ada jalan menutup aplikasi atau memindah kelas di tengah
-  // sesi yang sedang berlangsung.
-  const isPodiumBusy =
-    isRecording || serverEventStatus === "recording" || isLessonActive;
+  // Menu teknisi terkunci hanya saat benar-benar merekam. Pelajaran yang
+  // sekadar terjadwal tidak ikut mengunci: jadwal mengisi hampir sepanjang
+  // jam sekolah, dan teknisi justru datang di tengah pelajaran — mengunci di
+  // situ membuat menunya tidak bisa dipakai persis saat paling dibutuhkan.
+  const isPodiumBusy = isRecording || serverEventStatus === "recording";
 
   const LONG_PRESS_MS = 3000;
   const longPressTimerRef = useRef<number | null>(null);
@@ -292,19 +291,29 @@ const Home = () => {
   };
 
   const startLongPress = () => {
-    if (isPodiumBusy) return;
-
     cancelLongPress();
     longPressTimerRef.current = window.setTimeout(() => {
       longPressTimerRef.current = null;
+
+      // Alasannya disampaikan setelah tahan penuh, bukan di tiap sentuhan:
+      // sentuhan nyasar di label versi tidak perlu memunculkan apa-apa, tapi
+      // tahan 3 detik yang gagal diam-diam tidak bisa dibedakan dari rusak.
+      if (isPodiumBusy) {
+        showToast(
+          "Sedang merekam. Hentikan rekaman dulu untuk membuka menu teknisi.",
+          "info",
+        );
+        return;
+      }
+
       setShowAdminPanel(true);
     }, LONG_PRESS_MS);
   };
 
   useEffect(() => cancelLongPress, []);
 
-  // Kelas bisa mulai atau rekaman bisa jalan saat panel sudah terbuka
-  // (jadwal bergulir sendiri, status rekaman ikut server) — tutup paksa.
+  // Rekaman bisa mulai saat panel sudah terbuka — status rekaman ikut server,
+  // jadi bisa berubah tanpa disentuh dari podium ini — maka tutup paksa.
   useEffect(() => {
     if (isPodiumBusy) {
       cancelLongPress();
