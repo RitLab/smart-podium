@@ -9,7 +9,11 @@ type ToastProps = {
 
 const ToastComponent = ({ toasts, setToasts }: ToastProps) => {
   return (
-    <div className="fixed top-5 right-5 space-y-3 z-50">
+    // Toast harus di atas semua modal. Sebelumnya z-50, sementara setiap
+    // modal di app ini z-[100] ke atas (PINModal, AdminPanel, SummaryModal,
+    // boot splash, webview fullscreen), jadi toast selalu tertimbun dan
+    // aksinya terlihat seperti tidak terjadi apa-apa.
+    <div className="fixed top-5 right-5 space-y-3 z-[10000]">
       {toasts.map((toast) => (
         <div
           key={toast.id}

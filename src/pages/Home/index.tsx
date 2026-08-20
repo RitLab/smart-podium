@@ -331,6 +331,13 @@ const Home = () => {
     window.ipcRenderer.invoke("minimize-window");
   };
 
+  const handleAdminCheckUpdate = () => {
+    // Panel harus ditutup dulu: satu-satunya umpan balik pengecekan update
+    // adalah toast, dan toast tidak berguna kalau panel masih menutupinya.
+    setShowAdminPanel(false);
+    triggerUpdateCheck();
+  };
+
   const handleAdminQuit = () => {
     if (isExitDialogOpeningRef.current) return;
 
@@ -761,7 +768,7 @@ const Home = () => {
         onClose={() => setShowAdminPanel(false)}
         onChangeClass={handleAdminChangeClass}
         onMinimize={handleAdminMinimize}
-        onCheckUpdate={triggerUpdateCheck}
+        onCheckUpdate={handleAdminCheckUpdate}
         onQuit={handleAdminQuit}
       />
     </div>
