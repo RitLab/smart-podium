@@ -843,18 +843,6 @@ function MainLayoutContent() {
     return cleanup;
   }, []);
 
-  const clickCountRef = useRef(0);
-  const handleMinimizeOrClose = () => {
-    clickCountRef.current += 1;
-    if (clickCountRef.current === 5) {
-      clickCountRef.current = 0;
-      window.ipcRenderer.invoke("show-quit-dialog");
-    } else {
-      window.ipcRenderer.invoke("minimize-window");
-    }
-    setTimeout(() => { clickCountRef.current = 0; }, 2000);
-  };
-
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
 
@@ -871,11 +859,6 @@ function MainLayoutContent() {
             <RecorderComponents />
           </div>
         )}
-        <button
-          type="button"
-          onClick={handleMinimizeOrClose}
-          className="absolute top-0 right-0 w-16 h-16 opacity-0 cursor-default z-50"
-        />
         <Outlet />
 
         {loading && <Loading />}
