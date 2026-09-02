@@ -16,6 +16,15 @@ export type EventGroup = {
   items: EventItem[];
 };
 
+/**
+ * Kelas gabungan: satu sesi yang berjalan di beberapa ruang kelas sekaligus.
+ * Backend memecahnya jadi satu event per ruangan, lalu menautkannya lewat
+ * join_event_ids — daftar ini memuat id event kembarannya DAN id event ini sendiri.
+ */
+export type EventMetadata = {
+  join_event_ids?: string[];
+};
+
 export type DateClick = {
   year: number;
   month: number;
@@ -34,7 +43,10 @@ export interface EventList {
   class_room_name: string;
   course_name: string;
   event_date: string;
-  slot_index: number;
+  // Endpoint list mengirim slot_indexes (jamak) seperti EventDetail; slot_index
+  // lama dipertahankan opsional karena belum dipastikan sudah tidak dikirim.
+  slot_index?: number;
+  slot_indexes?: number[];
   start_time: string;
   end_time: string;
   teacher_id: string;
@@ -42,7 +54,8 @@ export interface EventList {
   teacher_image: string;
   color: string;
   course_id: number | string;
-  metadata?: string | null;
+  is_join_class_room?: boolean;
+  metadata?: EventMetadata | null;
 }
 
 export type EventRecordStatus =
@@ -73,7 +86,8 @@ export interface EventDetail {
   color: string;
   status: EventRecordStatus;
   is_meeting: boolean;
-  metadata: string | null;
+  is_join_class_room?: boolean;
+  metadata?: EventMetadata | null;
 }
 
 export interface EventDetailResponse extends BaseResponse {

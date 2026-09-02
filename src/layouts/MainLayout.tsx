@@ -26,6 +26,7 @@ import { beginNewBrowserSession } from "@/stores/browser";
 import RecorderComponents from "@/components/Recorder";
 import { eventService } from "@/services/event";
 import type { EventRecordStatus } from "@/types/event";
+import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 
 /* =====================================================
    TOAST CONTEXT
@@ -353,7 +354,7 @@ function MainLayoutContent() {
   const navigate = useNavigate();
 
   const { loading, isFullScreen } = useSelector((state: RootState) => state.ui);
-  const { isRecording, session_id, recordingEventId, recordingEventEndTime, recordingEventEndAt, showStopConfirm, showSummary, hasStoppedSession, stoppedAt, finishedEvent } = useSelector((state: RootState) => state.record);
+  const { isRecording, session_id, recordingEventId, startedEventId, recordingEventEndTime, recordingEventEndAt, showStopConfirm, showSummary, hasStoppedSession, stoppedAt, finishedEvent } = useSelector((state: RootState) => state.record);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { errorPin: authError } = useSelector((state: RootState) => state.auth);
   const headerEventsRef = useRef(headerEvents);
@@ -371,7 +372,12 @@ function MainLayoutContent() {
   const [graceCountdown, setGraceCountdown] = useState<string | null>(null);
   const [showStopPIN, setShowStopPIN] = useState(false);
   const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
-  const isEffectiveRecording = isRecording || serverEventStatus === "recording";
+  // Kelas gabungan: sesi dijalankan dari podium ruang lain, jadi podium ini
+  // hanya pengikut pasif — jadwal tetap tampil berjalan, tapi menu dikunci.
+  // Selalu false untuk kelas non-gabungan, sehingga alur lama tak berubah.
+  const isLockedByTwin = isLockedByTwinRoom(activeEvent, serverEventStatus, startedEventId);
+  const isEffectiveRecording =
+    (isRecording || serverEventStatus === "recording") && !isLockedByTwin;
   const isMeetingActive = !!activeEvent?.is_meeting;
   const canStartFromServerStatus = serverEventStatus === "" || serverEventStatus === "failed";
   const isStartBlockedByServerStatus =

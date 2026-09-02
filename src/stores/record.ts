@@ -11,6 +11,14 @@ export type RecordState = {
   isRecording: boolean;
   session_id: string | null;
   recordingEventId: string | null;
+  /**
+   * Id event yang start-nya dipicu dari podium ini. Sengaja dipisah dari
+   * recordingEventId: yang itu dibersihkan begitu stop dipanggil — termasuk saat
+   * stop GAGAL — sedangkan penanda kepemilikan harus bertahan selama server
+   * masih merekam. Dipakai kelas gabungan untuk membedakan podium pemilik sesi
+   * dari podium ruang sebelah. Baru dilepas saat server konfirmasi stop.
+   */
+  startedEventId: string | null;
   recordingEventEndTime: string | null;
   recordingEventEndAt: number | null;
   startTime: number | null; // timestamp (ms)
@@ -47,6 +55,7 @@ const savePersistedState = (state: RecordState) => {
       isRecording,
       session_id,
       recordingEventId,
+      startedEventId,
       recordingEventEndTime,
       recordingEventEndAt,
       startTime,
@@ -59,6 +68,7 @@ const savePersistedState = (state: RecordState) => {
         isRecording,
         session_id,
         recordingEventId,
+        startedEventId,
         recordingEventEndTime,
         recordingEventEndAt,
         startTime,
@@ -77,6 +87,7 @@ const initialState: RecordState = {
   isRecording: persisted.isRecording ?? false,
   session_id: persisted.session_id ?? null,
   recordingEventId: persisted.recordingEventId ?? null,
+  startedEventId: persisted.startedEventId ?? null,
   recordingEventEndTime: persisted.recordingEventEndTime ?? null,
   recordingEventEndAt: persisted.recordingEventEndAt ?? null,
   startTime: persisted.startTime ?? null,
@@ -171,6 +182,7 @@ const recordSlice = createSlice({
       state.isRecording = false;
       state.session_id = null;
       state.recordingEventId = null;
+      state.startedEventId = null;
       state.recordingEventEndTime = null;
       state.recordingEventEndAt = null;
       state.startTime = null;
@@ -189,6 +201,7 @@ const recordSlice = createSlice({
       state.isRecording = false;
       state.session_id = null;
       state.recordingEventId = null;
+      state.startedEventId = null;
       state.recordingEventEndTime = null;
       state.recordingEventEndAt = null;
       state.startTime = null;
@@ -243,6 +256,7 @@ const recordSlice = createSlice({
         state.isRecording = true;
         state.session_id = action.payload.session_id;
         state.recordingEventId = action.meta.arg.id;
+        state.startedEventId = action.meta.arg.id;
         state.recordingEventEndTime = action.meta.arg.end_time ?? null;
         state.recordingEventEndAt = action.meta.arg.end_at ?? null;
         state.startTime = Date.now();
@@ -272,6 +286,7 @@ const recordSlice = createSlice({
         state.isRecording = false;
         state.session_id = null;
         state.recordingEventId = null;
+        state.startedEventId = null;
         state.recordingEventEndTime = null;
         state.recordingEventEndAt = null;
         state.startTime = null;
@@ -301,6 +316,10 @@ const recordSlice = createSlice({
         state.isRecording = false;
         state.session_id = null;
         state.recordingEventId = null;
+        // startedEventId sengaja TIDAK dibersihkan: stop gagal berarti server
+        // kemungkinan masih merekam, dan podium ini tetap pemilik sesinya.
+        // Kalau ikut dihapus, pada kelas gabungan podium ini akan salah
+        // menyimpulkan ruang sebelah yang memulai, lalu mengunci dirinya sendiri.
         state.recordingEventEndTime = null;
         state.recordingEventEndAt = null;
         state.startTime = null;
