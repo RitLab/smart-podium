@@ -26,6 +26,7 @@ import PINModal from "@/components/PINModal";
 import AdminPanel from "@/components/AdminPanel";
 import { eventService } from "@/services/event";
 import type { EventRecordStatus } from "@/types/event";
+import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 
 /* ================= MENU TYPE ================= */
 
@@ -127,7 +128,7 @@ const Home = () => {
   const { showToast } = useToast();
 
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
-  const { isRecording, session_id, error, hasStoppedSession, stoppedAt, finishedEvent } = useSelector(
+  const { isRecording, session_id, error, startedEventId, hasStoppedSession, stoppedAt, finishedEvent } = useSelector(
     (state: RootState) => state.record,
   );
   const { user } = useSelector((state: RootState) => state.auth);
@@ -136,7 +137,12 @@ const Home = () => {
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [showPIN, setShowPIN] = useState(false);
   const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
-  const isEffectiveRecording = isRecording || serverEventStatus === "recording";
+  // Kelas gabungan: sesi dijalankan dari podium ruang lain, jadi podium ini
+  // hanya pengikut pasif — jadwal tetap tampil berjalan, tapi menu dikunci.
+  // Selalu false untuk kelas non-gabungan, sehingga alur lama tak berubah.
+  const isLockedByTwin = isLockedByTwinRoom(activeEvent, serverEventStatus, startedEventId);
+  const isEffectiveRecording =
+    (isRecording || serverEventStatus === "recording") && !isLockedByTwin;
   const canStartFromServerStatus =
     serverEventStatus === "" ||
     serverEventStatus === "failed";
@@ -478,7 +484,12 @@ const Home = () => {
 
     if (!isRecording) {
       if (serverEventStatus === "recording") {
-        showToast("Sesi sedang direkam di server", "info");
+        showToast(
+          isLockedByTwin
+            ? "Sesi sudah dimulai dari podium ruang kelas lain"
+            : "Sesi sedang direkam di server",
+          "info",
+        );
         return;
       }
       if (isStartBlockedByServerStatus) {
@@ -643,7 +654,9 @@ const Home = () => {
                 <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">
                   Sedang Rekam
                 </div>
-                <div className="text-[10px] text-gray-400">Terdeteksi dari server</div>
+                <div className="text-[10px] text-gray-400">
+                  {isLockedByTwin ? "Berjalan di ruang kelas lain" : "Terdeteksi dari server"}
+                </div>
               </div>
             ) : isStartBlockedByServerStatus ? (
               <div className="flex flex-col items-center gap-1 px-4 py-2 text-center min-w-[120px]">
