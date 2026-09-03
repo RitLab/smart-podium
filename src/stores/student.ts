@@ -82,6 +82,12 @@ const studentSlice = createSlice({
     setTotal: (state, action: PayloadAction<TotalType>) => {
       state.total = action.payload;
     },
+    clearAttendance: (state) => {
+      state.attendanceList = [];
+      state.total = { total_present: 0, total_absent: 0 };
+      state.teacher = { teacher_name: "", teacher_id: "" };
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -93,7 +99,11 @@ const studentSlice = createSlice({
         state.loading = false;
         let total_present = 0;
         let total_absent = 0;
-        const attendances = action.payload.data.attendances;
+        // Event tanpa kelas dibalikin BE sebagai list kosong dengan status 200.
+        // Null juga dianggap kosong biar .map di bawah nggak meledak.
+        const attendances = Array.isArray(action.payload.data?.attendances)
+          ? action.payload.data.attendances
+          : [];
 
         state.attendanceList = attendances;
         state.teacher = {
@@ -114,6 +124,9 @@ const studentSlice = createSlice({
       .addCase(fetchAttendance.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        // Lebih baik kosong daripada guru ngabsen daftar siswa punya event lain.
+        state.attendanceList = [];
+        state.total = { total_present: 0, total_absent: 0 };
       })
       .addCase(updateAttendance.pending, (state) => {
         state.loading = true;
@@ -129,5 +142,5 @@ const studentSlice = createSlice({
   },
 });
 
-export const { setAttendanceList, setTotal } = studentSlice.actions;
+export const { setAttendanceList, setTotal, clearAttendance } = studentSlice.actions;
 export default studentSlice.reducer;
