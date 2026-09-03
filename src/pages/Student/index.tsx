@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import Pagination from "@/components/Pagination";
 import type { Attendance, HandlingStatus, TeacherType } from "@/types/student";
-import { fetchAttendance } from "@/stores/student";
+import { clearAttendance, fetchAttendance } from "@/stores/student";
 import type { AppDispatch, RootState } from "@/stores";
 import ItemStudent from "./Item";
 import Detail from "./Detail";
@@ -77,24 +77,42 @@ const Student = () => {
   useEffect(() => {
     if (activeEventId) {
       fetchData(activeEventId);
+      return;
     }
-  }, [activeEventId]);
+
+    // Nggak ada jadwal yang cocok hari ini. Tanpa ini daftar siswa dari event
+    // sebelumnya nempel terus, soalnya store student nggak pernah ditimpa kalau
+    // fetch-nya nggak jalan. Podium nyala berhari-hari, jadi sisa data itu bisa
+    // kebawa sampai sesi yang sama sekali beda.
+    dispatch(clearAttendance());
+    resetAttendanceView();
+  }, [activeEventId, dispatch]);
 
   const [error, setErrorLocal] = useState<string | null>(null);
+
+  const resetAttendanceView = () => {
+    setAttendance({} as Attendance);
+    setPerPage(10);
+    setPage(1);
+    setTotalPage(1);
+  };
 
   const fetchData = async (event_id: string | null) => {
     if (!event_id) return;
     try {
       setErrorLocal(null);
 
-      const res = await dispatch(fetchAttendance(event_id ? { event_id } : null)).unwrap();
+      const res = await dispatch(fetchAttendance({ event_id })).unwrap();
 
-      const attendances = res.data.attendances;
+      const attendances = res.data?.attendances ?? [];
+
+      // Reset tetep jalan walaupun list-nya kosong. Dulu ini cuma dijalanin pas
+      // ada isi, jadi pagination sama panel detail siswa dari event sebelumnya
+      // masih ketinggalan di layar.
+      resetAttendanceView();
 
       if (attendances.length > 0) {
         setAttendance(attendances[0]);
-        setPerPage(10);
-        setPage(1);
         setTotalPage(Math.ceil(attendances.length / 10));
       }
     } catch (err: any) {
