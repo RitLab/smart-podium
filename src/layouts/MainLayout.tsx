@@ -522,7 +522,13 @@ function MainLayoutContent() {
 
     const computeNextDelayMs = (events: typeof headerEventsRef.current) => {
       const nowMs = Date.now();
-      const maxDelayMs = 2 * 60 * 60 * 1000;
+      // Batas atas jeda antar-fetch. Kandidat di bawah cuma dihitung dari jadwal
+      // yang UDAH diketahui, jadi kalau hari ini kosong yang tersisa cuma tengah
+      // malam. Dulu batasnya 2 jam, akibatnya jadwal yang baru dibikin siang
+      // nggak kebaca sampai berjam-jam kemudian dan harus restart app dulu.
+      // Sekarang paling lama 2 menit, tapi kandidat yang lebih deket tetep menang
+      // jadi bangun tepat di batas kelas (mulai/selesai) nggak ilang.
+      const maxDelayMs = 2 * 60 * 1000;
 
       const todayStr = getTodayStr();
       const todayEvents = events.filter((ev) => ev.event_date === todayStr);
