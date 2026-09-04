@@ -89,6 +89,10 @@ const menus: MenuItem[] = [
     // Sengaja "always", sejajar sama Kalender. Setup mikrofon justru dilakuin
     // pas nggak ada kelas, jadi ngunci ini di lesson_only bikin teknisi nggak
     // bisa nyiapin audio sebelum jadwal jalan.
+    //
+    // Konsekuensinya podium yang kekunci kelas gabungan juga bisa mengklik ini,
+    // dan itu MEMANG BOLEH — udah dikonfirmasi. Jadi jangan ditambahin
+    // pengecualian isLockedByTwin di sini ngira ini kebocoran.
     access: "always"
   }
   // WonderCast dihapus karena menyebabkan hang
