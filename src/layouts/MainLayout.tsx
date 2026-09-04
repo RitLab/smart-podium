@@ -463,8 +463,14 @@ function MainLayoutContent() {
           recordingEvent.app_name,
         );
         if (!alive) return;
-        // Status meeting dari server selalu "" — jangan matikan recording meeting
-        // yang sebenarnya sedang berjalan
+        // CATATAN: komentar lama di sini bilang status meeting dari server
+        // selalu "". Itu nggak akurat — pengecekan ke API nunjukin meeting juga
+        // dapet status nyata, termasuk "stopped". Perilakunya SENGAJA nggak
+        // diubah karena guard ini nyangkut alur rekaman meeting, tapi dampaknya
+        // perlu dicatat: buat meeting, watchdog ini nggak pernah ngebersihin
+        // state rekaman lokal walaupun server udah bilang berhenti. Jalur stop
+        // manual sama auto-stop tetep jalan, jadi ini cuma jaring pengaman yang
+        // mati khusus meeting.
         if (res.data?.is_meeting) return;
         if (res.data?.status !== "recording") {
           dispatch(clearRecordingOnly());
