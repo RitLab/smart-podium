@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import Pagination from "@/components/Pagination";
 import type { Attendance, HandlingStatus, TeacherType } from "@/types/student";
-import { clearAttendance, fetchAttendance } from "@/stores/student";
+import { CLASS_NOT_STARTED, clearAttendance, fetchAttendance } from "@/stores/student";
 import type { AppDispatch, RootState } from "@/stores";
 import ItemStudent from "./Item";
 import Detail from "./Detail";
@@ -86,9 +86,11 @@ const Student = () => {
     // kebawa sampai sesi yang sama sekali beda.
     dispatch(clearAttendance());
     resetAttendanceView();
+    setBelumMulai(false);
   }, [activeEventId, dispatch]);
 
   const [error, setErrorLocal] = useState<string | null>(null);
+  const [belumMulai, setBelumMulai] = useState(false);
 
   const resetAttendanceView = () => {
     setAttendance({} as Attendance);
@@ -101,6 +103,7 @@ const Student = () => {
     if (!event_id) return;
     try {
       setErrorLocal(null);
+      setBelumMulai(false);
 
       const res = await dispatch(fetchAttendance({ event_id })).unwrap();
 
@@ -116,6 +119,11 @@ const Student = () => {
         setTotalPage(Math.ceil(attendances.length / 10));
       }
     } catch (err: any) {
+      resetAttendanceView();
+      if (err === CLASS_NOT_STARTED) {
+        setBelumMulai(true);
+        return;
+      }
       setErrorLocal(err);
     }
   };
@@ -198,6 +206,17 @@ const Student = () => {
             Coba Lagi
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (belumMulai && !loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+        <p className="text-xl font-medium text-gray-500">Kelas belum dimulai</p>
+        <p className="text-sm text-gray-400 mt-2">
+          Presensi bisa diisi setelah kelas berjalan.
+        </p>
       </div>
     );
   }

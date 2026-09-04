@@ -25,7 +25,7 @@ import { stopRecord, clearRecordingOnly, resetStoppedSession, setShowSummary, se
 import { beginNewBrowserSession } from "@/stores/browser";
 import RecorderComponents from "@/components/Recorder";
 import { eventService } from "@/services/event";
-import type { EventRecordStatus } from "@/types/event";
+import type { EventDetail, EventRecordStatus } from "@/types/event";
 import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 
 /* =====================================================
@@ -371,11 +371,16 @@ function MainLayoutContent() {
   const [countdown, setCountdown] = useState("00:00:00");
   const [graceCountdown, setGraceCountdown] = useState<string | null>(null);
   const [showStopPIN, setShowStopPIN] = useState(false);
-  const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
+  // Simpan seluruh detail event dari server, bukan status doang. activeEvent
+  // datang dari endpoint list, dan di sana metadata SELALU null — cuma respons
+  // detail yang bawa join_event_ids. Dulu cuma status yang diambil, akibatnya
+  // gate kelas gabungan nggak pernah kebuka dan kuncinya nggak pernah nyala.
+  const [serverEvent, setServerEvent] = useState<EventDetail | null>(null);
+  const serverEventStatus: EventRecordStatus | null = serverEvent?.status ?? null;
   // Kelas gabungan: sesi dijalankan dari podium ruang lain, jadi podium ini
   // hanya pengikut pasif — jadwal tetap tampil berjalan, tapi menu dikunci.
   // Selalu false untuk kelas non-gabungan, sehingga alur lama tak berubah.
-  const isLockedByTwin = isLockedByTwinRoom(activeEvent, serverEventStatus, startedEventId);
+  const isLockedByTwin = isLockedByTwinRoom(serverEvent, serverEventStatus, startedEventId);
   const isEffectiveRecording =
     (isRecording || serverEventStatus === "recording") && !isLockedByTwin;
   const isMeetingActive = !!activeEvent?.is_meeting;
@@ -604,7 +609,7 @@ function MainLayoutContent() {
 
     const run = async () => {
       if (!activeEvent?.id || !activeEvent?.app_name) {
-        setServerEventStatus(null);
+        setServerEvent(null);
         return;
       }
 
@@ -615,10 +620,10 @@ function MainLayoutContent() {
             activeEvent.app_name,
           );
           if (!alive) return;
-          setServerEventStatus(res.data?.status ?? null);
+          setServerEvent(res.data ?? null);
         } catch {
           if (!alive) return;
-          setServerEventStatus(null);
+          setServerEvent(null);
         }
       };
 
