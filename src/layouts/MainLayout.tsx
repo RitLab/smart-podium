@@ -816,6 +816,14 @@ function MainLayoutContent() {
     }
   }, [headerEvents, time, activeEvent, finishedEvent, hasStoppedSession]);
 
+  /* ================= PENANDA SIBUK UNTUK UPDATER ================= */
+  // Update dipasang dengan cara nutup app. Tanpa penanda ini, pengecekan
+  // otomatis bisa jatuh pas kelas lagi jalan dan rekamannya kepotong.
+  useEffect(() => {
+    const sibuk = isEffectiveRecording || isLessonActive;
+    window.ipcRenderer.send("update-busy", sibuk);
+  }, [isEffectiveRecording, isLessonActive]);
+
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {
     if (

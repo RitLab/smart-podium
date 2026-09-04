@@ -29,10 +29,15 @@ const Student = () => {
 
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
 
-  /* ================= ACTIVE EVENT ID LOGIC ================= */
-  const activeEventId = useMemo(() => {
+  /* ================= ACTIVE EVENT LOGIC ================= */
+  // Halaman ini dulu ngebuang SEMUA meeting dari kandidat, lalu jatuh ke
+  // prioritas berikutnya. Akibatnya pas meeting lagi jalan, layar nampilin
+  // siswa dari kelas lain yang udah bubar — guru ngira itu data lama padahal
+  // itu event yang salah. Sekarang meeting ikut dihitung sebagai "yang lagi
+  // jalan", biar halaman ini nggak pernah beda pendapat sama navbar.
+  const activeEvent = useMemo(() => {
     if (!headerEvents || headerEvents.length === 0) return null;
-    
+
     const now = new Date();
     const todayStr = now.toLocaleDateString("id-ID", {
       day: "numeric", month: "long", year: "numeric",
@@ -41,40 +46,43 @@ const Student = () => {
       hour: "2-digit", minute: "2-digit", hour12: false
     }).replace(".", ":");
 
-    // Meeting tidak punya kelas/murid — jangan pernah jadi kandidat absensi
-    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr && !ev.is_meeting);
-    
-    // 1. Cari yang sedang jalan sekarang (Priority 1)
-    let current = todayEvents.find(ev => 
-      ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
+    const todayEvents = headerEvents.filter(ev => ev.event_date === todayStr);
+
+    // 1. Yang benar-benar jalan sekarang, meeting ikut. Kalau meeting overlap
+    //    sama kelas belajar, kelas yang menang — sama persis kayak MainLayout.
+    const running = todayEvents.filter(
+      ev => ev.start_time <= currentTimeStr && ev.end_time > currentTimeStr
     );
+    const current = running.find(ev => !ev.is_meeting) || running[0];
+    if (current) return current;
 
-    // 2. Jika tidak ada yang jalan, tampilkan yang TERBARU SELESAI (Priority 2)
-    // Supaya guru masih bisa cek presensi manual selama jeda kelas (gap).
-    if (!current) {
-      const finishedEvents = todayEvents
-        .filter(ev => ev.end_time <= currentTimeStr)
-        .sort((a, b) => b.end_time.localeCompare(a.end_time));
-      
-      if (finishedEvents.length > 0) {
-        current = finishedEvents[0];
-      }
-    }
+    // 2. Nggak ada yang jalan: mundur ke kelas terakhir selesai, supaya guru
+    //    masih bisa ngisi presensi pas jeda antar kelas.
+    const selesai = todayEvents
+      .filter(ev => !ev.is_meeting && ev.end_time <= currentTimeStr)
+      .sort((a, b) => b.end_time.localeCompare(a.end_time));
+    if (selesai.length > 0) return selesai[0];
 
-    // 3. Jika tetap tidak ada (misal masih pagi belum ada kelas), baru cari yang AKAN DATANG (Priority 3)
-    if (!current) {
-      current = todayEvents
-        .filter(ev => ev.start_time > currentTimeStr)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time))[0];
-    }
-
-
-
-    return current?.id || null;
-
+    // 3. Belum ada kelas sama sekali hari ini: lihat yang akan datang.
+    return todayEvents
+      .filter(ev => !ev.is_meeting && ev.start_time > currentTimeStr)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time))[0] || null;
   }, [headerEvents]);
 
+  const activeEventId = activeEvent?.id || null;
+  const meetingBerlangsung = !!activeEvent?.is_meeting;
+
   useEffect(() => {
+    // Meeting nggak punya kelas maupun siswa. Jangan di-fetch, dan yang lebih
+    // penting jangan mundur ke event lain — itu yang bikin daftar siswa asing
+    // muncul di tengah meeting.
+    if (meetingBerlangsung) {
+      dispatch(clearAttendance());
+      resetAttendanceView();
+      setBelumMulai(false);
+      return;
+    }
+
     if (activeEventId) {
       fetchData(activeEventId);
       return;
@@ -87,7 +95,7 @@ const Student = () => {
     dispatch(clearAttendance());
     resetAttendanceView();
     setBelumMulai(false);
-  }, [activeEventId, dispatch]);
+  }, [activeEventId, meetingBerlangsung, dispatch]);
 
   const [error, setErrorLocal] = useState<string | null>(null);
   const [belumMulai, setBelumMulai] = useState(false);
@@ -206,6 +214,17 @@ const Student = () => {
             Coba Lagi
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (meetingBerlangsung && !loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+        <p className="text-xl font-medium text-gray-500">Sedang berlangsung meeting</p>
+        <p className="text-sm text-gray-400 mt-2">
+          Meeting tidak memiliki daftar presensi siswa.
+        </p>
       </div>
     );
   }

@@ -19,10 +19,54 @@ export function update(win: Electron.BrowserWindow) {
 
   autoUpdater.requestHeaders = { "Authorization": `token ${GH_TOKEN}` };
 
-  autoUpdater.on('update-downloaded', () => {
+  // Podium nyala berhari-hari dan dulu pengecekan update CUMA jalan kalau
+  // teknisi buka menu tersembunyi lalu tap "Cek Update". Akibatnya unit bisa
+  // ketinggalan versi berbulan-bulan tanpa ada yang sadar, dan orang ngetes
+  // pakai build lama. Sekarang dicek otomatis.
+  //
+  // Tapi autoDownload nyala dan quitAndInstall langsung nutup app, jadi kalau
+  // dicek sembarangan update bisa motong rekaman di tengah kelas. Makanya ada
+  // penanda sibuk dari renderer: selama kelas jalan, pengecekan dilewat dan
+  // install yang terlanjur siap ditahan sampai kelasnya kelar.
+  const CEK_AWAL_MS = 30 * 1000
+  const CEK_BERKALA_MS = 30 * 60 * 1000
+
+  let sedangDipakai = false
+  let installTertunda = false
+
+  const pasang = () => {
     // Parameter: (isSilent, isForceRunAfter)
     autoUpdater.quitAndInstall(true, true)
+  }
+
+  ipcMain.on('update-busy', (_e, busy: boolean) => {
+    sedangDipakai = !!busy
+    if (!sedangDipakai && installTertunda) {
+      installTertunda = false
+      pasang()
+    }
   })
+
+  autoUpdater.on('update-downloaded', () => {
+    if (sedangDipakai) {
+      installTertunda = true
+      win.webContents.send('update-status', 'Pembaruan siap dipasang setelah kelas selesai.')
+      return
+    }
+    pasang()
+  })
+
+  if (app.isPackaged) {
+    const cekOtomatis = () => {
+      if (sedangDipakai) return
+      autoUpdater.checkForUpdates().catch(() => {
+        // Diamkan: podium sering offline sesaat, dan pengecekan berikutnya
+        // bakal jalan lagi. Error tetap dikirim lewat listener 'error'.
+      })
+    }
+    setTimeout(cekOtomatis, CEK_AWAL_MS)
+    setInterval(cekOtomatis, CEK_BERKALA_MS)
+  }
 
   autoUpdater.on('checking-for-update', () => {
     win.webContents.send('update-status', 'Mengecek pembaruan sistem...')
