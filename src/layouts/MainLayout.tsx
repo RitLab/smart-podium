@@ -91,7 +91,10 @@ const menus: MenuItem[] = [
     label: "VB Voicemeeter",
     icon: VoicemeeterIcon,
     color: "green" as const,
-    access: "lesson_only",
+    // Sengaja "always", sejajar sama Kalender. Setup mikrofon justru dilakuin
+    // pas nggak ada kelas, jadi ngunci ini di lesson_only bikin teknisi nggak
+    // bisa nyiapin audio sebelum jadwal jalan.
+    access: "always",
   },
 ];
 
