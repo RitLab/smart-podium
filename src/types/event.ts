@@ -43,9 +43,8 @@ export interface EventList {
   class_room_name: string;
   course_name: string;
   event_date: string;
-  // Endpoint list mengirim slot_indexes (jamak) seperti EventDetail; slot_index
-  // lama dipertahankan opsional karena belum dipastikan sudah tidak dikirim.
-  slot_index?: number;
+  // Terverifikasi lewat pengujian API: 0 dari 35 event punya slot_index,
+  // 35 dari 35 punya slot_indexes. Field tunggalnya udah dihapus.
   slot_indexes?: number[];
   start_time: string;
   end_time: string;

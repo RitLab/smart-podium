@@ -42,6 +42,16 @@ const initialState: StudentState = {
   error: null,
 };
 
+/**
+ * Kelas yang belum mulai bukan error. Backend balikin HTTP 400 dengan pesan
+ * "Class schedule not started yet!", padahal podium memang sering nampilin
+ * jadwal yang belum jalan (pagi sebelum kelas pertama, activeEventId jatuh ke
+ * event yang akan datang). Ditandai pakai sentinel biar halaman Siswa bisa
+ * nampilin empty state yang ramah, bukan kotak merah berisi pesan bahasa
+ * Inggris dari server.
+ */
+export const CLASS_NOT_STARTED = "CLASS_NOT_STARTED";
+
 export const fetchAttendance = createAsyncThunk<
   AttendanceResponse,
   AttendancePayload | null,
@@ -52,6 +62,9 @@ export const fetchAttendance = createAsyncThunk<
     return data;
   } catch (error: any) {
     const message = error.response?.data?.message || error.message || "Gagal mengambil data kehadiran";
+    if (error.response?.status === 400 && /not started/i.test(String(message))) {
+      return rejectWithValue(CLASS_NOT_STARTED);
+    }
     return rejectWithValue(message);
   }
 });
@@ -123,7 +136,8 @@ const studentSlice = createSlice({
       })
       .addCase(fetchAttendance.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        // Kelas belum mulai bukan kegagalan, jadi jangan diisi ke error.
+        state.error = action.payload === CLASS_NOT_STARTED ? null : (action.payload as string);
         // Lebih baik kosong daripada guru ngabsen daftar siswa punya event lain.
         state.attendanceList = [];
         state.total = { total_present: 0, total_absent: 0 };

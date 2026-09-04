@@ -25,7 +25,7 @@ import { stopRecord, clearRecordingOnly, resetStoppedSession, setShowSummary, se
 import { beginNewBrowserSession } from "@/stores/browser";
 import RecorderComponents from "@/components/Recorder";
 import { eventService } from "@/services/event";
-import type { EventRecordStatus } from "@/types/event";
+import type { EventDetail, EventRecordStatus } from "@/types/event";
 import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 
 /* =====================================================
@@ -91,7 +91,14 @@ const menus: MenuItem[] = [
     label: "VB Voicemeeter",
     icon: VoicemeeterIcon,
     color: "green" as const,
-    access: "lesson_only",
+    // Sengaja "always", sejajar sama Kalender. Setup mikrofon justru dilakuin
+    // pas nggak ada kelas, jadi ngunci ini di lesson_only bikin teknisi nggak
+    // bisa nyiapin audio sebelum jadwal jalan.
+    //
+    // Konsekuensinya podium yang kekunci kelas gabungan juga bisa mengklik ini,
+    // dan itu MEMANG BOLEH — udah dikonfirmasi. Jadi jangan ditambahin
+    // pengecualian isLockedByTwin di sini ngira ini kebocoran.
+    access: "always",
   },
 ];
 
@@ -371,11 +378,16 @@ function MainLayoutContent() {
   const [countdown, setCountdown] = useState("00:00:00");
   const [graceCountdown, setGraceCountdown] = useState<string | null>(null);
   const [showStopPIN, setShowStopPIN] = useState(false);
-  const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
+  // Simpan seluruh detail event dari server, bukan status doang. activeEvent
+  // datang dari endpoint list, dan di sana metadata SELALU null — cuma respons
+  // detail yang bawa join_event_ids. Dulu cuma status yang diambil, akibatnya
+  // gate kelas gabungan nggak pernah kebuka dan kuncinya nggak pernah nyala.
+  const [serverEvent, setServerEvent] = useState<EventDetail | null>(null);
+  const serverEventStatus: EventRecordStatus | null = serverEvent?.status ?? null;
   // Kelas gabungan: sesi dijalankan dari podium ruang lain, jadi podium ini
   // hanya pengikut pasif — jadwal tetap tampil berjalan, tapi menu dikunci.
   // Selalu false untuk kelas non-gabungan, sehingga alur lama tak berubah.
-  const isLockedByTwin = isLockedByTwinRoom(activeEvent, serverEventStatus, startedEventId);
+  const isLockedByTwin = isLockedByTwinRoom(serverEvent, serverEventStatus, startedEventId);
   const isEffectiveRecording =
     (isRecording || serverEventStatus === "recording") && !isLockedByTwin;
   const isMeetingActive = !!activeEvent?.is_meeting;
@@ -458,8 +470,14 @@ function MainLayoutContent() {
           recordingEvent.app_name,
         );
         if (!alive) return;
-        // Status meeting dari server selalu "" — jangan matikan recording meeting
-        // yang sebenarnya sedang berjalan
+        // CATATAN: komentar lama di sini bilang status meeting dari server
+        // selalu "". Itu nggak akurat — pengecekan ke API nunjukin meeting juga
+        // dapet status nyata, termasuk "stopped". Perilakunya SENGAJA nggak
+        // diubah karena guard ini nyangkut alur rekaman meeting, tapi dampaknya
+        // perlu dicatat: buat meeting, watchdog ini nggak pernah ngebersihin
+        // state rekaman lokal walaupun server udah bilang berhenti. Jalur stop
+        // manual sama auto-stop tetep jalan, jadi ini cuma jaring pengaman yang
+        // mati khusus meeting.
         if (res.data?.is_meeting) return;
         if (res.data?.status !== "recording") {
           dispatch(clearRecordingOnly());
@@ -610,7 +628,7 @@ function MainLayoutContent() {
 
     const run = async () => {
       if (!activeEvent?.id || !activeEvent?.app_name) {
-        setServerEventStatus(null);
+        setServerEvent(null);
         return;
       }
 
@@ -621,10 +639,10 @@ function MainLayoutContent() {
             activeEvent.app_name,
           );
           if (!alive) return;
-          setServerEventStatus(res.data?.status ?? null);
+          setServerEvent(res.data ?? null);
         } catch {
           if (!alive) return;
-          setServerEventStatus(null);
+          setServerEvent(null);
         }
       };
 
@@ -816,6 +834,14 @@ function MainLayoutContent() {
       setActiveEvent(current || null);
     }
   }, [headerEvents, time, activeEvent, finishedEvent, hasStoppedSession]);
+
+  /* ================= PENANDA SIBUK UNTUK UPDATER ================= */
+  // Update dipasang dengan cara nutup app. Tanpa penanda ini, pengecekan
+  // otomatis bisa jatuh pas kelas lagi jalan dan rekamannya kepotong.
+  useEffect(() => {
+    const sibuk = isEffectiveRecording || isLessonActive;
+    window.ipcRenderer.send("update-busy", sibuk);
+  }, [isEffectiveRecording, isLessonActive]);
 
   /* ================= ENFORCE START NOTIFICATION ================= */
   useEffect(() => {

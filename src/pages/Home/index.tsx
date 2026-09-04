@@ -25,7 +25,7 @@ import { useToast } from "@/components/ToastProvider";
 import PINModal from "@/components/PINModal";
 import AdminPanel from "@/components/AdminPanel";
 import { eventService } from "@/services/event";
-import type { EventRecordStatus } from "@/types/event";
+import type { EventDetail, EventRecordStatus } from "@/types/event";
 import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 
 /* ================= MENU TYPE ================= */
@@ -86,7 +86,14 @@ const menus: MenuItem[] = [
     label: "VB Voicemeeter",
     icon: VoicemeeterIcon,
     color: "green",
-    access: "lesson_only"
+    // Sengaja "always", sejajar sama Kalender. Setup mikrofon justru dilakuin
+    // pas nggak ada kelas, jadi ngunci ini di lesson_only bikin teknisi nggak
+    // bisa nyiapin audio sebelum jadwal jalan.
+    //
+    // Konsekuensinya podium yang kekunci kelas gabungan juga bisa mengklik ini,
+    // dan itu MEMANG BOLEH — udah dikonfirmasi. Jadi jangan ditambahin
+    // pengecualian isLockedByTwin di sini ngira ini kebocoran.
+    access: "always"
   }
   // WonderCast dihapus karena menyebabkan hang
 ];
@@ -136,11 +143,14 @@ const Home = () => {
   const [time, setTime] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [showPIN, setShowPIN] = useState(false);
-  const [serverEventStatus, setServerEventStatus] = useState<EventRecordStatus | null>(null);
+  // Lihat catatan di MainLayout: metadata cuma ada di respons detail, nggak di
+  // list. Makanya yang disimpan detail utuh, bukan status doang.
+  const [serverEvent, setServerEvent] = useState<EventDetail | null>(null);
+  const serverEventStatus: EventRecordStatus | null = serverEvent?.status ?? null;
   // Kelas gabungan: sesi dijalankan dari podium ruang lain, jadi podium ini
   // hanya pengikut pasif — jadwal tetap tampil berjalan, tapi menu dikunci.
   // Selalu false untuk kelas non-gabungan, sehingga alur lama tak berubah.
-  const isLockedByTwin = isLockedByTwinRoom(activeEvent, serverEventStatus, startedEventId);
+  const isLockedByTwin = isLockedByTwinRoom(serverEvent, serverEventStatus, startedEventId);
   const isEffectiveRecording =
     (isRecording || serverEventStatus === "recording") && !isLockedByTwin;
   const canStartFromServerStatus =
@@ -212,7 +222,7 @@ const Home = () => {
 
     const run = async () => {
       if (!activeEvent?.id || !activeEvent?.app_name) {
-        setServerEventStatus(null);
+        setServerEvent(null);
         return;
       }
 
@@ -223,10 +233,10 @@ const Home = () => {
             activeEvent.app_name,
           );
           if (!alive) return;
-          setServerEventStatus(res.data?.status ?? null);
+          setServerEvent(res.data ?? null);
         } catch {
           if (!alive) return;
-          setServerEventStatus(null);
+          setServerEvent(null);
         }
       };
 
