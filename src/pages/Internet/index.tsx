@@ -12,7 +12,8 @@ import {
   BookOpen, 
   Trash2,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Video
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -27,6 +28,40 @@ import {
   closeTab,
   resetBrowser,
 } from "@/stores/browser";
+
+/**
+ * Ubah apa pun yang diketik guru jadi URL join Google Meet.
+ *
+ * Guru bisa nempel link lengkap, atau ngetik kodenya aja, dan di layar sentuh
+ * tanda hubungnya sering kelewat. Jadi terima semuanya: "abc-defg-hij",
+ * "abcdefghij", "meet.google.com/abc-defg-hij", atau URL penuh dengan query.
+ *
+ * Sengaja NGGAK nerima meet.google.com/new — bikin rapat wajib login Google,
+ * dan login di webview ini ditolak Google. Yang dilayani cuma GABUNG rapat,
+ * karena cuma itu yang bisa jalan tanpa akun.
+ */
+export function urlGabungMeet(teks: string): string | null {
+  const t = (teks || "").trim();
+  if (!t) return null;
+
+  // Ambil bagian kode dari URL kalau yang ditempel link
+  let kode = t;
+  const cocokUrl = t.match(/meet\.google\.com\/([^/?#\s]+)/i);
+  if (cocokUrl) kode = cocokUrl[1];
+  else if (/^https?:\/\//i.test(t)) return null; // URL lain, bukan Meet
+
+  kode = kode.toLowerCase().replace(/[\s_]/g, "");
+  if (kode === "new" || kode === "" ) return null;
+
+  // Format resmi: 3-4-3 huruf. Terima yang udah ada tanda hubungnya,
+  // atau 10 huruf polos yang tinggal dipasangin tanda hubung.
+  if (/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(kode)) return `https://meet.google.com/${kode}`;
+  const polos = kode.replace(/-/g, "");
+  if (/^[a-z]{10}$/.test(polos)) {
+    return `https://meet.google.com/${polos.slice(0, 3)}-${polos.slice(3, 7)}-${polos.slice(7)}`;
+  }
+  return null;
+}
 
 const DEFAULT_BOOKMARKS: Bookmark[] = [
   {
@@ -65,6 +100,7 @@ interface WebviewContainerProps {
   onEnterFullScreen: () => void;
   onLeaveFullScreen: () => void;
   webviewRefRegistry: React.MutableRefObject<Record<string, WebviewTag | null>>;
+  namaTamu?: string;
 }
 
 const WebviewContainer = ({
@@ -77,6 +113,7 @@ const WebviewContainer = ({
   onEnterFullScreen,
   onLeaveFullScreen,
   webviewRefRegistry,
+  namaTamu,
 }: WebviewContainerProps) => {
   const webviewRef = useRef<WebviewTag | null>(null);
   const lastLoadedUrlRef = useRef("");
@@ -110,6 +147,37 @@ const WebviewContainer = ({
       onLoadingChange(tabId, false);
     };
 
+    // Di halaman tamu Meet, isiin nama guru kalau kolomnya masih kosong.
+    // Podium itu layar sentuh — ngetik nama tiap mau gabung itu nyebelin.
+    // Best-effort: kalau selector Google berubah, ya nggak ngapa-ngapain.
+    const isiNamaTamu = () => {
+      if (!namaTamu) return;
+      const url = webview.getURL() || "";
+      if (!/^https:\/\/meet\.google\.com\//i.test(url)) return;
+      webview
+        .executeJavaScript(
+          `(() => {
+            const nama = ${JSON.stringify(namaTamu)};
+            const cari = () => document.querySelector(
+              'input[aria-label*="name" i], input[aria-label*="nama" i], input[placeholder*="name" i], input[placeholder*="nama" i]'
+            );
+            let sisa = 20;
+            const coba = () => {
+              const el = cari();
+              if (el && !el.value) {
+                const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+                set.call(el, nama);
+                el.dispatchEvent(new Event("input", { bubbles: true }));
+              }
+              if (!el && sisa-- > 0) setTimeout(coba, 500);
+            };
+            coba();
+          })();`,
+        )
+        .catch(() => {});
+    };
+    webview.addEventListener("did-finish-load", isiNamaTamu);
+
     const handleFail = (e: any) => {
       if (e.errorCode === -3) return;
       console.error("Webview navigation failed:", e.errorDescription, e.url);
@@ -129,6 +197,7 @@ const WebviewContainer = ({
     return () => {
       delete webviewRefRegistry.current[tabId];
       
+      webview.removeEventListener("did-finish-load", isiNamaTamu);
       webview.removeEventListener("did-finish-load", updateNavigation);
       webview.removeEventListener("did-navigate", updateNavigation);
       webview.removeEventListener("did-navigate-in-page", updateNavigation);
@@ -139,7 +208,7 @@ const WebviewContainer = ({
       webview.removeEventListener("enter-html-full-screen", onEnterFullScreen);
       webview.removeEventListener("leave-html-full-screen", onLeaveFullScreen);
     };
-  }, [tabId, onNavigationStateChange, onTitleChange, onLoadingChange, onEnterFullScreen, onLeaveFullScreen, webviewRefRegistry]);
+  }, [tabId, onNavigationStateChange, onTitleChange, onLoadingChange, onEnterFullScreen, onLeaveFullScreen, webviewRefRegistry, namaTamu]);
 
   // We rely on Electron's native <webview src={url}> attribute change handling to navigate.
 
@@ -201,6 +270,13 @@ const Internet = ({ aktif = true }: { aktif?: boolean }) => {
   
   // Browser state from Redux (persisted across menu switches)
   const { tabs, activeTabId } = useSelector((state: RootState) => state.browser);
+  // Nama guru buat ngisi otomatis kolom nama di halaman tamu Meet. Diambil dari
+  // jadwal hari ini — sumber yang sama yang dipakai navbar, jadi nggak perlu
+  // state baru. Kalau nggak ada jadwal, prefill-nya dilewat aja.
+  const headerEvents = useSelector((state: RootState) => state.calendar.headerEvents);
+  const namaGuru = headerEvents.find((e) => e.teacher_name)?.teacher_name || "";
+  const [kodeMeet, setKodeMeet] = useState("");
+  const [salahKodeMeet, setSalahKodeMeet] = useState(false);
   const [isWebviewFullScreen, setIsWebviewFullScreen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
@@ -331,6 +407,14 @@ const Internet = ({ aktif = true }: { aktif?: boolean }) => {
     if (webview) {
       webview.executeJavaScript('if (document.fullscreenElement) { document.exitFullscreen(); }').catch(() => {});
     }
+  };
+
+  const gabungMeet = () => {
+    const url = urlGabungMeet(kodeMeet);
+    if (!url) { setSalahKodeMeet(true); return; }
+    setSalahKodeMeet(false);
+    setKodeMeet("");
+    updateActiveTabLocal({ url, inputUrl: url, isLanding: false, title: "Google Meet" });
   };
 
   const handleSearch = (query: string) => {
@@ -669,6 +753,7 @@ const Internet = ({ aktif = true }: { aktif?: boolean }) => {
                 onEnterFullScreen={handleEnterFullScreen}
                 onLeaveFullScreen={handleLeaveFullScreen}
                 webviewRefRegistry={webviewRefs}
+                namaTamu={namaGuru}
               />
             );
           })}
@@ -708,6 +793,49 @@ const Internet = ({ aktif = true }: { aktif?: boolean }) => {
                     >
                       Search
                     </button>
+                  </div>
+                </div>
+
+                {/* Gabung Google Meet sebagai TAMU — tanpa login.
+                    Login akun Google di dalam webview ditolak Google
+                    ("browser may not be secure"), dan itu kontrol keamanan
+                    mereka yang nggak bisa diakalin dari sisi kita. Yang bisa
+                    jalan cuma gabung anonim: meet.google.com/<kode> disajikan
+                    tanpa cookie sama sekali, lengkap sama kolom nama dan
+                    tombol "Ask to join". Makanya yang dilayani di sini cuma
+                    GABUNG, bukan bikin rapat (meet.google.com/new wajib login). */}
+                <div className="relative">
+                  <div className="relative bg-white rounded-2xl shadow-lg p-5 border border-gray-100 text-left">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Video size={20} className="text-emerald-600" />
+                      <span className="font-bold text-gray-700">Gabung Google Meet</span>
+                      <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        tanpa login
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={kodeMeet}
+                        onChange={(e) => { setKodeMeet(e.target.value); setSalahKodeMeet(false); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") gabungMeet(); }}
+                        placeholder="Kode rapat, mis. abc-defg-hij"
+                        className={`flex-1 px-4 py-3 rounded-xl outline-none text-base border transition-colors ${
+                          salahKodeMeet ? "border-red-400 bg-red-50 text-red-700" : "border-gray-200 bg-gray-50 text-gray-700"
+                        }`}
+                      />
+                      <button
+                        onClick={gabungMeet}
+                        className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all active:scale-95 shrink-0"
+                      >
+                        Gabung
+                      </button>
+                    </div>
+                    <p className={`text-xs mt-2 ${salahKodeMeet ? "text-red-600" : "text-gray-400"}`}>
+                      {salahKodeMeet
+                        ? "Kode rapat belum benar. Formatnya 3-4-3 huruf, contoh: abc-defg-hij. Boleh juga tempel link Meet-nya."
+                        : "Tempel link Meet atau ketik kodenya. Untuk MEMBUAT rapat baru, harus dari perangkat lain — bikin rapat wajib login Google."}
+                    </p>
                   </div>
                 </div>
 
