@@ -146,6 +146,13 @@ const WebviewContainer = ({
   return (
     <div
       className="absolute inset-0 bg-white"
+      // JANGAN pakai display:none buat nyembunyiin tab nonaktif. Di Electron,
+      // <webview> yang kena display:none bakal RELOAD halamannya begitu
+      // ditampilkan lagi — diuji: penanda JS di halaman hilang setelah pindah
+      // tab lalu balik. Itu yang bikin meeting Meet mati dan ngulang tiap ganti
+      // tab. visibility:hidden nggak punya efek itu: guest tetep hidup dan
+      // halamannya nggak disentuh. Semua tab ditumpuk di posisi yang sama,
+      // yang aktif ditaruh paling atas dan yang lain dibikin nggak bisa diklik.
       style={{
         position: "absolute",
         top: 0,
@@ -154,7 +161,9 @@ const WebviewContainer = ({
         bottom: 0,
         width: "100%",
         height: "100%",
-        display: isActive ? "block" : "none",
+        visibility: isActive ? "visible" : "hidden",
+        pointerEvents: isActive ? "auto" : "none",
+        zIndex: isActive ? 1 : 0,
       }}
     >
       <webview
@@ -181,7 +190,11 @@ const WebviewContainer = ({
   );
 };
 
-const Internet = () => {
+// `aktif` = rute /internet lagi kebuka. Komponen ini SENGAJA nggak pernah di-
+// unmount (dirender permanen di MainLayout) supaya webview — dan meeting Meet di
+// dalamnya — tetep hidup pas guru pindah ke Home/Kalender. Konsekuensinya, efek
+// yang dulu ngandelin mount/unmount sekarang harus ngikut `aktif`.
+const Internet = ({ aktif = true }: { aktif?: boolean }) => {
   const dispatch = useDispatch<AppDispatch>();
   const webviewRefs = useRef<Record<string, WebviewTag | null>>({});
   const landingInputRef = useRef<HTMLInputElement>(null);
@@ -210,11 +223,13 @@ const Internet = () => {
   }, [bookmarks]);
 
   useEffect(() => {
-    // Reset full screen pas pindah halaman
-    return () => {
-      dispatch(setFullScreen(false));
-    };
-  }, [dispatch]);
+    // Reset full screen pas pindah halaman. Dulu lewat cleanup unmount; sekarang
+    // komponennya nggak pernah unmount, jadi dipicu waktu rute ninggalin /internet.
+    if (aktif) return;
+    setIsWebviewFullScreen(false);
+    setIsMaximized(false);
+    dispatch(setFullScreen(false));
+  }, [aktif, dispatch]);
 
   // Escape key to force exit webview fullscreen or maximized mode
   useEffect(() => {
@@ -234,9 +249,10 @@ const Internet = () => {
       }
     };
 
+    if (!aktif) return;
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [isWebviewFullScreen, isMaximized, activeTabId, dispatch]);
+  }, [aktif, isWebviewFullScreen, isMaximized, activeTabId, dispatch]);
 
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0] || {
     id: "initial-tab",
@@ -256,7 +272,9 @@ const Internet = () => {
 
   // Auto-focus search input when landing page is loaded/active (especially when tab is closed)
   useEffect(() => {
-    if (isLanding) {
+    // Kalau nggak aktif, jangan nyuri fokus — halaman ini mounted terus di
+    // belakang Home/Kalender, dan window.focus() di sini bakal ngerebut fokus.
+    if (isLanding && aktif) {
       const timer = setTimeout(() => {
         // Safe check and blur current focused element to clean up any Electron webview stuck focus
         if (document.activeElement instanceof HTMLElement) {
@@ -632,7 +650,31 @@ const Internet = () => {
 
       {/* CONTENT AREA */}
       <div className="flex-1 relative bg-[#F8FAFC]">
-        {activeTab.isLanding ? (
+        {/* Webview dirender SELALU, apa pun tab aktifnya. Dulu dibungkus
+            `activeTab.isLanding ? landing : webview`, jadi begitu tab baru
+            (landing) dibuka, SEMUA webview di-unmount dan meeting Meet yang
+            lagi jalan di tab lain ikut mati. Landing sekarang jadi overlay di
+            atas webview, bukan penggantinya. */}
+        {tabs.map((tab) => {
+            if (tab.isLanding) return null;
+            return (
+              <WebviewContainer
+                key={tab.id}
+                tabId={tab.id}
+                url={tab.url}
+                isActive={tab.id === activeTabId}
+                onNavigationStateChange={handleNavigationStateChange}
+                onTitleChange={handleTitleChange}
+                onLoadingChange={handleLoadingChange}
+                onEnterFullScreen={handleEnterFullScreen}
+                onLeaveFullScreen={handleLeaveFullScreen}
+                webviewRefRegistry={webviewRefs}
+              />
+            );
+          })}
+        {activeTab.isLanding && (
+          <div className="absolute inset-0 z-10 flex flex-col min-h-0 overflow-auto">
+
           <div className="absolute inset-0 overflow-y-auto flex flex-col items-center p-6 md:py-16 animate-in fade-in zoom-in duration-500">
              <div className="w-full max-w-2xl flex flex-col justify-center min-h-full space-y-8 text-center">
                 <div className="relative inline-block">
@@ -742,24 +784,7 @@ const Internet = () => {
 
              </div>
           </div>
-        ) : (
-          tabs.map((tab) => {
-            if (tab.isLanding) return null;
-            return (
-              <WebviewContainer
-                key={tab.id}
-                tabId={tab.id}
-                url={tab.url}
-                isActive={tab.id === activeTabId}
-                onNavigationStateChange={handleNavigationStateChange}
-                onTitleChange={handleTitleChange}
-                onLoadingChange={handleLoadingChange}
-                onEnterFullScreen={handleEnterFullScreen}
-                onLeaveFullScreen={handleLeaveFullScreen}
-                webviewRefRegistry={webviewRefs}
-              />
-            );
-          })
+          </div>
         )}
       </div>
 

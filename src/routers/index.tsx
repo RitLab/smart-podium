@@ -10,7 +10,6 @@ import SettingPIN from "@/pages/Auth/SettingPIN";
 import LicenseKey from "@/pages/Auth/LicenseKey";
 import Calendar from "@/pages/Calendar";
 import Home from "@/pages/Home";
-import Internet from "@/pages/Internet";
 import Module from "@/pages/Module";
 import File from "@/pages/Module/File";
 import ImageViewer from "@/pages/Module/ImageViewer";
@@ -44,7 +43,10 @@ export default () => {
             <Route path="calendar" element={<Calendar />} />
             <Route path="student" element={<Student />} />
             <Route path="module" element={<Module />} />
-            <Route path="internet" element={<Internet />} />
+            {/* Internet dirender permanen di MainLayout (lihat di sana), biar
+                webview + meeting di dalamnya nggak mati pas pindah halaman.
+                Rutenya tetep ada supaya URL /internet valid, tapi elemennya kosong. */}
+            <Route path="internet" element={null} />
           </Route>
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Route>
