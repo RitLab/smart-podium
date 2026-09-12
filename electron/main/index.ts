@@ -192,6 +192,14 @@ async function createWindow() {
   const platformHint =
     process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux";
   const secChUa = `"Chromium";v="${mayorChrome}", "Google Chrome";v="${mayorChrome}", "Not?A_Brand";v="99"`;
+  const platformVersionHint = process.platform === "win32" ? "15.0.0" : process.platform === "darwin" ? "15.0.0" : "6.5.0";
+
+  // 1c. Sisi JavaScript. Header doang nggak cukup buat Google Sign-In: setelah
+  //     email dikirim, token BotGuard (JS Google) mem-fingerprint browser dari
+  //     dalam halaman. Preload sesi ini nimpa navigator.userAgentData &
+  //     window.chrome di dunia utama halaman biar konsisten sama Chrome asli.
+  //     Lihat electron/preload/uaPatch.ts.
+  session.defaultSession.setPreloads([path.join(__dirname, "../preload/uaPatch.cjs")]);
 
   // 2. Screen share. getDisplayMedia() di Electron nggak jalan sama sekali
   //    kalau handler ini nggak dipasang — makanya share screen di Google Meet
@@ -227,6 +235,16 @@ async function createWindow() {
     details.requestHeaders["sec-ch-ua"] = secChUa;
     details.requestHeaders["sec-ch-ua-mobile"] = "?0";
     details.requestHeaders["sec-ch-ua-platform"] = `"${platformHint}"`;
+    // Entropi tinggi — Google minta lewat Accept-CH setelah halaman pertama;
+    // Chrome asli ngirim, Electron nggak. Absennya kebaca sebagai bukan Chrome.
+    details.requestHeaders["sec-ch-ua-full-version"] = `"${versiChrome}"`;
+    details.requestHeaders["sec-ch-ua-full-version-list"] =
+      `"Chromium";v="${versiChrome}", "Google Chrome";v="${versiChrome}", "Not?A_Brand";v="99.0.0.0"`;
+    details.requestHeaders["sec-ch-ua-platform-version"] = `"${platformVersionHint}"`;
+    details.requestHeaders["sec-ch-ua-arch"] = `"x86"`;
+    details.requestHeaders["sec-ch-ua-bitness"] = `"64"`;
+    details.requestHeaders["sec-ch-ua-model"] = `""`;
+    details.requestHeaders["sec-ch-ua-wow64"] = "?0";
     callback({ requestHeaders: details.requestHeaders });
   });
 
