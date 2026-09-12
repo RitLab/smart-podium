@@ -20,6 +20,21 @@ const DEFAULT_INITIAL_TAB: BrowserTab = {
   isLoading: false,
 };
 
+/**
+ * Halaman yang nggak ada gunanya di-restore karena SELALU basi begitu app
+ * dibuka lagi: alur login akun Google.
+ *
+ * Kenapa khusus ini: login Google di dalam <webview> ditolak Google
+ * ("browser may not be secure"), dan URL penolakannya nyimpen dsh/token sesi.
+ * Kalau tab itu ikut di-restore, tiap app dibuka guru disuguhi halaman
+ * penolakan yang SAMA PERSIS — kelihatan kayak percobaan baru yang gagal lagi,
+ * padahal cuma halaman mati yang dimuat ulang. Bikin salah paham dan bikin
+ * kartu "Gabung Google Meet" di landing nggak keliatan karena ketutup tab itu.
+ */
+const halamanBasi = (url: string) =>
+  /^https:\/\/accounts\.google\.com\/.*\/(signin|rejected)/i.test(url || "") ||
+  /^https:\/\/accounts\.google\.com\/(ServiceLogin|signin)/i.test(url || "");
+
 const loadPersistedTabs = (): BrowserState => {
   try {
     const saved = localStorage.getItem(BROWSER_STATE_KEY);
@@ -41,9 +56,17 @@ const loadPersistedTabs = (): BrowserState => {
           return fresh;
         }
 
+        // Buang tab login Google yang basi sebelum di-restore.
+        const tabs = parsed.tabs.filter((t: BrowserTab) => !halamanBasi(t?.url || ""));
+        if (tabs.length === 0) {
+          const fresh = { tabs: [DEFAULT_INITIAL_TAB], activeTabId: "initial-tab", associatedEventId: parsed.associatedEventId ?? null };
+          savePersistedTabs(fresh.tabs, fresh.activeTabId, fresh.associatedEventId);
+          return fresh;
+        }
+        const aktifMasihAda = tabs.some((t: BrowserTab) => t.id === parsed.activeTabId);
         return {
-          tabs: parsed.tabs,
-          activeTabId: parsed.activeTabId,
+          tabs,
+          activeTabId: aktifMasihAda ? parsed.activeTabId : tabs[0].id,
           associatedEventId: parsed.associatedEventId ?? null,
         };
       }
