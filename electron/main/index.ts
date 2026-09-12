@@ -288,6 +288,22 @@ async function createWindow() {
 
   // Klik kanan / tahan di TAB (tab strip). Renderer yang minta, main yang
   // munculin menu native, hasilnya dikembalikan sebagai string aksi.
+  // Bersihin data browsing (cookie, cache, storage) di session default —
+  // session yang dipakai webview browser dalam app. Ini yang bikin bisa pulih
+  // kalau Google udah nge-flag sesi gara-gara percobaan login gagal berkali-
+  // kali: state penolakannya nyimpen di cookie, jadi header doang nggak cukup.
+  ipcMain.handle("browser-clear-data", async () => {
+    try {
+      await session.defaultSession.clearStorageData({
+        storages: ["cookies", "localstorage", "indexdb", "websql", "serviceworkers", "cachestorage"],
+      });
+      await session.defaultSession.clearCache();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: String((e as Error)?.message || e) };
+    }
+  });
+
   ipcMain.handle(
     "browser-tab-menu",
     (_e, opsi: { bisaTutup: boolean; adaUrl: boolean }) =>

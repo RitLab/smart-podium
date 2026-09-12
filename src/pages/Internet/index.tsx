@@ -495,15 +495,17 @@ const Internet = () => {
             <Plus size={16} />
           </button>
 
-          {/* Manual reset - safety net */}
+          {/* Bersihkan data browsing — tab + cookie + cache. Selain jaring
+              pengaman, ini juga jalan keluar kalau Google nge-flag sesi gara-
+              gara login gagal berkali-kali (state-nya nyimpen di cookie). */}
           <button
-            onClick={() => {
-              if (confirm("Bersihkan semua tab browser?")) {
-                dispatch(resetBrowser());
-              }
+            onClick={async () => {
+              if (!confirm("Bersihkan semua data browser? Ini menghapus tab, cookie, dan sesi login (mis. Google).")) return;
+              await window.ipcRenderer.invoke("browser-clear-data");
+              dispatch(resetBrowser());
             }}
             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 mb-1 active:scale-95 ml-1"
-            title="Bersihkan Semua Tab"
+            title="Bersihkan Data Browser (tab, cookie, sesi login)"
           >
             <Trash2 size={15} />
           </button>
