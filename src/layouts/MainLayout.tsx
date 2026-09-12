@@ -33,6 +33,7 @@ import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 ===================================================== */
 
 import { useToast } from "@/components/ToastProvider";
+import Internet from "@/pages/Internet";
 
 /* =====================================================
    MENUS
@@ -353,6 +354,70 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
 /* =====================================================
    MAIN LAYOUT CORE
 ===================================================== */
+
+/**
+ * Penampil Web dirender PERMANEN lewat lapisan ini, bukan lewat rute.
+ *
+ * Kenapa nggak lewat rute: pindah ke Home bikin komponennya unmount, webview-nya
+ * hancur, dan meeting Meet yang lagi jalan ikut mati. Kenapa nggak cukup ditaruh
+ * di dalam <main>: MainLayout ngerender DUA pohon berbeda (cabang isHome nggak
+ * punya <main> sama sekali), dan React nggak mempertahankan instance lintas
+ * struktur induk yang beda. Makanya lapisan ini jadi ANAK PERTAMA Fragment di
+ * KEDUA return — posisi pohonnya sama, jadi instance-nya dipertahankan.
+ *
+ * Posisinya fixed dan disinkronkan ke rect <main> pakai ResizeObserver, biar di
+ * /internet dia persis nutup area konten. Disembunyiin pakai visibility, BUKAN
+ * display:none — display:none (termasuk di ancestor) bikin webview reload begitu
+ * ditampilin lagi, yang justru masalah awalnya.
+ */
+function LapisanPenampilWeb({ aktif, mainEl }: { aktif: boolean; mainEl: HTMLElement | null }) {
+  const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    if (!aktif || !mainEl) return;
+    const ukur = () => {
+      const r = mainEl.getBoundingClientRect();
+      setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+    };
+    ukur();
+    const ro = new ResizeObserver(ukur);
+    ro.observe(mainEl);
+    window.addEventListener("resize", ukur);
+    return () => { ro.disconnect(); window.removeEventListener("resize", ukur); };
+  }, [aktif, mainEl]);
+
+  // Disembunyiin dengan DIGESER KE LUAR LAYAR, bukan visibility:hidden.
+  // Diuji: kalau pakai visibility di lapisan ini, Blink nyimpen nilai
+  // "hidden" yang diwarisi anak-anaknya dari frame pertama (rect belum ada)
+  // dan NGGAK pernah ngitung ulang setelah lapisannya dibalik ke visible —
+  // getComputedStyle di halaman bilang hidden padahal DevTools bilang visible,
+  // dan focus() nolak karena percaya nilai basi itu. Akibatnya input landing
+  // nggak bisa diketik sama sekali. Geser ke luar layar nggak nyentuh
+  // pewarisan visibility, jadi bebas dari jebakan itu. Bukan transform:
+  // ancestor yang di-transform jadi containing block buat root fullscreen
+  // Penampil Web yang position:fixed.
+  const tampil = aktif;
+  return (
+    <div
+      aria-hidden={!tampil}
+      style={{
+        position: "fixed",
+        top: tampil ? (rect?.top ?? 0) : 0,
+        left: tampil ? (rect?.left ?? 0) : -10000,
+        width: tampil ? (rect?.width ?? 0) : 1,
+        height: tampil ? (rect?.height ?? 0) : 1,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        pointerEvents: tampil ? "auto" : "none",
+        zIndex: tampil ? 20 : 0,
+      }}
+    >
+      <Internet aktif={aktif} />
+    </div>
+  );
+}
 
 function MainLayoutContent() {
   const location = useLocation();
@@ -883,10 +948,18 @@ function MainLayoutContent() {
 
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
+  const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
+  // useCallback wajib: kalau ref-nya fungsi baru tiap render, React manggil
+  // ref lama dengan null lalu ref baru dengan elemennya di SETIAP render —
+  // state mainEl bolak-balik null/el terus, dan observer di lapisan permanen
+  // ikut dilepas-pasang tiap render.
+  const mainRef = useCallback((el: HTMLElement | null) => setMainEl(el), []);
 
 
   if (isHome) {
     return (
+      <>
+      <LapisanPenampilWeb aktif={false} mainEl={null} />
       <div
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
@@ -937,10 +1010,13 @@ function MainLayoutContent() {
           onCancel={() => dispatch(setShowStopConfirm(false))}
         />
       </div>
+      </>
     );
   }
 
   return (
+    <>
+    <LapisanPenampilWeb aktif={isInternet} mainEl={mainEl} />
     <div
       className="relative h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}
@@ -971,7 +1047,9 @@ function MainLayoutContent() {
         )}
 
         <div className={`flex-1 flex min-h-0 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : ""}`}>
-          <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${isFullScreen ? "pr-0" : isInternet ? "pr-8" : "pr-12"}`}>
+          {/* ref: rect-nya dipakai lapisan Penampil Web permanen (lihat
+              LapisanPenampilWeb) buat nempatin diri persis di area konten ini. */}
+          <main ref={mainRef} className={`relative flex-1 flex flex-col min-h-0 overflow-hidden ${isFullScreen ? "pr-0" : isInternet ? "pr-8" : "pr-12"}`}>
             <Outlet />
           </main>
           {!isFullScreen && (
@@ -1024,6 +1102,7 @@ function MainLayoutContent() {
         onCancel={() => dispatch(setShowStopConfirm(false))}
       />
     </div>
+    </>
   );
 }
 
