@@ -7,6 +7,7 @@ import {
   Menu,
   dialog,
   desktopCapturer,
+  clipboard,
 } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -14,6 +15,7 @@ import path from "node:path";
 import os from "node:os";
 import { spawn } from "child_process";
 import { update } from "./update";
+import { susunMenuKonten, susunMenuTab, type AksiTab } from "./browserMenu";
 
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -229,13 +231,48 @@ async function createWindow() {
   // popup dari webview dialihkan jadi tab baru di tab bar kita — persis kayak
   // Chrome — bukan jendela OS terpisah, dan bukan diblokir diam-diam.
   win.webContents.on("did-attach-webview", (_event, contents) => {
+    const bukaTab = (url: string) => {
+      if (/^https?:\/\//i.test(url)) win?.webContents.send("browser-open-tab", url);
+    };
+
     contents.setWindowOpenHandler(({ url }) => {
-      if (/^https?:\/\//i.test(url)) {
-        win?.webContents.send("browser-open-tab", url);
-      }
+      bukaTab(url);
       return { action: "deny" };
     });
+
+    // Klik kanan / tahan di isi halaman -> menu native ala Chrome. Aksi edit
+    // dipanggil langsung di webContents ini, bukan lewat role, supaya nggak
+    // salah sasaran ke jendela utama.
+    contents.on("context-menu", (_e, params) => {
+      const template = susunMenuKonten(
+        params,
+        { canGoBack: contents.canGoBack(), canGoForward: contents.canGoForward() },
+        {
+          bukaTab,
+          salinTeks: (t) => clipboard.writeText(t),
+          potong: () => contents.cut(),
+          salin: () => contents.copy(),
+          tempel: () => contents.paste(),
+          pilihSemua: () => contents.selectAll(),
+          kembali: () => contents.goBack(),
+          maju: () => contents.goForward(),
+          muatUlang: () => contents.reload(),
+        },
+      );
+      Menu.buildFromTemplate(template).popup({ window: win ?? undefined });
+    });
   });
+
+  // Klik kanan / tahan di TAB (tab strip). Renderer yang minta, main yang
+  // munculin menu native, hasilnya dikembalikan sebagai string aksi.
+  ipcMain.handle(
+    "browser-tab-menu",
+    (_e, opsi: { bisaTutup: boolean; adaUrl: boolean }) =>
+      new Promise<AksiTab | null>((resolve) => {
+        const menu = Menu.buildFromTemplate(susunMenuTab(opsi, resolve));
+        menu.popup({ window: win ?? undefined, callback: () => resolve(null) });
+      }),
+  );
 
   update(win);
 }

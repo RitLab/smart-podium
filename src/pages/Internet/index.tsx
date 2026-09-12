@@ -388,6 +388,24 @@ const Internet = () => {
     dispatch(closeTab(id));
   };
 
+  // Klik kanan / tahan di tab -> menu native ala tab strip Chrome. Di layar
+  // sentuh, tahan (long-press) juga micu onContextMenu, jadi cukup satu jalur.
+  const handleTabContextMenu = async (tab: BrowserTab, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const aksi = await window.ipcRenderer.invoke("browser-tab-menu", {
+      bisaTutup: tabs.length > 1,
+      adaUrl: !tab.isLanding && !!tab.url,
+    });
+    switch (aksi) {
+      case "tab-baru": dispatch(addTab({ initialUrl: "" })); break;
+      case "duplikat": dispatch(addTab({ initialUrl: tab.url })); break;
+      case "muat-ulang": webviewRefs.current[tab.id]?.reload(); break;
+      case "tutup": dispatch(closeTab(tab.id)); break;
+      default: break;
+    }
+  };
+
   const handleToggleBookmark = () => {
     if (isLanding) return;
 
@@ -439,6 +457,7 @@ const Internet = () => {
                 <div
                   key={tab.id}
                   onClick={() => dispatch(setActiveTabId(tab.id))}
+                  onContextMenu={(e) => handleTabContextMenu(tab, e)}
                   className={`group relative flex items-center gap-2 pl-4 pr-10 py-2.5 text-xs font-semibold rounded-t-xl cursor-pointer transition-all duration-200 shrink-0 max-w-[160px] ${
                     isActive 
                       ? "bg-white text-blue-600 shadow-sm border-t border-x border-gray-200" 
