@@ -175,6 +175,24 @@ async function createWindow() {
     .replace(/ Electron\/\S+/, "");
   session.defaultSession.setUserAgent(uaChrome);
 
+  // 1b. Client hints. Ini yang bikin Google Sign-In tetep nolak walau UA udah
+  //     bersih: UA string bilang "Chrome/130", tapi navigator.userAgentData dan
+  //     header Sec-CH-UA cuma ngaku "Chromium" tanpa brand "Google Chrome".
+  //     Google ngebandingin keduanya, nggak cocok, terus nganggep browsernya
+  //     nggak aman. Brand-nya disamain sama Chrome asli, versinya diambil dari
+  //     Chromium yang emang dipakai Electron biar nggak pernah ketinggalan.
+  //
+  //     Yang dicek Google ternyata header HTTP-nya — diuji langsung: begitu
+  //     header ini bener, halaman sign-in Google kebuka normal walau
+  //     navigator.userAgentData di JS masih ngaku "Chromium" doang. Menimpa
+  //     objek JS-nya sengaja nggak dilakukan: satu-satunya jalur (debugger
+  //     protocol) bentrok sama DevTools dan nggak bisa diverifikasi.
+  const versiChrome = process.versions.chrome;               // "130.0.6723.191"
+  const mayorChrome = versiChrome.split(".")[0];             // "130"
+  const platformHint =
+    process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux";
+  const secChUa = `"Chromium";v="${mayorChrome}", "Google Chrome";v="${mayorChrome}", "Not?A_Brand";v="99"`;
+
   // 2. Screen share. getDisplayMedia() di Electron nggak jalan sama sekali
   //    kalau handler ini nggak dipasang — makanya share screen di Google Meet
   //    gagal. Windows nggak punya picker bawaan dari Electron, jadi layar
@@ -204,6 +222,11 @@ async function createWindow() {
     ) {
       details.requestHeaders["Referer"] = "https://www.youtube.com";
     }
+    // Client hints ala Chrome (lihat catatan di atas). Electron nggak ngirim
+    // ini sama sekali, dan absennya pun udah jadi sinyal buat Google.
+    details.requestHeaders["sec-ch-ua"] = secChUa;
+    details.requestHeaders["sec-ch-ua-mobile"] = "?0";
+    details.requestHeaders["sec-ch-ua-platform"] = `"${platformHint}"`;
     callback({ requestHeaders: details.requestHeaders });
   });
 
