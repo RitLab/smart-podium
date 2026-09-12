@@ -161,6 +161,16 @@ const WebviewContainer = ({
         ref={webviewRef}
         src={url}
         allowFullScreen
+        // Tanpa ini, popup dari halaman (window.open, target="_blank") diblokir
+        // Electron sebelum sempat nyampe ke handler di main process. Handler di
+        // sana yang mutusin popup-nya jadi tab baru, bukan jendela terpisah.
+        //
+        // Harus string, bukan boolean. React nggak kenal allowpopups sebagai
+        // atribut boolean, jadi nilai `true` dibuang diam-diam dan atributnya
+        // nggak pernah nyampe ke DOM — beda sama allowFullScreen yang memang
+        // ada di daftar bawaan React. Tipe React-nya bilang boolean, makanya
+        // dilewatin lewat spread.
+        {...({ allowpopups: "true" } as Record<string, string>)}
         style={{
           width: "100%",
           height: "100%",
@@ -360,6 +370,18 @@ const Internet = () => {
   const handleNewTab = (initialUrl = "") => {
     dispatch(addTab({ initialUrl }));
   };
+
+  // Popup dari halaman di dalam webview (window.open, target="_blank")
+  // dikirim main process ke sini supaya kebuka sebagai tab baru di tab bar
+  // kita — perilaku yang sama kayak Chrome.
+  useEffect(() => {
+    const lepas = window.ipcRenderer.on("browser-open-tab", (_e, url: string) => {
+      if (typeof url === "string" && /^https?:\/\//i.test(url)) {
+        dispatch(addTab({ initialUrl: url }));
+      }
+    });
+    return () => { if (typeof lepas === "function") lepas(); };
+  }, [dispatch]);
 
   const handleCloseTab = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();

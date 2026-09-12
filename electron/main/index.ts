@@ -6,6 +6,7 @@ import {
   session,
   Menu,
   dialog,
+  desktopCapturer,
 } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -160,6 +161,40 @@ async function createWindow() {
   // const menu = Menu.buildFromTemplate(template as any);
   // Menu.setApplicationMenu(menu);
 
+  // ===== Supaya browser dalam aplikasi berperilaku kayak Chrome =====
+  //
+  // 1. User-Agent. Bawaan Electron nyelipin "smart-podium/x.y.z" dan
+  //    "Electron/x.y.z" di UA. Beberapa layanan (Google Meet salah satunya)
+  //    ngeliat itu terus nganggep browsernya nggak didukung dan matiin fitur.
+  //    Dua token itu dibuang biar UA-nya kebaca sebagai Chrome biasa.
+  const uaChrome = session.defaultSession
+    .getUserAgent()
+    .replace(/ smart-podium\/\S+/i, "")
+    .replace(/ Electron\/\S+/, "");
+  session.defaultSession.setUserAgent(uaChrome);
+
+  // 2. Screen share. getDisplayMedia() di Electron nggak jalan sama sekali
+  //    kalau handler ini nggak dipasang — makanya share screen di Google Meet
+  //    gagal. Windows nggak punya picker bawaan dari Electron, jadi layar
+  //    utama podium yang dipilih otomatis; buat podium itu memang yang
+  //    dimau (yang di-share ya layar podiumnya). Audio loopback cuma ada di
+  //    Windows, di platform lain dilewat biar nggak error.
+  session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => {
+    desktopCapturer
+      .getSources({ types: ["screen"] })
+      .then((sources) => {
+        if (!sources.length) {
+          callback({});
+          return;
+        }
+        callback({
+          video: sources[0],
+          ...(process.platform === "win32" ? { audio: "loopback" as const } : {}),
+        });
+      })
+      .catch(() => callback({}));
+  });
+
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     if (
       details.url.includes("youtube.com") ||
@@ -184,6 +219,22 @@ async function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("https:")) shell.openExternal(url);
     return { action: "deny" };
+  });
+
+  // ===== Browser dalam aplikasi (<webview> di halaman Penampil Web) =====
+  //
+  // Handler di atas cuma buat jendela utama. Halaman yang dibuka DI DALAM
+  // webview punya webContents sendiri, dan tanpa handler khusus, window.open()
+  // maupun link target="_blank" dari situ nggak ngapa-ngapain. Sekarang tiap
+  // popup dari webview dialihkan jadi tab baru di tab bar kita — persis kayak
+  // Chrome — bukan jendela OS terpisah, dan bukan diblokir diam-diam.
+  win.webContents.on("did-attach-webview", (_event, contents) => {
+    contents.setWindowOpenHandler(({ url }) => {
+      if (/^https?:\/\//i.test(url)) {
+        win?.webContents.send("browser-open-tab", url);
+      }
+      return { action: "deny" };
+    });
   });
 
   update(win);
