@@ -274,7 +274,23 @@ const Internet = ({ aktif = true }: { aktif?: boolean }) => {
   // jadwal hari ini — sumber yang sama yang dipakai navbar, jadi nggak perlu
   // state baru. Kalau nggak ada jadwal, prefill-nya dilewat aja.
   const headerEvents = useSelector((state: RootState) => state.calendar.headerEvents);
-  const namaGuru = headerEvents.find((e) => e.teacher_name)?.teacher_name || "";
+  // Ambil guru dari event yang BENAR-BENAR jalan sekarang, bukan event pertama
+  // yang kebetulan punya nama. Sehari bisa diisi beberapa guru; find() polos
+  // bakal ngisi nama yang salah di kolom nama tamu Meet.
+  const namaGuru = (() => {
+    const now = new Date();
+    const hariIni = now.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const jam = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(".", ":");
+    const punyaGuru = headerEvents.filter((e) => e.event_date === hariIni && e.teacher_name);
+    const jalan = punyaGuru.filter((e) => e.start_time <= jam && e.end_time > jam);
+    // Kelas belajar menang atas meeting kalau waktunya tumpang tindih — sama
+    // kayak cara MainLayout milih activeEvent.
+    const dipilih =
+      jalan.find((e) => !e.is_meeting) ||
+      jalan[0] ||
+      punyaGuru.filter((e) => e.end_time <= jam).sort((a, b) => b.end_time.localeCompare(a.end_time))[0];
+    return dipilih?.teacher_name || "";
+  })();
   const [kodeMeet, setKodeMeet] = useState("");
   const [salahKodeMeet, setSalahKodeMeet] = useState(false);
   const [isWebviewFullScreen, setIsWebviewFullScreen] = useState(false);
