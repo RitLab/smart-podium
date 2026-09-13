@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"; // Home Page Component
+import { useEffect, useRef, useState } from "react"; // Home Page Component
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router";
 import { LogOut } from "lucide-react";
@@ -556,14 +556,12 @@ const Home = () => {
 
   /* ================= ACCESS RESOLVER ================= */
   // lesson_only juga disable jika session sudah dihentikan
-  // Voicemeeter DIHILANGKAN, bukan cuma dimatiin, di ruang yang aplikasinya
-  // emang nggak kepasang (Aula). Ikon mati masih ngundang pertanyaan "kenapa
-  // nggak bisa"; yang nggak ada sama sekali nggak nimbulin pertanyaan.
+  // Voicemeeter DIMATIIN, bukan dihilangin, di ruang yang aplikasinya emang
+  // nggak kepasang (Aula). Sempat dihilangin, tapi grid menunya dipatok
+  // repeat(6, 120px) dan isinya pas enam — begitu satu ilang, barisnya jadi
+  // timpang dan malah kelihatan ada yang dicopot. Dimatiin bikin susunannya
+  // tetep utuh, dan alasannya dikasih tahu lewat tooltip.
   const { adaVoicemeeter } = useRuangSekarang();
-  const menuTampil = useMemo(
-    () => menus.filter((m) => (m.action === "voicemeeter" ? adaVoicemeeter : true)),
-    [adaVoicemeeter],
-  );
 
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isEffectiveRecording) {
@@ -715,9 +713,13 @@ const Home = () => {
 
       {/* MAIN MENUS */}
       <div className="text-center w-full" style={{ display: "grid", gridTemplateColumns: "repeat(6, 120px)", justifyContent: "center", columnGap: "2.5rem", rowGap: "1.5rem", alignItems: "start" }}>
-        {menuTampil.map((menu) => {
+        {menus.map((menu) => {
           const Icon = menu.icon;
-          const enabled = isMenuEnabled(menu.access);
+          const kepasang = menu.action !== "voicemeeter" || adaVoicemeeter;
+          const enabled = isMenuEnabled(menu.access) && kepasang;
+          const alasanMati = !kepasang
+            ? "Voicemeeter nggak terpasang di ruang ini"
+            : "Tidak tersedia di luar jadwal pelajaran";
 
           const renderMenuInner = (
             <div key={menu.label} className={`group flex flex-col items-center justify-start w-full transition-all duration-300 ${enabled ? "" : "opacity-35 grayscale pointer-events-none"
@@ -750,7 +752,7 @@ const Home = () => {
           // Disabled → wrapper non-interactive
           if (!enabled) {
             return (
-              <div key={menu.label} className="cursor-not-allowed select-none" title="Tidak tersedia di luar jadwal pelajaran">
+              <div key={menu.label} className="cursor-not-allowed select-none" title={alasanMati}>
                 {renderMenuInner}
               </div>
             );

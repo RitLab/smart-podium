@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock9, Eye, EyeOff, LogOut, Timer } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -229,13 +229,9 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
     showToast(res?.message || "Gagal mengubah mode display", "error");
   };
 
-  // Sama kayak di Home: ruang yang nggak kepasang Voicemeeter nggak usah
-  // dikasih ikonnya sama sekali. Lihat src/utils/ruangKelas.ts.
+  // Sama kayak di Home: di ruang yang Voicemeeter-nya nggak kepasang, ikonnya
+  // DIMATIIN, bukan dihilangin. Lihat src/utils/ruangKelas.ts.
   const { adaVoicemeeter } = useRuangSekarang();
-  const menuTampil = useMemo(
-    () => menus.filter((m) => (m.action === "voicemeeter" ? adaVoicemeeter : true)),
-    [adaVoicemeeter],
-  );
 
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isRecording) return true;
@@ -255,16 +251,20 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
   return (
     <aside className="flex flex-col h-full">
       <div className="w-20 flex-1 flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
-        {menuTampil.map((menu) => {
+        {menus.map((menu) => {
           const Icon = menu.icon;
           const color = colorMap[menu.color];
-          const enabled = isMenuEnabled(menu.access);
+          const kepasang = menu.action !== "voicemeeter" || adaVoicemeeter;
+          const enabled = isMenuEnabled(menu.access) && kepasang;
+          const alasanMati = !kepasang
+            ? "Voicemeeter nggak terpasang di ruang ini"
+            : "Tidak tersedia di luar jadwal pelajaran";
 
           const disabledWrapper = (child: React.ReactNode) => (
             <div
               key={menu.label}
               className="opacity-30 grayscale cursor-not-allowed"
-              title="Tidak tersedia di luar jadwal pelajaran"
+              title={alasanMati}
             >
               {child}
             </div>
