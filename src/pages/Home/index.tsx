@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"; // Home Page Component
+import { useEffect, useMemo, useRef, useState } from "react"; // Home Page Component
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router";
 import { LogOut } from "lucide-react";
@@ -27,6 +27,7 @@ import AdminPanel from "@/components/AdminPanel";
 import { eventService } from "@/services/event";
 import type { EventDetail, EventRecordStatus } from "@/types/event";
 import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
+import { useRuangSekarang } from "@/hooks/useRuangSekarang";
 
 /* ================= MENU TYPE ================= */
 
@@ -43,6 +44,9 @@ type MenuItem = {
 };
 
 /* ================= MENU LIST ================= */
+
+// Menu yang cuma ada kalau aplikasinya beneran kepasang di ruang itu.
+// Lihat src/utils/ruangKelas.ts.
 
 const menus: MenuItem[] = [
   {
@@ -552,6 +556,15 @@ const Home = () => {
 
   /* ================= ACCESS RESOLVER ================= */
   // lesson_only juga disable jika session sudah dihentikan
+  // Voicemeeter DIHILANGKAN, bukan cuma dimatiin, di ruang yang aplikasinya
+  // emang nggak kepasang (Aula). Ikon mati masih ngundang pertanyaan "kenapa
+  // nggak bisa"; yang nggak ada sama sekali nggak nimbulin pertanyaan.
+  const { adaVoicemeeter } = useRuangSekarang();
+  const menuTampil = useMemo(
+    () => menus.filter((m) => (m.action === "voicemeeter" ? adaVoicemeeter : true)),
+    [adaVoicemeeter],
+  );
+
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isEffectiveRecording) {
       return access !== "outside_only";
@@ -702,7 +715,7 @@ const Home = () => {
 
       {/* MAIN MENUS */}
       <div className="text-center w-full" style={{ display: "grid", gridTemplateColumns: "repeat(6, 120px)", justifyContent: "center", columnGap: "2.5rem", rowGap: "1.5rem", alignItems: "start" }}>
-        {menus.map((menu) => {
+        {menuTampil.map((menu) => {
           const Icon = menu.icon;
           const enabled = isMenuEnabled(menu.access);
 

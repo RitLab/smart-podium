@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock9, Eye, EyeOff, LogOut, Timer } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -35,6 +35,7 @@ import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 import { useToast } from "@/components/ToastProvider";
 import Internet from "@/pages/Internet";
 import SharePicker from "@/components/SharePicker";
+import { useRuangSekarang } from "@/hooks/useRuangSekarang";
 
 /* =====================================================
    MENUS
@@ -228,6 +229,14 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
     showToast(res?.message || "Gagal mengubah mode display", "error");
   };
 
+  // Sama kayak di Home: ruang yang nggak kepasang Voicemeeter nggak usah
+  // dikasih ikonnya sama sekali. Lihat src/utils/ruangKelas.ts.
+  const { adaVoicemeeter } = useRuangSekarang();
+  const menuTampil = useMemo(
+    () => menus.filter((m) => (m.action === "voicemeeter" ? adaVoicemeeter : true)),
+    [adaVoicemeeter],
+  );
+
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isRecording) return true;
 
@@ -246,7 +255,7 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
   return (
     <aside className="flex flex-col h-full">
       <div className="w-20 flex-1 flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
-        {menus.map((menu) => {
+        {menuTampil.map((menu) => {
           const Icon = menu.icon;
           const color = colorMap[menu.color];
           const enabled = isMenuEnabled(menu.access);
