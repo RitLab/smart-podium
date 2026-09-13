@@ -147,13 +147,30 @@ const WebviewContainer = ({
   return (
     <div
       className="absolute inset-0 bg-white"
-      // JANGAN pakai display:none buat nyembunyiin tab nonaktif. Di Electron,
-      // <webview> yang kena display:none bakal RELOAD halamannya begitu
-      // ditampilkan lagi — diuji: penanda JS di halaman hilang setelah pindah
-      // tab lalu balik. Itu yang bikin meeting Meet mati dan ngulang tiap ganti
-      // tab. visibility:hidden nggak punya efek itu: guest tetep hidup dan
-      // halamannya nggak disentuh. Semua tab ditumpuk di posisi yang sama,
-      // yang aktif ditaruh paling atas dan yang lain dibikin nggak bisa diklik.
+      // Cara nyembunyiin tab nonaktif ini KELIHATANNYA sepele, padahal nentuin
+      // dua fitur sekaligus. Ada dua syarat yang harus kepenuhan bareng:
+      //
+      // 1. Halamannya nggak boleh dimuat ulang. display:none bikin <webview>
+      //    RELOAD begitu ditampilkan lagi — diuji: penanda JS di halaman hilang
+      //    setelah pindah tab lalu balik. Itu yang dulu bikin konferensi mati
+      //    dan ngulang tiap ganti tab.
+      //
+      // 2. Halamannya harus tetep DIGAMBAR. Ini yang kelewat dulu. Webview yang
+      //    nggak dikomposit nggak ngasih frame sama sekali, dan itu bikin dua
+      //    hal rusak diam-diam: share screen kategori "Tab Browser" cuma ngirim
+      //    layar kosong (videoWidth 0, track langsung muted), dan capturePage
+      //    buat pratinjau di picker nggantung selamanya.
+      //
+      // Terukur di Electron 33.4.11 — yang NGASIH frame: opacity:0, ditutupi
+      // elemen lain, z-index negatif, transform:scale(0). Yang NOL frame:
+      // visibility:hidden, display:none, clip-path:inset(100%), dan digeser ke
+      // luar layar. Nggak ada cara maksa dari main process: setBackgroundThrottling,
+      // invalidate, setFrameRate, startPainting, sampai command-line switch
+      // semuanya no-op karena <webview> bukan offscreen rendering.
+      //
+      // Jadi dipakai opacity:0. Semua tab ditumpuk di posisi yang sama; yang
+      // aktif ditaruh paling atas (wrapper-nya bg-white, jadi nutup penuh) dan
+      // yang lain dibikin transparan sekaligus nggak bisa diklik.
       style={{
         position: "absolute",
         top: 0,
@@ -162,7 +179,7 @@ const WebviewContainer = ({
         bottom: 0,
         width: "100%",
         height: "100%",
-        visibility: isActive ? "visible" : "hidden",
+        opacity: isActive ? 1 : 0,
         pointerEvents: isActive ? "auto" : "none",
         zIndex: isActive ? 1 : 0,
       }}

@@ -374,6 +374,8 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
 function LapisanPenampilWeb({ aktif, mainEl }: { aktif: boolean; mainEl: HTMLElement | null }) {
   const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
 
+  // Sengaja NGGAK ngosongin rect pas nonaktif: ukuran terakhir dipertahankan
+  // supaya lapisannya tetep segede area konten dan capture-nya nggak ngecil.
   useEffect(() => {
     if (!aktif || !mainEl) return;
     const ukur = () => {
@@ -387,26 +389,45 @@ function LapisanPenampilWeb({ aktif, mainEl }: { aktif: boolean; mainEl: HTMLEle
     return () => { ro.disconnect(); window.removeEventListener("resize", ukur); };
   }, [aktif, mainEl]);
 
-  // Disembunyiin dengan DIGESER KE LUAR LAYAR, bukan visibility:hidden.
-  // Diuji: kalau pakai visibility di lapisan ini, Blink nyimpen nilai
-  // "hidden" yang diwarisi anak-anaknya dari frame pertama (rect belum ada)
-  // dan NGGAK pernah ngitung ulang setelah lapisannya dibalik ke visible —
-  // getComputedStyle di halaman bilang hidden padahal DevTools bilang visible,
-  // dan focus() nolak karena percaya nilai basi itu. Akibatnya input landing
-  // nggak bisa diketik sama sekali. Geser ke luar layar nggak nyentuh
-  // pewarisan visibility, jadi bebas dari jebakan itu. Bukan transform:
-  // ancestor yang di-transform jadi containing block buat root fullscreen
-  // Penampil Web yang position:fixed.
+  // Cara nyembunyiin lapisan ini udah tiga kali ganti, masing-masing karena
+  // jebakan yang beda. Biar nggak kejebak lagi, ini catatannya:
+  //
+  // - display:none (termasuk di ancestor) bikin webview RELOAD pas ditampilin
+  //   lagi. Itu masalah awalnya, makanya nggak pernah dipakai.
+  // - visibility:hidden bikin Blink nyimpen nilai "hidden" yang diwarisi
+  //   anak-anaknya dari frame pertama dan NGGAK pernah ngitung ulang pas
+  //   lapisannya dibalik ke visible. getComputedStyle di halaman bilang hidden
+  //   padahal DevTools bilang visible, dan focus() nolak karena percaya nilai
+  //   basi itu — input landing jadi nggak bisa diketik sama sekali.
+  // - transform:scale(0) nggak boleh: ancestor yang di-transform jadi
+  //   containing block buat root fullscreen Penampil Web yang position:fixed.
+  // - Digeser ke luar layar (left:-10000, ukuran 1x1) BEBAS dari tiga jebakan
+  //   di atas, tapi punya jebakan sendiri yang baru ketahuan: elemen yang
+  //   nggak beririsan sama viewport berhenti dikomposit, dan capture nempel ke
+  //   compositor. Terukur di app ini — share screen yang lagi jalan langsung
+  //   BEKU begitu guru balik ke Home (4 sampel berturut-turut warnanya sama
+  //   persis), lalu ngalir lagi pas balik ke /internet. Buat kelas, itu layar
+  //   diam tanpa peringatan apa pun.
+  //
+  // Yang dipakai sekarang: opacity:0, ukuran dan posisi TETAP dipertahankan.
+  // Opacity nggak diwarisi sebagai nilai yang bisa basi kayak visibility, nggak
+  // bikin containing block kayak transform, nggak nyentuh siklus hidup webview
+  // kayak display, dan yang penting elemennya tetep dikomposit — jadi share
+  // screen tetep ngalir walaupun guru lagi di Home.
+  //
+  // Ukurannya WAJIB tetap segede area aslinya. Sempat 1x1 waktu digeser ke luar
+  // layar, dan itu bikin resolusi capture ikut ngecil jadi beberapa piksel.
   const tampil = aktif;
   return (
     <div
       aria-hidden={!tampil}
       style={{
         position: "fixed",
-        top: tampil ? (rect?.top ?? 0) : 0,
-        left: tampil ? (rect?.left ?? 0) : -10000,
-        width: tampil ? (rect?.width ?? 0) : 1,
-        height: tampil ? (rect?.height ?? 0) : 1,
+        top: rect?.top ?? 0,
+        left: rect?.left ?? 0,
+        width: rect?.width ?? "100vw",
+        height: rect?.height ?? "100vh",
+        opacity: tampil ? 1 : 0,
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
