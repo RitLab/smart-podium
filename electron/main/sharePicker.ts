@@ -21,9 +21,9 @@ import type { BrowserWindow, WebFrameMain } from "electron";
  * (LiveKit) dilayani picker yang sama.
  */
 
-export type TipeSumber = "layar" | "jendela" | "tab";
+type TipeSumber = "layar" | "jendela" | "tab";
 
-export type SumberBagi = {
+type SumberBagi = {
   kunci: string;
   tipe: TipeSumber;
   nama: string;
