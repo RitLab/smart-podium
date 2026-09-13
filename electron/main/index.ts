@@ -6,7 +6,6 @@ import {
   session,
   Menu,
   dialog,
-  desktopCapturer,
   clipboard,
 } from "electron";
 import { createRequire } from "node:module";
@@ -16,6 +15,7 @@ import os from "node:os";
 import { spawn } from "child_process";
 import { update } from "./update";
 import { susunMenuKonten, susunMenuTab, type AksiTab } from "./browserMenu";
+import { pasangSharePicker } from "./sharePicker";
 
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -118,6 +118,91 @@ function openVoicemeeter() {
 }
 
 // ===============================
+// SETUP SEKALI SEUMUR APLIKASI
+// ===============================
+// Semua yang nempel ke session atau ke ipcMain cuma boleh dipasang SEKALI.
+// createWindow() bisa jalan lagi lewat event "activate" (macOS bikin ulang
+// jendela setelah semua ditutup), dan ipcMain.handle yang kedua bikin Electron
+// lempar "Attempted to register a second handler" — itu muncul sebagai
+// unhandled rejection dan bikin sisa setup di bawahnya batal jalan.
+let globalSudahDipasang = false;
+
+function pasangSekali() {
+  if (globalSudahDipasang) return;
+  globalSudahDipasang = true;
+
+  // ===== Supaya browser dalam aplikasi berperilaku kayak Chrome =====
+  //
+  // 1. User-Agent. Bawaan Electron nyelipin "smart-podium/x.y.z" dan
+  //    "Electron/x.y.z" di UA. Banyak layanan — termasuk SDK WebRTC seperti
+  //    LiveKit yang dipakai video-room sekolah — mendeteksi browser dari UA
+  //    string. Token "Electron/x" bikin mereka salah deteksi dan mematikan
+  //    fitur. Dua token itu dibuang biar UA-nya kebaca sebagai Chrome biasa.
+  const versiChrome = process.versions.chrome;               // "130.0.6723.191"
+  const mayorChrome = versiChrome.split(".")[0];             // "130"
+  const platformHint =
+    process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux";
+  const uaChrome = session.defaultSession
+    .getUserAgent()
+    .replace(/ smart-podium\/\S+/i, "")
+    .replace(/ Electron\/\S+/, "");
+  session.defaultSession.setUserAgent(uaChrome);
+
+  // 1b. Client hints dasar. Wajib ikut dibetulkan karena UA string di atas udah
+  //     kita ubah jadi "Chrome/130": kalau brand di Sec-CH-UA masih bilang
+  //     "Chromium" doang, dua sumber identitas itu jadi saling bertentangan dan
+  //     situs yang mengecek keduanya bisa salah ambil keputusan.
+  const secChUa = `"Chromium";v="${mayorChrome}", "Google Chrome";v="${mayorChrome}", "Not?A_Brand";v="99"`;
+
+  // 2. Share screen lewat picker ala Chrome (Seluruh Layar / Jendela / Tab).
+  //    Lihat electron/main/sharePicker.ts. Handler-nya dipasang di session
+  //    default, dan itu juga melayani getDisplayMedia yang dipanggil dari DALAM
+  //    <webview> — jadi video-room sekolah (LiveKit) dilayani picker yang sama.
+  pasangSharePicker(() => win, session.defaultSession);
+
+  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    if (
+      details.url.includes("youtube.com") ||
+      details.url.includes("ytimg.com")
+    ) {
+      details.requestHeaders["Referer"] = "https://www.youtube.com";
+    }
+    // Client hints dasar, biar konsisten sama UA string yang udah kita ubah.
+    details.requestHeaders["sec-ch-ua"] = secChUa;
+    details.requestHeaders["sec-ch-ua-mobile"] = "?0";
+    details.requestHeaders["sec-ch-ua-platform"] = `"${platformHint}"`;
+    callback({ requestHeaders: details.requestHeaders });
+  });
+
+  // Bersihin data browsing (cookie, cache, storage) di session default —
+  // session yang dipakai webview browser dalam app. Podium ini dipakai
+  // gantian, jadi guru berikutnya nggak boleh kebagian sesi login guru
+  // sebelumnya.
+  ipcMain.handle("browser-clear-data", async () => {
+    try {
+      await session.defaultSession.clearStorageData({
+        storages: ["cookies", "localstorage", "indexdb", "websql", "serviceworkers", "cachestorage"],
+      });
+      await session.defaultSession.clearCache();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: String((e as Error)?.message || e) };
+    }
+  });
+
+  // Klik kanan / tahan di TAB (tab strip). Renderer yang minta, main yang
+  // munculin menu native, hasilnya dikembalikan sebagai string aksi.
+  ipcMain.handle(
+    "browser-tab-menu",
+    (_e, opsi: { bisaTutup: boolean; adaUrl: boolean }) =>
+      new Promise<AksiTab | null>((resolve) => {
+        const menu = Menu.buildFromTemplate(susunMenuTab(opsi, resolve));
+        menu.popup({ window: win ?? undefined, callback: () => resolve(null) });
+      }),
+  );
+}
+
+// ===============================
 // CREATE WINDOW
 // ===============================
 async function createWindow() {
@@ -130,6 +215,8 @@ async function createWindow() {
       webviewTag: true,
     },
   });
+
+  pasangSekali();
 
   if (process.platform !== "darwin") {
     win.on("close", (e) => {
@@ -162,91 +249,6 @@ async function createWindow() {
 
   // const menu = Menu.buildFromTemplate(template as any);
   // Menu.setApplicationMenu(menu);
-
-  // ===== Supaya browser dalam aplikasi berperilaku kayak Chrome =====
-  //
-  // 1. User-Agent. Bawaan Electron nyelipin "smart-podium/x.y.z" dan
-  //    "Electron/x.y.z" di UA. Beberapa layanan (Google Meet salah satunya)
-  //    ngeliat itu terus nganggep browsernya nggak didukung dan matiin fitur.
-  //    Dua token itu dibuang biar UA-nya kebaca sebagai Chrome biasa.
-  const uaChrome = session.defaultSession
-    .getUserAgent()
-    .replace(/ smart-podium\/\S+/i, "")
-    .replace(/ Electron\/\S+/, "");
-  session.defaultSession.setUserAgent(uaChrome);
-
-  // 1b. Client hints. Ini yang bikin Google Sign-In tetep nolak walau UA udah
-  //     bersih: UA string bilang "Chrome/130", tapi navigator.userAgentData dan
-  //     header Sec-CH-UA cuma ngaku "Chromium" tanpa brand "Google Chrome".
-  //     Google ngebandingin keduanya, nggak cocok, terus nganggep browsernya
-  //     nggak aman. Brand-nya disamain sama Chrome asli, versinya diambil dari
-  //     Chromium yang emang dipakai Electron biar nggak pernah ketinggalan.
-  //
-  //     Yang dicek Google ternyata header HTTP-nya — diuji langsung: begitu
-  //     header ini bener, halaman sign-in Google kebuka normal walau
-  //     navigator.userAgentData di JS masih ngaku "Chromium" doang. Menimpa
-  //     objek JS-nya sengaja nggak dilakukan: satu-satunya jalur (debugger
-  //     protocol) bentrok sama DevTools dan nggak bisa diverifikasi.
-  const versiChrome = process.versions.chrome;               // "130.0.6723.191"
-  const mayorChrome = versiChrome.split(".")[0];             // "130"
-  const platformHint =
-    process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux";
-  const secChUa = `"Chromium";v="${mayorChrome}", "Google Chrome";v="${mayorChrome}", "Not?A_Brand";v="99"`;
-  const platformVersionHint = process.platform === "win32" ? "15.0.0" : process.platform === "darwin" ? "15.0.0" : "6.5.0";
-
-  // 1c. Sisi JavaScript. Header doang nggak cukup buat Google Sign-In: setelah
-  //     email dikirim, token BotGuard (JS Google) mem-fingerprint browser dari
-  //     dalam halaman. Preload sesi ini nimpa navigator.userAgentData &
-  //     window.chrome di dunia utama halaman biar konsisten sama Chrome asli.
-  //     Lihat electron/preload/uaPatch.ts.
-  session.defaultSession.setPreloads([path.join(__dirname, "../preload/uaPatch.cjs")]);
-
-  // 2. Screen share. getDisplayMedia() di Electron nggak jalan sama sekali
-  //    kalau handler ini nggak dipasang — makanya share screen di Google Meet
-  //    gagal. Windows nggak punya picker bawaan dari Electron, jadi layar
-  //    utama podium yang dipilih otomatis; buat podium itu memang yang
-  //    dimau (yang di-share ya layar podiumnya). Audio loopback cuma ada di
-  //    Windows, di platform lain dilewat biar nggak error.
-  session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => {
-    desktopCapturer
-      .getSources({ types: ["screen"] })
-      .then((sources) => {
-        if (!sources.length) {
-          callback({});
-          return;
-        }
-        callback({
-          video: sources[0],
-          ...(process.platform === "win32" ? { audio: "loopback" as const } : {}),
-        });
-      })
-      .catch(() => callback({}));
-  });
-
-  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-    if (
-      details.url.includes("youtube.com") ||
-      details.url.includes("ytimg.com")
-    ) {
-      details.requestHeaders["Referer"] = "https://www.youtube.com";
-    }
-    // Client hints ala Chrome (lihat catatan di atas). Electron nggak ngirim
-    // ini sama sekali, dan absennya pun udah jadi sinyal buat Google.
-    details.requestHeaders["sec-ch-ua"] = secChUa;
-    details.requestHeaders["sec-ch-ua-mobile"] = "?0";
-    details.requestHeaders["sec-ch-ua-platform"] = `"${platformHint}"`;
-    // Entropi tinggi — Google minta lewat Accept-CH setelah halaman pertama;
-    // Chrome asli ngirim, Electron nggak. Absennya kebaca sebagai bukan Chrome.
-    details.requestHeaders["sec-ch-ua-full-version"] = `"${versiChrome}"`;
-    details.requestHeaders["sec-ch-ua-full-version-list"] =
-      `"Chromium";v="${versiChrome}", "Google Chrome";v="${versiChrome}", "Not?A_Brand";v="99.0.0.0"`;
-    details.requestHeaders["sec-ch-ua-platform-version"] = `"${platformVersionHint}"`;
-    details.requestHeaders["sec-ch-ua-arch"] = `"x86"`;
-    details.requestHeaders["sec-ch-ua-bitness"] = `"64"`;
-    details.requestHeaders["sec-ch-ua-model"] = `""`;
-    details.requestHeaders["sec-ch-ua-wow64"] = "?0";
-    callback({ requestHeaders: details.requestHeaders });
-  });
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL);
@@ -303,33 +305,6 @@ async function createWindow() {
       Menu.buildFromTemplate(template).popup({ window: win ?? undefined });
     });
   });
-
-  // Klik kanan / tahan di TAB (tab strip). Renderer yang minta, main yang
-  // munculin menu native, hasilnya dikembalikan sebagai string aksi.
-  // Bersihin data browsing (cookie, cache, storage) di session default —
-  // session yang dipakai webview browser dalam app. Ini yang bikin bisa pulih
-  // kalau Google udah nge-flag sesi gara-gara percobaan login gagal berkali-
-  // kali: state penolakannya nyimpen di cookie, jadi header doang nggak cukup.
-  ipcMain.handle("browser-clear-data", async () => {
-    try {
-      await session.defaultSession.clearStorageData({
-        storages: ["cookies", "localstorage", "indexdb", "websql", "serviceworkers", "cachestorage"],
-      });
-      await session.defaultSession.clearCache();
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: String((e as Error)?.message || e) };
-    }
-  });
-
-  ipcMain.handle(
-    "browser-tab-menu",
-    (_e, opsi: { bisaTutup: boolean; adaUrl: boolean }) =>
-      new Promise<AksiTab | null>((resolve) => {
-        const menu = Menu.buildFromTemplate(susunMenuTab(opsi, resolve));
-        menu.popup({ window: win ?? undefined, callback: () => resolve(null) });
-      }),
-  );
 
   update(win);
 }

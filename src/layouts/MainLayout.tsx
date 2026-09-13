@@ -34,6 +34,7 @@ import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 
 import { useToast } from "@/components/ToastProvider";
 import Internet from "@/pages/Internet";
+import SharePicker from "@/components/SharePicker";
 
 /* =====================================================
    MENUS
@@ -960,6 +961,7 @@ function MainLayoutContent() {
     return (
       <>
       <LapisanPenampilWeb aktif={false} mainEl={null} />
+      <SharePicker />
       <div
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
@@ -1017,6 +1019,7 @@ function MainLayoutContent() {
   return (
     <>
     <LapisanPenampilWeb aktif={isInternet} mainEl={mainEl} />
+    <SharePicker />
     <div
       className="relative h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}

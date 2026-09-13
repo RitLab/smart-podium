@@ -3,7 +3,6 @@ import path from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import electron from "vite-plugin-electron/simple";
-import electronEntry from "vite-plugin-electron";
 import pkg from "./package.json";
 
 // https://vitejs.dev/config/
@@ -68,34 +67,11 @@ export default defineConfig(({ command }) => {
             },
           },
         },
-        // (uaPatch dibangun lewat plugin terpisah di bawah)
         // Ployfill the Electron and Node.js API for Renderer process.
         // If you want use Node.js in Renderer process, the `nodeIntegration` needs to be enabled in the Main process.
         // See 👉 https://github.com/electron-vite/vite-plugin-electron-renderer
         renderer: {},
       }),
-      // Preload SESI buat webview browser dalam app (electron/preload/uaPatch.ts).
-      // Dibangun terpisah karena: builder preload di atas nolak >1 input, dan
-      // builder main ngeluarin ESM (package type=module) padahal preload sesi
-      // di-require() sama renderer -> harus CJS. Output: preload/uaPatch.cjs.
-      electronEntry([
-        {
-          entry: "electron/preload/uaPatch.ts",
-          onstart() { /* jangan nyalain Electron dari entry ini */ },
-          vite: {
-            build: {
-              sourcemap,
-              minify: isBuild,
-              outDir: "dist-electron/preload",
-              lib: { entry: "electron/preload/uaPatch.ts", formats: ["cjs"] },
-              rollupOptions: {
-                external: Object.keys("dependencies" in pkg ? pkg.dependencies : {}),
-                output: { entryFileNames: "[name].cjs" },
-              },
-            },
-          },
-        },
-      ]),
     ],
     server:
       process.env.VSCODE_DEBUG &&
