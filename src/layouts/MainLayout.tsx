@@ -22,7 +22,7 @@ import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { fetchHeaderEvents } from "@/stores/calendar";
 import { stopRecord, clearRecordingOnly, resetStoppedSession, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
-import { beginNewBrowserSession } from "@/stores/browser";
+import { beginNewBrowserSession, resetBrowser } from "@/stores/browser";
 import RecorderComponents from "@/components/Recorder";
 import { eventService } from "@/services/event";
 import type { EventDetail, EventRecordStatus } from "@/types/event";
@@ -33,6 +33,10 @@ import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 ===================================================== */
 
 import { useToast } from "@/components/ToastProvider";
+import Internet from "@/pages/Internet";
+import SharePicker from "@/components/SharePicker";
+import { useRuangSekarang } from "@/hooks/useRuangSekarang";
+import PagarGalat from "@/components/PagarGalat";
 
 /* =====================================================
    MENUS
@@ -226,6 +230,10 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
     showToast(res?.message || "Gagal mengubah mode display", "error");
   };
 
+  // Sama kayak di Home: di ruang yang Voicemeeter-nya nggak kepasang, ikonnya
+  // DIMATIIN, bukan dihilangin. Lihat src/utils/ruangKelas.ts.
+  const { adaVoicemeeter } = useRuangSekarang();
+
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isRecording) return true;
 
@@ -247,13 +255,17 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
         {menus.map((menu) => {
           const Icon = menu.icon;
           const color = colorMap[menu.color];
-          const enabled = isMenuEnabled(menu.access);
+          const kepasang = menu.action !== "voicemeeter" || adaVoicemeeter;
+          const enabled = isMenuEnabled(menu.access) && kepasang;
+          const alasanMati = !kepasang
+            ? "Voicemeeter nggak terpasang di ruang ini"
+            : "Tidak tersedia di luar jadwal pelajaran";
 
           const disabledWrapper = (child: React.ReactNode) => (
             <div
               key={menu.label}
               className="opacity-30 grayscale cursor-not-allowed"
-              title="Tidak tersedia di luar jadwal pelajaran"
+              title={alasanMati}
             >
               {child}
             </div>
@@ -354,6 +366,91 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
    MAIN LAYOUT CORE
 ===================================================== */
 
+/**
+ * Penampil Web dirender PERMANEN lewat lapisan ini, bukan lewat rute.
+ *
+ * Kenapa nggak lewat rute: pindah ke Home bikin komponennya unmount, webview-nya
+ * hancur, dan meeting Meet yang lagi jalan ikut mati. Kenapa nggak cukup ditaruh
+ * di dalam <main>: MainLayout ngerender DUA pohon berbeda (cabang isHome nggak
+ * punya <main> sama sekali), dan React nggak mempertahankan instance lintas
+ * struktur induk yang beda. Makanya lapisan ini jadi ANAK PERTAMA Fragment di
+ * KEDUA return — posisi pohonnya sama, jadi instance-nya dipertahankan.
+ *
+ * Posisinya fixed dan disinkronkan ke rect <main> pakai ResizeObserver, biar di
+ * /internet dia persis nutup area konten. Disembunyiin pakai visibility, BUKAN
+ * display:none — display:none (termasuk di ancestor) bikin webview reload begitu
+ * ditampilin lagi, yang justru masalah awalnya.
+ */
+function LapisanPenampilWeb({ aktif, mainEl }: { aktif: boolean; mainEl: HTMLElement | null }) {
+  const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
+  // Sengaja NGGAK ngosongin rect pas nonaktif: ukuran terakhir dipertahankan
+  // supaya lapisannya tetep segede area konten dan capture-nya nggak ngecil.
+  useEffect(() => {
+    if (!aktif || !mainEl) return;
+    const ukur = () => {
+      const r = mainEl.getBoundingClientRect();
+      setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+    };
+    ukur();
+    const ro = new ResizeObserver(ukur);
+    ro.observe(mainEl);
+    window.addEventListener("resize", ukur);
+    return () => { ro.disconnect(); window.removeEventListener("resize", ukur); };
+  }, [aktif, mainEl]);
+
+  // Cara nyembunyiin lapisan ini udah tiga kali ganti, masing-masing karena
+  // jebakan yang beda. Biar nggak kejebak lagi, ini catatannya:
+  //
+  // - display:none (termasuk di ancestor) bikin webview RELOAD pas ditampilin
+  //   lagi. Itu masalah awalnya, makanya nggak pernah dipakai.
+  // - visibility:hidden bikin Blink nyimpen nilai "hidden" yang diwarisi
+  //   anak-anaknya dari frame pertama dan NGGAK pernah ngitung ulang pas
+  //   lapisannya dibalik ke visible. getComputedStyle di halaman bilang hidden
+  //   padahal DevTools bilang visible, dan focus() nolak karena percaya nilai
+  //   basi itu — input landing jadi nggak bisa diketik sama sekali.
+  // - transform:scale(0) nggak boleh: ancestor yang di-transform jadi
+  //   containing block buat root fullscreen Penampil Web yang position:fixed.
+  // - Digeser ke luar layar (left:-10000, ukuran 1x1) BEBAS dari tiga jebakan
+  //   di atas, tapi punya jebakan sendiri yang baru ketahuan: elemen yang
+  //   nggak beririsan sama viewport berhenti dikomposit, dan capture nempel ke
+  //   compositor. Terukur di app ini — share screen yang lagi jalan langsung
+  //   BEKU begitu guru balik ke Home (4 sampel berturut-turut warnanya sama
+  //   persis), lalu ngalir lagi pas balik ke /internet. Buat kelas, itu layar
+  //   diam tanpa peringatan apa pun.
+  //
+  // Yang dipakai sekarang: opacity:0, ukuran dan posisi TETAP dipertahankan.
+  // Opacity nggak diwarisi sebagai nilai yang bisa basi kayak visibility, nggak
+  // bikin containing block kayak transform, nggak nyentuh siklus hidup webview
+  // kayak display, dan yang penting elemennya tetep dikomposit — jadi share
+  // screen tetep ngalir walaupun guru lagi di Home.
+  //
+  // Ukurannya WAJIB tetap segede area aslinya. Sempat 1x1 waktu digeser ke luar
+  // layar, dan itu bikin resolusi capture ikut ngecil jadi beberapa piksel.
+  const tampil = aktif;
+  return (
+    <div
+      aria-hidden={!tampil}
+      style={{
+        position: "fixed",
+        top: rect?.top ?? 0,
+        left: rect?.left ?? 0,
+        width: rect?.width ?? "100vw",
+        height: rect?.height ?? "100vh",
+        opacity: tampil ? 1 : 0,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        pointerEvents: tampil ? "auto" : "none",
+        zIndex: tampil ? 20 : 0,
+      }}
+    >
+      <Internet aktif={aktif} />
+    </div>
+  );
+}
+
 function MainLayoutContent() {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
@@ -362,6 +459,36 @@ function MainLayoutContent() {
 
   const { loading, isFullScreen } = useSelector((state: RootState) => state.ui);
   const { isRecording, session_id, recordingEventId, startedEventId, recordingEventEndTime, recordingEventEndAt, showStopConfirm, showSummary, hasStoppedSession, stoppedAt, finishedEvent } = useSelector((state: RootState) => state.record);
+
+  /**
+   * Kelas berhenti -> tab browser ditutup semua.
+   *
+   * Ini WAJIB, bukan kerapian. Dulu pencet Stop bikin Penampil Web ikut unmount
+   * dan webview-nya hancur, jadi kamera sama mic di video-room mati sendiri.
+   * Sekarang webview sengaja dipertahankan biar konferensi nggak putus tiap
+   * pindah halaman — efek sampingnya, sesudah kelas dinyatakan selesai podium
+   * MASIH nyiarin ruang kelas. Terukur: mic-nya tetep readyState "live" setelah
+   * balik ke Home. Nggak ada indikator apa pun buat guru.
+   *
+   * Dipasang di sini, bukan di tiap tombol Stop. Ada enam titik navigate("/home")
+   * yang tersebar di dua cabang render yang kembar (auto-stop, stop manual, dan
+   * penutup ringkasan) — nambahin satu-satu di situ cepat atau lambat bakal
+   * kelewat. Dideteksi dari status rekamannya, jadi jalur stop baru pun otomatis
+   * ikut kebersihin.
+   */
+  const pernahRekam = useRef(false);
+  useEffect(() => {
+    if (isRecording) {
+      pernahRekam.current = true;
+      return;
+    }
+    // Cuma bereaksi ke peralihan rekam -> berhenti. Tanpa penjaga ini, app yang
+    // baru dibuka (isRecording awalnya false) bakal ngehapus tab yang tadinya
+    // dipulihin dari sesi sebelumnya.
+    if (!pernahRekam.current) return;
+    pernahRekam.current = false;
+    dispatch(resetBrowser());
+  }, [isRecording, dispatch]);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { errorPin: authError } = useSelector((state: RootState) => state.auth);
   const headerEventsRef = useRef(headerEvents);
@@ -884,9 +1011,51 @@ function MainLayoutContent() {
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
 
+  /**
+   * Halaman materi ajar dirender LAYAR PENUH, tanpa sidebar sama navbar.
+   *
+   * Rute-rute ini dulunya saudara MainLayout, bukan anaknya — jadi buka satu PDF
+   * dari Modul bikin MainLayout unmount, lapisan Penampil Web ikut unmount, dan
+   * semua <webview> hancur. Konferensi yang lagi jalan putus, persis kegagalan
+   * yang mau dihindarin. Sekarang rutenya dipindah jadi anak MainLayout supaya
+   * lapisannya selamat.
+   *
+   * Tapi enam halaman itu semuanya dibikin pakai h-screen alias ngarep seukuran
+   * layar. Kalau dijejelin ke dalam <main> yang ada sidebar-nya, layoutnya
+   * jebol. Makanya dikasih cabang render sendiri: cuma <Outlet />, tanpa apa-apa
+   * di sekelilingnya — tampilannya sama persis kayak sebelum dipindah.
+   */
+  const RUTE_MATERI = ["/file", "/video", "/image", "/3d", "/interactive", "/viewer"];
+  const isMateri = RUTE_MATERI.includes(location.pathname);
+  const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
+  // useCallback wajib: kalau ref-nya fungsi baru tiap render, React manggil
+  // ref lama dengan null lalu ref baru dengan elemennya di SETIAP render —
+  // state mainEl bolak-balik null/el terus, dan observer di lapisan permanen
+  // ikut dilepas-pasang tiap render.
+  const mainRef = useCallback((el: HTMLElement | null) => setMainEl(el), []);
+
+
+  if (isMateri) {
+    // Lapisan Penampil Web WAJIB tetep jadi anak pertama Fragment, sama kayak
+    // dua cabang lain. Posisi di pohon React harus sama persis di semua cabang —
+    // kalau nggak, instance-nya nggak dipertahankan dan webview-nya dibikin
+    // ulang, yang artinya konferensinya putus juga.
+    return (
+      <>
+        <LapisanPenampilWeb aktif={false} mainEl={null} />
+        <SharePicker />
+        <PagarGalat onKembali={() => navigate("/module")}>
+          <Outlet />
+        </PagarGalat>
+      </>
+    );
+  }
 
   if (isHome) {
     return (
+      <>
+      <LapisanPenampilWeb aktif={false} mainEl={null} />
+      <SharePicker />
       <div
         className="h-screen w-full bg-cover bg-center flex justify-center items-center relative"
         style={{ backgroundImage: `url(${bgImage})` }}
@@ -937,10 +1106,14 @@ function MainLayoutContent() {
           onCancel={() => dispatch(setShowStopConfirm(false))}
         />
       </div>
+      </>
     );
   }
 
   return (
+    <>
+    <LapisanPenampilWeb aktif={isInternet} mainEl={mainEl} />
+    <SharePicker />
     <div
       className="relative h-screen w-full bg-cover bg-center flex"
       style={{ backgroundImage: `url(${bgImage})` }}
@@ -971,7 +1144,9 @@ function MainLayoutContent() {
         )}
 
         <div className={`flex-1 flex min-h-0 overflow-hidden ${!isInternet && !isFullScreen ? "mt-4" : ""}`}>
-          <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${isFullScreen ? "pr-0" : isInternet ? "pr-8" : "pr-12"}`}>
+          {/* ref: rect-nya dipakai lapisan Penampil Web permanen (lihat
+              LapisanPenampilWeb) buat nempatin diri persis di area konten ini. */}
+          <main ref={mainRef} className={`relative flex-1 flex flex-col min-h-0 overflow-hidden ${isFullScreen ? "pr-0" : isInternet ? "pr-8" : "pr-12"}`}>
             <Outlet />
           </main>
           {!isFullScreen && (
@@ -1024,6 +1199,7 @@ function MainLayoutContent() {
         onCancel={() => dispatch(setShowStopConfirm(false))}
       />
     </div>
+    </>
   );
 }
 

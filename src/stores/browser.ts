@@ -168,7 +168,18 @@ const browserSlice = createSlice({
      */
     beginNewBrowserSession(state, action: PayloadAction<string>) {
       const newEventId = action.payload;
-      if (state.associatedEventId !== newEventId) {
+      // Reset cuma kalau PINDAH dari satu kelas ke kelas LAIN. Kalau sebelumnya
+      // belum ada sesi (null), jangan hapus apa-apa.
+      //
+      // Alasannya: ini dipanggil tepat setelah tombol Mulai ditekan. Urutan
+      // paling natural guru adalah buka browser dulu, masuk video-room, baru
+      // tekan Mulai. Dengan reset tanpa syarat, tab video-room-nya kehapus
+      // persis di detik kelas dimulai — konferensinya putus dan guru harus
+      // masuk ulang di depan kelas.
+      // "Browser bersih tiap ganti kelas" tetep jalan, karena perpindahan
+      // antar-kelas tetep punya associatedEventId lama yang beda.
+      const pindahKelas = state.associatedEventId !== null && state.associatedEventId !== newEventId;
+      if (pindahKelas) {
         state.tabs = [DEFAULT_INITIAL_TAB];
         state.activeTabId = "initial-tab";
       }

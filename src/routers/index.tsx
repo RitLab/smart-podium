@@ -10,7 +10,6 @@ import SettingPIN from "@/pages/Auth/SettingPIN";
 import LicenseKey from "@/pages/Auth/LicenseKey";
 import Calendar from "@/pages/Calendar";
 import Home from "@/pages/Home";
-import Internet from "@/pages/Internet";
 import Module from "@/pages/Module";
 import File from "@/pages/Module/File";
 import ImageViewer from "@/pages/Module/ImageViewer";
@@ -33,18 +32,27 @@ export default () => {
 
         <Route path="/">
           <Route index element={<Navigate to="/home" replace />} />
-          <Route path="file" element={<File />} />
-          <Route path="video" element={<VideoPlayer />} />
-          <Route path="image" element={<ImageViewer />} />
-          <Route path="3d" element={<ThreeDimensionViewer />} />
-          <Route path="interactive" element={<Interactive />} />
-          <Route path="viewer" element={<Viewer />} />
           <Route path="/" element={<MainLayout />}>
+            {/* Halaman materi ajar ANAK MainLayout, bukan saudaranya.
+                Dulu saudara, dan itu bikin MainLayout unmount tiap guru buka
+                materi — lapisan Penampil Web ikut kebuang dan konferensi yang
+                lagi jalan putus. MainLayout ngerender rute-rute ini layar penuh
+                tanpa sidebar (lihat cabang isMateri di sana), jadi tampilannya
+                nggak berubah. */}
+            <Route path="file" element={<File />} />
+            <Route path="video" element={<VideoPlayer />} />
+            <Route path="image" element={<ImageViewer />} />
+            <Route path="3d" element={<ThreeDimensionViewer />} />
+            <Route path="interactive" element={<Interactive />} />
+            <Route path="viewer" element={<Viewer />} />
             <Route path="home" element={<Home />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="student" element={<Student />} />
             <Route path="module" element={<Module />} />
-            <Route path="internet" element={<Internet />} />
+            {/* Internet dirender permanen di MainLayout (lihat di sana), biar
+                webview + meeting di dalamnya nggak mati pas pindah halaman.
+                Rutenya tetep ada supaya URL /internet valid, tapi elemennya kosong. */}
+            <Route path="internet" element={null} />
           </Route>
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Route>

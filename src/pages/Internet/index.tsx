@@ -110,6 +110,7 @@ const WebviewContainer = ({
       onLoadingChange(tabId, false);
     };
 
+
     const handleFail = (e: any) => {
       if (e.errorCode === -3) return;
       console.error("Webview navigation failed:", e.errorDescription, e.url);
@@ -146,6 +147,30 @@ const WebviewContainer = ({
   return (
     <div
       className="absolute inset-0 bg-white"
+      // Cara nyembunyiin tab nonaktif ini KELIHATANNYA sepele, padahal nentuin
+      // dua fitur sekaligus. Ada dua syarat yang harus kepenuhan bareng:
+      //
+      // 1. Halamannya nggak boleh dimuat ulang. display:none bikin <webview>
+      //    RELOAD begitu ditampilkan lagi — diuji: penanda JS di halaman hilang
+      //    setelah pindah tab lalu balik. Itu yang dulu bikin konferensi mati
+      //    dan ngulang tiap ganti tab.
+      //
+      // 2. Halamannya harus tetep DIGAMBAR. Ini yang kelewat dulu. Webview yang
+      //    nggak dikomposit nggak ngasih frame sama sekali, dan itu bikin dua
+      //    hal rusak diam-diam: share screen kategori "Tab Browser" cuma ngirim
+      //    layar kosong (videoWidth 0, track langsung muted), dan capturePage
+      //    buat pratinjau di picker nggantung selamanya.
+      //
+      // Terukur di Electron 33.4.11 — yang NGASIH frame: opacity:0, ditutupi
+      // elemen lain, z-index negatif, transform:scale(0). Yang NOL frame:
+      // visibility:hidden, display:none, clip-path:inset(100%), dan digeser ke
+      // luar layar. Nggak ada cara maksa dari main process: setBackgroundThrottling,
+      // invalidate, setFrameRate, startPainting, sampai command-line switch
+      // semuanya no-op karena <webview> bukan offscreen rendering.
+      //
+      // Jadi dipakai opacity:0. Semua tab ditumpuk di posisi yang sama; yang
+      // aktif ditaruh paling atas (wrapper-nya bg-white, jadi nutup penuh) dan
+      // yang lain dibikin transparan sekaligus nggak bisa diklik.
       style={{
         position: "absolute",
         top: 0,
@@ -154,13 +179,30 @@ const WebviewContainer = ({
         bottom: 0,
         width: "100%",
         height: "100%",
-        display: isActive ? "block" : "none",
+        opacity: isActive ? 1 : 0,
+        pointerEvents: isActive ? "auto" : "none",
+        zIndex: isActive ? 1 : 0,
       }}
     >
       <webview
         ref={webviewRef}
         src={url}
         allowFullScreen
+        // Tanpa ini, popup dari halaman (window.open, target="_blank") diblokir
+        // Electron sebelum sempat nyampe ke handler di main process. Handler di
+        // sana yang mutusin popup-nya jadi tab baru, bukan jendela terpisah.
+        //
+        // Harus string, bukan boolean. React nggak kenal allowpopups sebagai
+        // atribut boolean, jadi nilai `true` dibuang diam-diam dan atributnya
+        // nggak pernah nyampe ke DOM — beda sama allowFullScreen yang memang
+        // ada di daftar bawaan React. Tipe React-nya bilang boolean, makanya
+        // dilewatin lewat spread.
+        {...({ allowpopups: "true" } as Record<string, string>)}
+        // Session kepisah dari aplikasinya. Ini yang bikin "Bersihkan Data
+        // Browser" cuma ngehapus jejak jelajah guru, bukan lisensi sama ruang
+        // kelas yang lagi dipakai. Nilainya harus sama persis sama
+        // PARTISI_BROWSER di electron/main/index.ts.
+        partition="persist:browser"
         style={{
           width: "100%",
           height: "100%",
@@ -171,7 +213,11 @@ const WebviewContainer = ({
   );
 };
 
-const Internet = () => {
+// `aktif` = rute /internet lagi kebuka. Komponen ini SENGAJA nggak pernah di-
+// unmount (dirender permanen di MainLayout) supaya webview — dan meeting Meet di
+// dalamnya — tetep hidup pas guru pindah ke Home/Kalender. Konsekuensinya, efek
+// yang dulu ngandelin mount/unmount sekarang harus ngikut `aktif`.
+const Internet = ({ aktif = true }: { aktif?: boolean }) => {
   const dispatch = useDispatch<AppDispatch>();
   const webviewRefs = useRef<Record<string, WebviewTag | null>>({});
   const landingInputRef = useRef<HTMLInputElement>(null);
@@ -200,11 +246,13 @@ const Internet = () => {
   }, [bookmarks]);
 
   useEffect(() => {
-    // Reset full screen pas pindah halaman
-    return () => {
-      dispatch(setFullScreen(false));
-    };
-  }, [dispatch]);
+    // Reset full screen pas pindah halaman. Dulu lewat cleanup unmount; sekarang
+    // komponennya nggak pernah unmount, jadi dipicu waktu rute ninggalin /internet.
+    if (aktif) return;
+    setIsWebviewFullScreen(false);
+    setIsMaximized(false);
+    dispatch(setFullScreen(false));
+  }, [aktif, dispatch]);
 
   // Escape key to force exit webview fullscreen or maximized mode
   useEffect(() => {
@@ -224,9 +272,10 @@ const Internet = () => {
       }
     };
 
+    if (!aktif) return;
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [isWebviewFullScreen, isMaximized, activeTabId, dispatch]);
+  }, [aktif, isWebviewFullScreen, isMaximized, activeTabId, dispatch]);
 
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0] || {
     id: "initial-tab",
@@ -246,7 +295,9 @@ const Internet = () => {
 
   // Auto-focus search input when landing page is loaded/active (especially when tab is closed)
   useEffect(() => {
-    if (isLanding) {
+    // Kalau nggak aktif, jangan nyuri fokus — halaman ini mounted terus di
+    // belakang Home/Kalender, dan window.focus() di sini bakal ngerebut fokus.
+    if (isLanding && aktif) {
       const timer = setTimeout(() => {
         // Safe check and blur current focused element to clean up any Electron webview stuck focus
         if (document.activeElement instanceof HTMLElement) {
@@ -361,9 +412,39 @@ const Internet = () => {
     dispatch(addTab({ initialUrl }));
   };
 
+  // Popup dari halaman di dalam webview (window.open, target="_blank")
+  // dikirim main process ke sini supaya kebuka sebagai tab baru di tab bar
+  // kita — perilaku yang sama kayak Chrome.
+  useEffect(() => {
+    const lepas = window.ipcRenderer.on("browser-open-tab", (_e, url: string) => {
+      if (typeof url === "string" && /^https?:\/\//i.test(url)) {
+        dispatch(addTab({ initialUrl: url }));
+      }
+    });
+    return () => { if (typeof lepas === "function") lepas(); };
+  }, [dispatch]);
+
   const handleCloseTab = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     dispatch(closeTab(id));
+  };
+
+  // Klik kanan / tahan di tab -> menu native ala tab strip Chrome. Di layar
+  // sentuh, tahan (long-press) juga micu onContextMenu, jadi cukup satu jalur.
+  const handleTabContextMenu = async (tab: BrowserTab, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const aksi = await window.ipcRenderer.invoke("browser-tab-menu", {
+      bisaTutup: tabs.length > 1,
+      adaUrl: !tab.isLanding && !!tab.url,
+    });
+    switch (aksi) {
+      case "tab-baru": dispatch(addTab({ initialUrl: "" })); break;
+      case "duplikat": dispatch(addTab({ initialUrl: tab.url })); break;
+      case "muat-ulang": webviewRefs.current[tab.id]?.reload(); break;
+      case "tutup": dispatch(closeTab(tab.id)); break;
+      default: break;
+    }
   };
 
   const handleToggleBookmark = () => {
@@ -417,6 +498,7 @@ const Internet = () => {
                 <div
                   key={tab.id}
                   onClick={() => dispatch(setActiveTabId(tab.id))}
+                  onContextMenu={(e) => handleTabContextMenu(tab, e)}
                   className={`group relative flex items-center gap-2 pl-4 pr-10 py-2.5 text-xs font-semibold rounded-t-xl cursor-pointer transition-all duration-200 shrink-0 max-w-[160px] ${
                     isActive 
                       ? "bg-white text-blue-600 shadow-sm border-t border-x border-gray-200" 
@@ -454,15 +536,17 @@ const Internet = () => {
             <Plus size={16} />
           </button>
 
-          {/* Manual reset - safety net */}
+          {/* Bersihkan data browsing — tab + cookie + cache. Podium dipakai
+              gantian, jadi guru berikutnya nggak kebagian sesi login guru
+              sebelumnya. */}
           <button
-            onClick={() => {
-              if (confirm("Bersihkan semua tab browser?")) {
-                dispatch(resetBrowser());
-              }
+            onClick={async () => {
+              if (!confirm("Bersihkan semua data browser? Ini menghapus tab, cookie, dan sesi login.")) return;
+              await window.ipcRenderer.invoke("browser-clear-data");
+              dispatch(resetBrowser());
             }}
             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 mb-1 active:scale-95 ml-1"
-            title="Bersihkan Semua Tab"
+            title="Bersihkan Data Browser (tab, cookie, sesi login)"
           >
             <Trash2 size={15} />
           </button>
@@ -589,7 +673,31 @@ const Internet = () => {
 
       {/* CONTENT AREA */}
       <div className="flex-1 relative bg-[#F8FAFC]">
-        {activeTab.isLanding ? (
+        {/* Webview dirender SELALU, apa pun tab aktifnya. Dulu dibungkus
+            `activeTab.isLanding ? landing : webview`, jadi begitu tab baru
+            (landing) dibuka, SEMUA webview di-unmount dan meeting Meet yang
+            lagi jalan di tab lain ikut mati. Landing sekarang jadi overlay di
+            atas webview, bukan penggantinya. */}
+        {tabs.map((tab) => {
+            if (tab.isLanding) return null;
+            return (
+              <WebviewContainer
+                key={tab.id}
+                tabId={tab.id}
+                url={tab.url}
+                isActive={tab.id === activeTabId}
+                onNavigationStateChange={handleNavigationStateChange}
+                onTitleChange={handleTitleChange}
+                onLoadingChange={handleLoadingChange}
+                onEnterFullScreen={handleEnterFullScreen}
+                onLeaveFullScreen={handleLeaveFullScreen}
+                webviewRefRegistry={webviewRefs}
+              />
+            );
+          })}
+        {activeTab.isLanding && (
+          <div className="absolute inset-0 z-10 flex flex-col min-h-0 overflow-auto">
+
           <div className="absolute inset-0 overflow-y-auto flex flex-col items-center p-6 md:py-16 animate-in fade-in zoom-in duration-500">
              <div className="w-full max-w-2xl flex flex-col justify-center min-h-full space-y-8 text-center">
                 <div className="relative inline-block">
@@ -699,24 +807,7 @@ const Internet = () => {
 
              </div>
           </div>
-        ) : (
-          tabs.map((tab) => {
-            if (tab.isLanding) return null;
-            return (
-              <WebviewContainer
-                key={tab.id}
-                tabId={tab.id}
-                url={tab.url}
-                isActive={tab.id === activeTabId}
-                onNavigationStateChange={handleNavigationStateChange}
-                onTitleChange={handleTitleChange}
-                onLoadingChange={handleLoadingChange}
-                onEnterFullScreen={handleEnterFullScreen}
-                onLeaveFullScreen={handleLeaveFullScreen}
-                webviewRefRegistry={webviewRefs}
-              />
-            );
-          })
+          </div>
         )}
       </div>
 

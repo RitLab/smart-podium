@@ -6,6 +6,7 @@ import {
   session,
   Menu,
   dialog,
+  clipboard,
 } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -13,8 +14,18 @@ import path from "node:path";
 import os from "node:os";
 import { spawn } from "child_process";
 import { update } from "./update";
+import { susunMenuKonten, susunMenuTab, type AksiTab } from "./browserMenu";
+import { pasangSharePicker } from "./sharePicker";
 
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+
+/**
+ * Session khusus buat <webview> browser dalam app. HARUS sama persis sama
+ * atribut partition di src/pages/Internet/index.tsx — kalau beda satu huruf,
+ * webview-nya balik ke defaultSession dan semua penyetelan di pasangSekali()
+ * nggak kena ke dia.
+ */
+export const PARTISI_BROWSER = "persist:browser";
 
 if (VITE_DEV_SERVER_URL) {
   app.commandLine.appendSwitch('ignore-certificate-errors');
@@ -115,6 +126,107 @@ function openVoicemeeter() {
 }
 
 // ===============================
+// SETUP SEKALI SEUMUR APLIKASI
+// ===============================
+// Semua yang nempel ke session atau ke ipcMain cuma boleh dipasang SEKALI.
+// createWindow() bisa jalan lagi lewat event "activate" (macOS bikin ulang
+// jendela setelah semua ditutup), dan ipcMain.handle yang kedua bikin Electron
+// lempar "Attempted to register a second handler" — itu muncul sebagai
+// unhandled rejection dan bikin sisa setup di bawahnya batal jalan.
+let globalSudahDipasang = false;
+
+function pasangSekali() {
+  if (globalSudahDipasang) return;
+  globalSudahDipasang = true;
+
+  // Browser dalam app punya SESSION SENDIRI, kepisah dari session aplikasi.
+  //
+  // Dulu semuanya numpang di defaultSession — termasuk jendela aplikasinya. Itu
+  // bikin tombol "Bersihkan Data Browser" jadi granat: clearStorageData nggak
+  // bisa milih-milih, jadi localStorage APLIKASI ikut kehapus. Terukur — sekali
+  // pencet, license_key, class_id, nama ruang, bookmark, sama token di
+  // sessionStorage lenyap semua, jumlah kunci dari 6 jadi 0, dan podium-nya
+  // balik minta pilih ruang di tengah pelajaran.
+  //
+  // Dipisah begini, "bersihin data browser" cuma nyentuh yang dijelajahi guru.
+  // Semua penyetelan di bawah ini dipasang ke session browser itu, BUKAN ke
+  // defaultSession — kalau ketuker, share screen dari dalam <webview> nggak
+  // kelayanin dan UA-nya balik ngaku Electron.
+  const sesiBrowser = session.fromPartition(PARTISI_BROWSER);
+
+  // ===== Supaya browser dalam aplikasi berperilaku kayak Chrome =====
+  //
+  // 1. User-Agent. Bawaan Electron nyelipin "smart-podium/x.y.z" dan
+  //    "Electron/x.y.z" di UA. Banyak layanan — termasuk SDK WebRTC seperti
+  //    LiveKit yang dipakai video-room sekolah — mendeteksi browser dari UA
+  //    string. Token "Electron/x" bikin mereka salah deteksi dan mematikan
+  //    fitur. Dua token itu dibuang biar UA-nya kebaca sebagai Chrome biasa.
+  const versiChrome = process.versions.chrome;               // "130.0.6723.191"
+  const mayorChrome = versiChrome.split(".")[0];             // "130"
+  const platformHint =
+    process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux";
+  const uaChrome = sesiBrowser
+    .getUserAgent()
+    .replace(/ smart-podium\/\S+/i, "")
+    .replace(/ Electron\/\S+/, "");
+  sesiBrowser.setUserAgent(uaChrome);
+
+  // 1b. Client hints dasar. Wajib ikut dibetulkan karena UA string di atas udah
+  //     kita ubah jadi "Chrome/130": kalau brand di Sec-CH-UA masih bilang
+  //     "Chromium" doang, dua sumber identitas itu jadi saling bertentangan dan
+  //     situs yang mengecek keduanya bisa salah ambil keputusan.
+  const secChUa = `"Chromium";v="${mayorChrome}", "Google Chrome";v="${mayorChrome}", "Not?A_Brand";v="99"`;
+
+  // 2. Share screen lewat picker ala Chrome (Seluruh Layar / Jendela / Tab).
+  //    Lihat electron/main/sharePicker.ts. Handler-nya dipasang di session
+  //    default, dan itu juga melayani getDisplayMedia yang dipanggil dari DALAM
+  //    <webview> — jadi video-room sekolah (LiveKit) dilayani picker yang sama.
+  pasangSharePicker(() => win, sesiBrowser);
+
+  sesiBrowser.webRequest.onBeforeSendHeaders((details, callback) => {
+    if (
+      details.url.includes("youtube.com") ||
+      details.url.includes("ytimg.com")
+    ) {
+      details.requestHeaders["Referer"] = "https://www.youtube.com";
+    }
+    // Client hints dasar, biar konsisten sama UA string yang udah kita ubah.
+    details.requestHeaders["sec-ch-ua"] = secChUa;
+    details.requestHeaders["sec-ch-ua-mobile"] = "?0";
+    details.requestHeaders["sec-ch-ua-platform"] = `"${platformHint}"`;
+    callback({ requestHeaders: details.requestHeaders });
+  });
+
+  // Bersihin data browsing (cookie, cache, storage) — CUMA di session browser.
+  // Podium ini dipakai gantian, jadi guru berikutnya nggak boleh kebagian sesi
+  // login guru sebelumnya. Yang dibersihin sengaja dibatasi ke sesiBrowser:
+  // defaultSession itu punya aplikasinya sendiri, dan kalau ikut dibersihin,
+  // lisensi sama ruang kelas yang lagi dipakai ikut kehapus.
+  ipcMain.handle("browser-clear-data", async () => {
+    try {
+      await sesiBrowser.clearStorageData({
+        storages: ["cookies", "localstorage", "indexdb", "websql", "serviceworkers", "cachestorage"],
+      });
+      await sesiBrowser.clearCache();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: String((e as Error)?.message || e) };
+    }
+  });
+
+  // Klik kanan / tahan di TAB (tab strip). Renderer yang minta, main yang
+  // munculin menu native, hasilnya dikembalikan sebagai string aksi.
+  ipcMain.handle(
+    "browser-tab-menu",
+    (_e, opsi: { bisaTutup: boolean; adaUrl: boolean }) =>
+      new Promise<AksiTab | null>((resolve) => {
+        const menu = Menu.buildFromTemplate(susunMenuTab(opsi, resolve));
+        menu.popup({ window: win ?? undefined, callback: () => resolve(null) });
+      }),
+  );
+}
+
+// ===============================
 // CREATE WINDOW
 // ===============================
 async function createWindow() {
@@ -127,6 +239,8 @@ async function createWindow() {
       webviewTag: true,
     },
   });
+
+  pasangSekali();
 
   if (process.platform !== "darwin") {
     win.on("close", (e) => {
@@ -160,16 +274,6 @@ async function createWindow() {
   // const menu = Menu.buildFromTemplate(template as any);
   // Menu.setApplicationMenu(menu);
 
-  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-    if (
-      details.url.includes("youtube.com") ||
-      details.url.includes("ytimg.com")
-    ) {
-      details.requestHeaders["Referer"] = "https://www.youtube.com";
-    }
-    callback({ requestHeaders: details.requestHeaders });
-  });
-
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL);
     win.webContents.openDevTools();
@@ -184,6 +288,46 @@ async function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("https:")) shell.openExternal(url);
     return { action: "deny" };
+  });
+
+  // ===== Browser dalam aplikasi (<webview> di halaman Penampil Web) =====
+  //
+  // Handler di atas cuma buat jendela utama. Halaman yang dibuka DI DALAM
+  // webview punya webContents sendiri, dan tanpa handler khusus, window.open()
+  // maupun link target="_blank" dari situ nggak ngapa-ngapain. Sekarang tiap
+  // popup dari webview dialihkan jadi tab baru di tab bar kita — persis kayak
+  // Chrome — bukan jendela OS terpisah, dan bukan diblokir diam-diam.
+  win.webContents.on("did-attach-webview", (_event, contents) => {
+    const bukaTab = (url: string) => {
+      if (/^https?:\/\//i.test(url)) win?.webContents.send("browser-open-tab", url);
+    };
+
+    contents.setWindowOpenHandler(({ url }) => {
+      bukaTab(url);
+      return { action: "deny" };
+    });
+
+    // Klik kanan / tahan di isi halaman -> menu native ala Chrome. Aksi edit
+    // dipanggil langsung di webContents ini, bukan lewat role, supaya nggak
+    // salah sasaran ke jendela utama.
+    contents.on("context-menu", (_e, params) => {
+      const template = susunMenuKonten(
+        params,
+        { canGoBack: contents.canGoBack(), canGoForward: contents.canGoForward() },
+        {
+          bukaTab,
+          salinTeks: (t) => clipboard.writeText(t),
+          potong: () => contents.cut(),
+          salin: () => contents.copy(),
+          tempel: () => contents.paste(),
+          pilihSemua: () => contents.selectAll(),
+          kembali: () => contents.goBack(),
+          maju: () => contents.goForward(),
+          muatUlang: () => contents.reload(),
+        },
+      );
+      Menu.buildFromTemplate(template).popup({ window: win ?? undefined });
+    });
   });
 
   update(win);

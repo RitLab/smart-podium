@@ -8,6 +8,7 @@ import Logo from "@/assets/images/logo.png";
 import Select from "@/components/Select";
 import { setError, setLoading } from "@/stores/ui";
 import { fetchClass } from "@/stores/auth";
+import { simpanRuangTerpilih } from "@/utils/ruangKelas";
 
 const SettingPIN = () => {
   const navigate = useNavigate();
@@ -29,7 +30,11 @@ const SettingPIN = () => {
     e.preventDefault();
     dispatch(setLoading(true));
 
-    localStorage.setItem("class_id", classId);
+    // Namanya ikut disimpan, bukan cuma id-nya. Sesudah halaman ini daftar
+    // kelas nggak pernah diambil lagi, jadi tanpa nama aplikasinya nggak bisa
+    // tahu ruangnya yang mana — dan itu yang nentuin menu mana yang kepasang.
+    const terpilih = (Array.isArray(classList) ? classList : []).find((c) => c.id === classId);
+    simpanRuangTerpilih(classId, terpilih?.name ?? "");
 
     try {
       dispatch(setError(""));
