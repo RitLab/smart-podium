@@ -22,7 +22,7 @@ import type { AppDispatch, RootState } from "@/stores";
 import { fetchUser } from "@/stores/auth";
 import { fetchHeaderEvents } from "@/stores/calendar";
 import { stopRecord, clearRecordingOnly, resetStoppedSession, setShowSummary, setShowStopConfirm, setFinishedEvent } from "@/stores/record";
-import { beginNewBrowserSession } from "@/stores/browser";
+import { beginNewBrowserSession, resetBrowser } from "@/stores/browser";
 import RecorderComponents from "@/components/Recorder";
 import { eventService } from "@/services/event";
 import type { EventDetail, EventRecordStatus } from "@/types/event";
@@ -36,6 +36,7 @@ import { useToast } from "@/components/ToastProvider";
 import Internet from "@/pages/Internet";
 import SharePicker from "@/components/SharePicker";
 import { useRuangSekarang } from "@/hooks/useRuangSekarang";
+import PagarGalat from "@/components/PagarGalat";
 
 /* =====================================================
    MENUS
@@ -458,6 +459,36 @@ function MainLayoutContent() {
 
   const { loading, isFullScreen } = useSelector((state: RootState) => state.ui);
   const { isRecording, session_id, recordingEventId, startedEventId, recordingEventEndTime, recordingEventEndAt, showStopConfirm, showSummary, hasStoppedSession, stoppedAt, finishedEvent } = useSelector((state: RootState) => state.record);
+
+  /**
+   * Kelas berhenti -> tab browser ditutup semua.
+   *
+   * Ini WAJIB, bukan kerapian. Dulu pencet Stop bikin Penampil Web ikut unmount
+   * dan webview-nya hancur, jadi kamera sama mic di video-room mati sendiri.
+   * Sekarang webview sengaja dipertahankan biar konferensi nggak putus tiap
+   * pindah halaman — efek sampingnya, sesudah kelas dinyatakan selesai podium
+   * MASIH nyiarin ruang kelas. Terukur: mic-nya tetep readyState "live" setelah
+   * balik ke Home. Nggak ada indikator apa pun buat guru.
+   *
+   * Dipasang di sini, bukan di tiap tombol Stop. Ada enam titik navigate("/home")
+   * yang tersebar di dua cabang render yang kembar (auto-stop, stop manual, dan
+   * penutup ringkasan) — nambahin satu-satu di situ cepat atau lambat bakal
+   * kelewat. Dideteksi dari status rekamannya, jadi jalur stop baru pun otomatis
+   * ikut kebersihin.
+   */
+  const pernahRekam = useRef(false);
+  useEffect(() => {
+    if (isRecording) {
+      pernahRekam.current = true;
+      return;
+    }
+    // Cuma bereaksi ke peralihan rekam -> berhenti. Tanpa penjaga ini, app yang
+    // baru dibuka (isRecording awalnya false) bakal ngehapus tab yang tadinya
+    // dipulihin dari sesi sebelumnya.
+    if (!pernahRekam.current) return;
+    pernahRekam.current = false;
+    dispatch(resetBrowser());
+  }, [isRecording, dispatch]);
   const { headerEvents } = useSelector((state: RootState) => state.calendar);
   const { errorPin: authError } = useSelector((state: RootState) => state.auth);
   const headerEventsRef = useRef(headerEvents);
@@ -979,6 +1010,23 @@ function MainLayoutContent() {
 
   const isHome = location.pathname === "/home";
   const isInternet = location.pathname === "/internet";
+
+  /**
+   * Halaman materi ajar dirender LAYAR PENUH, tanpa sidebar sama navbar.
+   *
+   * Rute-rute ini dulunya saudara MainLayout, bukan anaknya — jadi buka satu PDF
+   * dari Modul bikin MainLayout unmount, lapisan Penampil Web ikut unmount, dan
+   * semua <webview> hancur. Konferensi yang lagi jalan putus, persis kegagalan
+   * yang mau dihindarin. Sekarang rutenya dipindah jadi anak MainLayout supaya
+   * lapisannya selamat.
+   *
+   * Tapi enam halaman itu semuanya dibikin pakai h-screen alias ngarep seukuran
+   * layar. Kalau dijejelin ke dalam <main> yang ada sidebar-nya, layoutnya
+   * jebol. Makanya dikasih cabang render sendiri: cuma <Outlet />, tanpa apa-apa
+   * di sekelilingnya — tampilannya sama persis kayak sebelum dipindah.
+   */
+  const RUTE_MATERI = ["/file", "/video", "/image", "/3d", "/interactive", "/viewer"];
+  const isMateri = RUTE_MATERI.includes(location.pathname);
   const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
   // useCallback wajib: kalau ref-nya fungsi baru tiap render, React manggil
   // ref lama dengan null lalu ref baru dengan elemennya di SETIAP render —
@@ -986,6 +1034,22 @@ function MainLayoutContent() {
   // ikut dilepas-pasang tiap render.
   const mainRef = useCallback((el: HTMLElement | null) => setMainEl(el), []);
 
+
+  if (isMateri) {
+    // Lapisan Penampil Web WAJIB tetep jadi anak pertama Fragment, sama kayak
+    // dua cabang lain. Posisi di pohon React harus sama persis di semua cabang —
+    // kalau nggak, instance-nya nggak dipertahankan dan webview-nya dibikin
+    // ulang, yang artinya konferensinya putus juga.
+    return (
+      <>
+        <LapisanPenampilWeb aktif={false} mainEl={null} />
+        <SharePicker />
+        <PagarGalat onKembali={() => navigate("/module")}>
+          <Outlet />
+        </PagarGalat>
+      </>
+    );
+  }
 
   if (isHome) {
     return (
