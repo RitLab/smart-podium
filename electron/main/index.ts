@@ -19,6 +19,14 @@ import { pasangSharePicker } from "./sharePicker";
 
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
+/**
+ * Session khusus buat <webview> browser dalam app. HARUS sama persis sama
+ * atribut partition di src/pages/Internet/index.tsx — kalau beda satu huruf,
+ * webview-nya balik ke defaultSession dan semua penyetelan di pasangSekali()
+ * nggak kena ke dia.
+ */
+export const PARTISI_BROWSER = "persist:browser";
+
 if (VITE_DEV_SERVER_URL) {
   app.commandLine.appendSwitch('ignore-certificate-errors');
 }
@@ -131,6 +139,21 @@ function pasangSekali() {
   if (globalSudahDipasang) return;
   globalSudahDipasang = true;
 
+  // Browser dalam app punya SESSION SENDIRI, kepisah dari session aplikasi.
+  //
+  // Dulu semuanya numpang di defaultSession — termasuk jendela aplikasinya. Itu
+  // bikin tombol "Bersihkan Data Browser" jadi granat: clearStorageData nggak
+  // bisa milih-milih, jadi localStorage APLIKASI ikut kehapus. Terukur — sekali
+  // pencet, license_key, class_id, nama ruang, bookmark, sama token di
+  // sessionStorage lenyap semua, jumlah kunci dari 6 jadi 0, dan podium-nya
+  // balik minta pilih ruang di tengah pelajaran.
+  //
+  // Dipisah begini, "bersihin data browser" cuma nyentuh yang dijelajahi guru.
+  // Semua penyetelan di bawah ini dipasang ke session browser itu, BUKAN ke
+  // defaultSession — kalau ketuker, share screen dari dalam <webview> nggak
+  // kelayanin dan UA-nya balik ngaku Electron.
+  const sesiBrowser = session.fromPartition(PARTISI_BROWSER);
+
   // ===== Supaya browser dalam aplikasi berperilaku kayak Chrome =====
   //
   // 1. User-Agent. Bawaan Electron nyelipin "smart-podium/x.y.z" dan
@@ -142,11 +165,11 @@ function pasangSekali() {
   const mayorChrome = versiChrome.split(".")[0];             // "130"
   const platformHint =
     process.platform === "win32" ? "Windows" : process.platform === "darwin" ? "macOS" : "Linux";
-  const uaChrome = session.defaultSession
+  const uaChrome = sesiBrowser
     .getUserAgent()
     .replace(/ smart-podium\/\S+/i, "")
     .replace(/ Electron\/\S+/, "");
-  session.defaultSession.setUserAgent(uaChrome);
+  sesiBrowser.setUserAgent(uaChrome);
 
   // 1b. Client hints dasar. Wajib ikut dibetulkan karena UA string di atas udah
   //     kita ubah jadi "Chrome/130": kalau brand di Sec-CH-UA masih bilang
@@ -158,9 +181,9 @@ function pasangSekali() {
   //    Lihat electron/main/sharePicker.ts. Handler-nya dipasang di session
   //    default, dan itu juga melayani getDisplayMedia yang dipanggil dari DALAM
   //    <webview> — jadi video-room sekolah (LiveKit) dilayani picker yang sama.
-  pasangSharePicker(() => win, session.defaultSession);
+  pasangSharePicker(() => win, sesiBrowser);
 
-  session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+  sesiBrowser.webRequest.onBeforeSendHeaders((details, callback) => {
     if (
       details.url.includes("youtube.com") ||
       details.url.includes("ytimg.com")
@@ -174,16 +197,17 @@ function pasangSekali() {
     callback({ requestHeaders: details.requestHeaders });
   });
 
-  // Bersihin data browsing (cookie, cache, storage) di session default —
-  // session yang dipakai webview browser dalam app. Podium ini dipakai
-  // gantian, jadi guru berikutnya nggak boleh kebagian sesi login guru
-  // sebelumnya.
+  // Bersihin data browsing (cookie, cache, storage) — CUMA di session browser.
+  // Podium ini dipakai gantian, jadi guru berikutnya nggak boleh kebagian sesi
+  // login guru sebelumnya. Yang dibersihin sengaja dibatasi ke sesiBrowser:
+  // defaultSession itu punya aplikasinya sendiri, dan kalau ikut dibersihin,
+  // lisensi sama ruang kelas yang lagi dipakai ikut kehapus.
   ipcMain.handle("browser-clear-data", async () => {
     try {
-      await session.defaultSession.clearStorageData({
+      await sesiBrowser.clearStorageData({
         storages: ["cookies", "localstorage", "indexdb", "websql", "serviceworkers", "cachestorage"],
       });
-      await session.defaultSession.clearCache();
+      await sesiBrowser.clearCache();
       return { ok: true };
     } catch (e) {
       return { ok: false, error: String((e as Error)?.message || e) };

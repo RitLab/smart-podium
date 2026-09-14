@@ -198,6 +198,11 @@ const WebviewContainer = ({
         // ada di daftar bawaan React. Tipe React-nya bilang boolean, makanya
         // dilewatin lewat spread.
         {...({ allowpopups: "true" } as Record<string, string>)}
+        // Session kepisah dari aplikasinya. Ini yang bikin "Bersihkan Data
+        // Browser" cuma ngehapus jejak jelajah guru, bukan lisensi sama ruang
+        // kelas yang lagi dipakai. Nilainya harus sama persis sama
+        // PARTISI_BROWSER di electron/main/index.ts.
+        partition="persist:browser"
         style={{
           width: "100%",
           height: "100%",
