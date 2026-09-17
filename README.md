@@ -1,5 +1,9 @@
 # electron-vite-react
 
+> **Smart Podium** — cara ngeluarin versi baru ke podium sekolah ada di [DEPLOY.md](DEPLOY.md).
+>
+> Isi README di bawah ini bawaan template electron-vite-react, belum disesuaikan sama proyek ini.
+
 [![awesome-vite](https://awesome.re/mentioned-badge.svg)](https://github.com/vitejs/awesome-vite)
 ![GitHub stars](https://img.shields.io/github/stars/caoxiemeihao/vite-react-electron?color=fa6470)
 ![GitHub issues](https://img.shields.io/github/issues/caoxiemeihao/vite-react-electron?color=d8b22d)

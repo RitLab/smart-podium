@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock9, Eye, EyeOff, LogOut, Timer } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -231,8 +231,14 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
   };
 
   // Sama kayak di Home: di ruang yang Voicemeeter-nya nggak kepasang, ikonnya
-  // DIMATIIN, bukan dihilangin. Lihat src/utils/ruangKelas.ts.
+  // DIHILANGIN. Menu samping ini kolom vertikal ber-gap, jadi tinggal jadi
+  // lebih pendek — nggak ninggalin lubang kayak grid di Home.
+  // Lihat src/utils/ruangKelas.ts.
   const { adaVoicemeeter } = useRuangSekarang();
+  const menuTampil = useMemo(
+    () => menus.filter((m) => (m.action === "voicemeeter" ? adaVoicemeeter : true)),
+    [adaVoicemeeter],
+  );
 
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isRecording) return true;
@@ -252,20 +258,16 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
   return (
     <aside className="flex flex-col h-full">
       <div className="w-20 flex-1 flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
-        {menus.map((menu) => {
+        {menuTampil.map((menu) => {
           const Icon = menu.icon;
           const color = colorMap[menu.color];
-          const kepasang = menu.action !== "voicemeeter" || adaVoicemeeter;
-          const enabled = isMenuEnabled(menu.access) && kepasang;
-          const alasanMati = !kepasang
-            ? "Voicemeeter nggak terpasang di ruang ini"
-            : "Tidak tersedia di luar jadwal pelajaran";
+          const enabled = isMenuEnabled(menu.access);
 
           const disabledWrapper = (child: React.ReactNode) => (
             <div
               key={menu.label}
               className="opacity-30 grayscale cursor-not-allowed"
-              title={alasanMati}
+              title="Tidak tersedia di luar jadwal pelajaran"
             >
               {child}
             </div>
