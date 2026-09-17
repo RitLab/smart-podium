@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock9, Eye, EyeOff, LogOut, Timer } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
@@ -13,7 +13,6 @@ import {
   WebIcon,
   WhiteboardIcon,
   ZoomIcon,
-  VoicemeeterIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 import Loading from "@/components/Loading";
@@ -35,7 +34,6 @@ import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
 import { useToast } from "@/components/ToastProvider";
 import Internet from "@/pages/Internet";
 import SharePicker from "@/components/SharePicker";
-import { useRuangSekarang } from "@/hooks/useRuangSekarang";
 import PagarGalat from "@/components/PagarGalat";
 
 /* =====================================================
@@ -49,7 +47,7 @@ type MenuItem = {
   icon: any;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize" | "zoom" | "wondercast" | "voicemeeter";
+  action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
   access: MenuAccess;
 };
 
@@ -89,20 +87,6 @@ const menus: MenuItem[] = [
     icon: ZoomIcon,
     color: "blue" as const,
     access: "lesson_only",
-  },
-  {
-    action: "voicemeeter" as const,
-    label: "VB Voicemeeter",
-    icon: VoicemeeterIcon,
-    color: "green" as const,
-    // Sengaja "always", sejajar sama Kalender. Setup mikrofon justru dilakuin
-    // pas nggak ada kelas, jadi ngunci ini di lesson_only bikin teknisi nggak
-    // bisa nyiapin audio sebelum jadwal jalan.
-    //
-    // Konsekuensinya podium yang kekunci kelas gabungan juga bisa mengklik ini,
-    // dan itu MEMANG BOLEH — udah dikonfirmasi. Jadi jangan ditambahin
-    // pengecualian isLockedByTwin di sini ngira ini kebocoran.
-    access: "always",
   },
 ];
 
@@ -210,10 +194,6 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
     window.ipcRenderer.invoke('open-zoom');
   };
 
-  const openVoicemeeter = () => {
-    window.ipcRenderer.invoke("open-voicemeeter");
-  };
-
   const minimizeApp = () => {
     window.ipcRenderer.invoke("minimize-window");
   };
@@ -229,16 +209,6 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
     }
     showToast(res?.message || "Gagal mengubah mode display", "error");
   };
-
-  // Sama kayak di Home: di ruang yang Voicemeeter-nya nggak kepasang, ikonnya
-  // DIHILANGIN. Menu samping ini kolom vertikal ber-gap, jadi tinggal jadi
-  // lebih pendek — nggak ninggalin lubang kayak grid di Home.
-  // Lihat src/utils/ruangKelas.ts.
-  const { adaVoicemeeter } = useRuangSekarang();
-  const menuTampil = useMemo(
-    () => menus.filter((m) => (m.action === "voicemeeter" ? adaVoicemeeter : true)),
-    [adaVoicemeeter],
-  );
 
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isRecording) return true;
@@ -258,7 +228,7 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
   return (
     <aside className="flex flex-col h-full">
       <div className="w-20 flex-1 flex flex-col items-center py-6 gap-6 bg-white shadow-lg rounded-l-2xl">
-        {menuTampil.map((menu) => {
+        {menus.map((menu) => {
           const Icon = menu.icon;
           const color = colorMap[menu.color];
           const enabled = isMenuEnabled(menu.access);
@@ -295,15 +265,6 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
               if (!enabled) return disabledWrapper(iconEl);
               return (
                 <button key={menu.label} type="button" onClick={openZoom}>
-                  {iconEl}
-                </button>
-              );
-            }
-
-            if (menu.action === "voicemeeter") {
-              if (!enabled) return disabledWrapper(iconEl);
-              return (
-                <button key={menu.label} type="button" onClick={openVoicemeeter}>
                   {iconEl}
                 </button>
               );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"; // Home Page Component
+import { useEffect, useRef, useState } from "react"; // Home Page Component
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router";
 import { LogOut } from "lucide-react";
@@ -11,7 +11,6 @@ import {
   WebIcon,
   WhiteboardIcon,
   ZoomIcon,
-  VoicemeeterIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 
@@ -27,7 +26,6 @@ import AdminPanel from "@/components/AdminPanel";
 import { eventService } from "@/services/event";
 import type { EventDetail, EventRecordStatus } from "@/types/event";
 import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
-import { useRuangSekarang } from "@/hooks/useRuangSekarang";
 
 /* ================= MENU TYPE ================= */
 
@@ -39,14 +37,13 @@ type MenuItem = {
   image?: string;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize" | "zoom" | "wondercast" | "voicemeeter";
+  action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
   access: MenuAccess;
 };
 
 /* ================= MENU LIST ================= */
 
-// Menu yang cuma ada kalau aplikasinya beneran kepasang di ruang itu.
-// Lihat src/utils/ruangKelas.ts.
+
 
 const menus: MenuItem[] = [
   {
@@ -85,20 +82,6 @@ const menus: MenuItem[] = [
     color: "blue",
     access: "lesson_only",
   },
-  {
-    action: "voicemeeter",
-    label: "VB Voicemeeter",
-    icon: VoicemeeterIcon,
-    color: "green",
-    // Sengaja "always", sejajar sama Kalender. Setup mikrofon justru dilakuin
-    // pas nggak ada kelas, jadi ngunci ini di lesson_only bikin teknisi nggak
-    // bisa nyiapin audio sebelum jadwal jalan.
-    //
-    // Konsekuensinya podium yang kekunci kelas gabungan juga bisa mengklik ini,
-    // dan itu MEMANG BOLEH — udah dikonfirmasi. Jadi jangan ditambahin
-    // pengecualian isLockedByTwin di sini ngira ini kebocoran.
-    access: "always"
-  }
   // WonderCast dihapus karena menyebabkan hang
 ];
 
@@ -379,10 +362,6 @@ const Home = () => {
     window.ipcRenderer.invoke("open-zoom");
   };
 
-  const openVoicemeeter = () => {
-    window.ipcRenderer.invoke("open-voicemeeter");
-  };
-
 
   /* ================= ERROR TOAST ================= */
   // Moved to MainLayout for centralized handling
@@ -556,19 +535,6 @@ const Home = () => {
 
   /* ================= ACCESS RESOLVER ================= */
   // lesson_only juga disable jika session sudah dihentikan
-  // Voicemeeter DIHILANGIN di ruang yang aplikasinya emang nggak kepasang
-  // (Aula). Ikon mati masih ngundang pertanyaan "kok nggak bisa"; yang nggak
-  // ada sama sekali nggak nimbulin pertanyaan.
-  //
-  // Jumlah kolom grid-nya ikut jumlah menu yang beneran tampil, JANGAN dipatok.
-  // Dulu dipatok repeat(6, 120px) padahal isinya pas enam — begitu satu ilang,
-  // barisnya nyisain lubang di kanan dan malah kelihatan ada yang dicopot.
-  const { adaVoicemeeter } = useRuangSekarang();
-  const menuTampil = useMemo(
-    () => menus.filter((m) => (m.action === "voicemeeter" ? adaVoicemeeter : true)),
-    [adaVoicemeeter],
-  );
-
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isEffectiveRecording) {
       return access !== "outside_only";
@@ -718,8 +684,8 @@ const Home = () => {
 
 
       {/* MAIN MENUS */}
-      <div className="text-center w-full" style={{ display: "grid", gridTemplateColumns: `repeat(${menuTampil.length}, 120px)`, justifyContent: "center", columnGap: "2.5rem", rowGap: "1.5rem", alignItems: "start" }}>
-        {menuTampil.map((menu) => {
+      <div className="text-center w-full" style={{ display: "grid", gridTemplateColumns: `repeat(${menus.length}, 120px)`, justifyContent: "center", columnGap: "2.5rem", rowGap: "1.5rem", alignItems: "start" }}>
+        {menus.map((menu) => {
           const Icon = menu.icon;
           const enabled = isMenuEnabled(menu.access);
 
@@ -771,14 +737,6 @@ const Home = () => {
           if (menu.action === "zoom") {
             return (
               <button key={menu.label} type="button" onClick={openZoom} className="outline-none">
-                {renderMenuInner}
-              </button>
-            );
-          }
-
-          if (menu.action === "voicemeeter") {
-            return (
-              <button key={menu.label} type="button" onClick={openVoicemeeter} className="outline-none">
                 {renderMenuInner}
               </button>
             );

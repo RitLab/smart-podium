@@ -112,19 +112,6 @@ function openWonderCast() {
   }
 }
 
-function openVoicemeeter() {
-  const exePath = "C:\\Program Files (x86)\\VB\\Voicemeeter\\voicemeeter.exe";
-
-  try {
-    spawn(exePath, [], {
-      detached: true,
-      stdio: "ignore",
-    }).unref();
-  } catch (error) {
-    console.error("Failed to open Voicemeeter:", error);
-  }
-}
-
 // ===============================
 // SETUP SEKALI SEUMUR APLIKASI
 // ===============================
@@ -437,10 +424,6 @@ ipcMain.handle("open-zoom", () => {
 
 ipcMain.handle("open-wondercast", () => {
   openWonderCast();
-});
-
-ipcMain.handle("open-voicemeeter", () => {
-  openVoicemeeter();
 });
 
 ipcMain.handle("open-win", (_, arg) => {
