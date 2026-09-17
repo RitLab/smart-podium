@@ -11,7 +11,6 @@ import {
   WebIcon,
   WhiteboardIcon,
   ZoomIcon,
-  VoicemeeterIcon
 } from "@/components/Icon";
 import { Image } from "@/components/Image";
 
@@ -27,7 +26,6 @@ import AdminPanel from "@/components/AdminPanel";
 import { eventService } from "@/services/event";
 import type { EventDetail, EventRecordStatus } from "@/types/event";
 import { isLockedByTwinRoom } from "@/utils/joinClassRoom";
-import { useRuangSekarang } from "@/hooks/useRuangSekarang";
 
 /* ================= MENU TYPE ================= */
 
@@ -39,14 +37,13 @@ type MenuItem = {
   image?: string;
   color: keyof typeof colorMap;
   path?: string;
-  action?: "whiteboard" | "minimize" | "zoom" | "wondercast" | "voicemeeter";
+  action?: "whiteboard" | "minimize" | "zoom" | "wondercast";
   access: MenuAccess;
 };
 
 /* ================= MENU LIST ================= */
 
-// Menu yang cuma ada kalau aplikasinya beneran kepasang di ruang itu.
-// Lihat src/utils/ruangKelas.ts.
+
 
 const menus: MenuItem[] = [
   {
@@ -85,20 +82,6 @@ const menus: MenuItem[] = [
     color: "blue",
     access: "lesson_only",
   },
-  {
-    action: "voicemeeter",
-    label: "VB Voicemeeter",
-    icon: VoicemeeterIcon,
-    color: "green",
-    // Sengaja "always", sejajar sama Kalender. Setup mikrofon justru dilakuin
-    // pas nggak ada kelas, jadi ngunci ini di lesson_only bikin teknisi nggak
-    // bisa nyiapin audio sebelum jadwal jalan.
-    //
-    // Konsekuensinya podium yang kekunci kelas gabungan juga bisa mengklik ini,
-    // dan itu MEMANG BOLEH — udah dikonfirmasi. Jadi jangan ditambahin
-    // pengecualian isLockedByTwin di sini ngira ini kebocoran.
-    access: "always"
-  }
   // WonderCast dihapus karena menyebabkan hang
 ];
 
@@ -379,10 +362,6 @@ const Home = () => {
     window.ipcRenderer.invoke("open-zoom");
   };
 
-  const openVoicemeeter = () => {
-    window.ipcRenderer.invoke("open-voicemeeter");
-  };
-
 
   /* ================= ERROR TOAST ================= */
   // Moved to MainLayout for centralized handling
@@ -556,13 +535,6 @@ const Home = () => {
 
   /* ================= ACCESS RESOLVER ================= */
   // lesson_only juga disable jika session sudah dihentikan
-  // Voicemeeter DIMATIIN, bukan dihilangin, di ruang yang aplikasinya emang
-  // nggak kepasang (Aula). Sempat dihilangin, tapi grid menunya dipatok
-  // repeat(6, 120px) dan isinya pas enam — begitu satu ilang, barisnya jadi
-  // timpang dan malah kelihatan ada yang dicopot. Dimatiin bikin susunannya
-  // tetep utuh, dan alasannya dikasih tahu lewat tooltip.
-  const { adaVoicemeeter } = useRuangSekarang();
-
   const isMenuEnabled = (access: MenuAccess): boolean => {
     if (isEffectiveRecording) {
       return access !== "outside_only";
@@ -712,14 +684,10 @@ const Home = () => {
 
 
       {/* MAIN MENUS */}
-      <div className="text-center w-full" style={{ display: "grid", gridTemplateColumns: "repeat(6, 120px)", justifyContent: "center", columnGap: "2.5rem", rowGap: "1.5rem", alignItems: "start" }}>
+      <div className="text-center w-full" style={{ display: "grid", gridTemplateColumns: `repeat(${menus.length}, 120px)`, justifyContent: "center", columnGap: "2.5rem", rowGap: "1.5rem", alignItems: "start" }}>
         {menus.map((menu) => {
           const Icon = menu.icon;
-          const kepasang = menu.action !== "voicemeeter" || adaVoicemeeter;
-          const enabled = isMenuEnabled(menu.access) && kepasang;
-          const alasanMati = !kepasang
-            ? "Voicemeeter nggak terpasang di ruang ini"
-            : "Tidak tersedia di luar jadwal pelajaran";
+          const enabled = isMenuEnabled(menu.access);
 
           const renderMenuInner = (
             <div key={menu.label} className={`group flex flex-col items-center justify-start w-full transition-all duration-300 ${enabled ? "" : "opacity-35 grayscale pointer-events-none"
@@ -752,7 +720,7 @@ const Home = () => {
           // Disabled → wrapper non-interactive
           if (!enabled) {
             return (
-              <div key={menu.label} className="cursor-not-allowed select-none" title={alasanMati}>
+              <div key={menu.label} className="cursor-not-allowed select-none" title="Tidak tersedia di luar jadwal pelajaran">
                 {renderMenuInner}
               </div>
             );
@@ -769,14 +737,6 @@ const Home = () => {
           if (menu.action === "zoom") {
             return (
               <button key={menu.label} type="button" onClick={openZoom} className="outline-none">
-                {renderMenuInner}
-              </button>
-            );
-          }
-
-          if (menu.action === "voicemeeter") {
-            return (
-              <button key={menu.label} type="button" onClick={openVoicemeeter} className="outline-none">
                 {renderMenuInner}
               </button>
             );
