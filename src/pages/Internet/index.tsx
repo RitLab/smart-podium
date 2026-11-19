@@ -30,9 +30,9 @@ import {
 
 const DEFAULT_BOOKMARKS: Bookmark[] = [
   {
-    id: "slms-syslink",
-    title: "Syslink SLMS (Materi Pelajaran)",
-    url: "https://slms.syslink.space/",
+    id: "slms-bnpt",
+    title: "BNPT Smart LMS (Materi Pelajaran)",
+    url: "https://smart-lms.bnpt.go.id/",
     isDefault: true,
   },
   {

@@ -1183,7 +1183,7 @@ const BootSplash = ({ isRecording }: { isRecording: boolean }) => {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-6">
-        <img src={Logo} alt="Smart Podium" className="h-14 w-auto object-contain" />
+        <img src={Logo} alt="BNPT Smart Podium" className="h-28 w-auto object-contain" />
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         <div className="text-xs font-semibold text-gray-500 tracking-wide">
           {isRecording ? "Memulihkan sesi..." : "Memuat sistem..."}
