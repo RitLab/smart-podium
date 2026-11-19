@@ -4,7 +4,7 @@ import { fileURLToPath as N } from "node:url";
 import h from "node:path";
 import G from "node:os";
 import { spawn as T } from "child_process";
-const z = "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", { autoUpdater: c } = q(import.meta.url)("electron-updater");
+const z = import.meta.env.VITE_GH_TOKEN, { autoUpdater: c } = q(import.meta.url)("electron-updater");
 function K(e) {
   c.autoDownload = !0, c.disableWebInstaller = !1, c.allowDowngrade = !1, c.requestHeaders = { Authorization: `token ${z}` };
   const n = 30 * 1e3, t = 30 * 60 * 1e3;
