@@ -378,12 +378,29 @@ app.on("activate", () => {
 // ===============================
 // IPC
 // ===============================
+// macOS nolak minimize jendela yang lagi native fullscreen — minimize()
+// diem-diem diabaikan, tombolnya kepencet tapi nggak ngapa-ngapain. Windows
+// nggak punya batasan ini. Jadi khusus Mac: keluar fullscreen dulu, baru
+// dikecilin pas animasi keluarnya kelar, dan begitu dibalikin dari Dock
+// langsung fullscreen lagi biar sama kayak di podium.
+function kecilkanJendela(w: BrowserWindow) {
+  if (process.platform === "darwin" && w.isFullScreen()) {
+    w.once("leave-full-screen", () => {
+      w.once("restore", () => w.setFullScreen(true));
+      w.minimize();
+    });
+    w.setFullScreen(false);
+    return;
+  }
+  w.minimize();
+}
+
 // Kecilin jendela yang NGIRIM permintaannya, bukan yang kebetulan lagi fokus.
 // Habis buka Whiteboard/Zoom fokusnya bisa nyangkut di aplikasi lain, dan
 // getFocusedWindow() balikin null — tombolnya kepencet tapi nggak ngapa-ngapain.
 ipcMain.handle("minimize-window", (event) => {
   const window = BrowserWindow.fromWebContents(event.sender) ?? win;
-  window?.minimize();
+  if (window) kecilkanJendela(window);
 });
 
 ipcMain.handle("close-window", (event) => {
