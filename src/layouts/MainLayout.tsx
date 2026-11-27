@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock9, Eye, EyeOff, LogOut, Timer } from "lucide-react";
+import { CheckCircle2, Clock9, Eye, EyeOff, LogOut, Minimize2, Timer } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
@@ -315,6 +315,17 @@ const Sidebar = React.memo(({ isLessonActive, isLessonOrGrace, isRecording, hasS
             ) : (
               <Eye width={22} height={22} className="text-gray-700" />
             )}
+          </button>
+          {/* Sama kayak kartu "Kecilkan Jendela" di Home: selalu aktif, juga
+              pas kelas jalan. Ikonnya disamain biar guru langsung ngenalin. */}
+          <button
+            type="button"
+            onClick={minimizeApp}
+            title="Kecilkan jendela"
+            aria-label="Kecilkan jendela"
+            className="h-12 w-12 flex items-center justify-center rounded-lg transition bg-gradient-to-b from-gray-50 to-gray-100 hover:from-slate-100 hover:to-slate-200"
+          >
+            <Minimize2 width={22} height={22} className="text-slate-600" />
           </button>
           <NavLink to="/home">
             <HomeIcon width={24} height={24} className="text-orange-600" />

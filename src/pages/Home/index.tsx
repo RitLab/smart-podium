@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"; // Home Page Component
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate } from "react-router";
-import { LogOut } from "lucide-react";
+import { LogOut, Minimize2 } from "lucide-react";
 
 import Logo from "@/assets/images/logo.png";
 import {
@@ -83,6 +83,19 @@ const menus: MenuItem[] = [
     access: "lesson_only",
   },
   // WonderCast dihapus karena menyebabkan hang
+
+  // Sengaja kelihatan dan bisa dipakai kapan aja, termasuk pas kelas jalan:
+  // guru butuh turun ke desktop buat buka PowerPoint atau file. Nggak ada yang
+  // rusak kalau kepencet — rekaman jalan di server, dan jendelanya tinggal
+  // diklik di taskbar buat balik. Yang dirahasiain cuma "Keluar Aplikasi" di
+  // menu teknisi, dan close dari OS (Alt+F4, taskbar) juga cuma ngecilin.
+  {
+    action: "minimize",
+    label: "Kecilkan Jendela",
+    icon: Minimize2,
+    color: "gray",
+    access: "always",
+  },
 ];
 
 /* ================= COLOR MAP ================= */
@@ -93,6 +106,8 @@ const colorMap = {
   yellow:
     "from-yellow-500 to-yellow-600 hover:from-yellow-700 hover:to-yellow-800",
   red: "from-red-500 to-red-600 hover:from-red-700 hover:to-red-800",
+  // Netral buat kontrol jendela, biar nggak kebaca sebagai fitur pelajaran.
+  gray: "from-slate-500 to-slate-600 hover:from-slate-700 hover:to-slate-800",
 };
 
 /* ================= MENU CARD ================= */
@@ -360,6 +375,10 @@ const Home = () => {
 
   const openZoom = () => {
     window.ipcRenderer.invoke("open-zoom");
+  };
+
+  const minimizeApp = () => {
+    window.ipcRenderer.invoke("minimize-window");
   };
 
 
@@ -737,6 +756,14 @@ const Home = () => {
           if (menu.action === "zoom") {
             return (
               <button key={menu.label} type="button" onClick={openZoom} className="outline-none">
+                {renderMenuInner}
+              </button>
+            );
+          }
+
+          if (menu.action === "minimize") {
+            return (
+              <button key={menu.label} type="button" onClick={minimizeApp} className="outline-none">
                 {renderMenuInner}
               </button>
             );
