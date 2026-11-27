@@ -229,15 +229,29 @@ async function createWindow() {
 
   pasangSekali();
 
+  // Close dari OS nggak boleh nutup podium, cukup dikecilin.
+  //
+  // Begitu jendela bisa diminimize, taskbar Windows jadi kelihatan, dan dari
+  // situ siapa aja bisa klik kanan -> "Close window". Ditambah Alt+F4 sama
+  // tombol X di Task View. Dulu semua itu langsung nutup aplikasi (setelah
+  // nyuruh rekaman berhenti). Sekarang dibelokin jadi minimize: podium tetap
+  // jalan di belakang, tinggal klik ikonnya di taskbar buat balik.
+  //
+  // Jalan keluar yang sah tetap ada, dan semuanya lewat app.quit(): "Keluar
+  // Aplikasi" di menu teknisi, sama pasang update. app.quit() bunyiin
+  // before-quit DULUAN, handler-nya nyalain isQuitting, baru jendela ditutup —
+  // jadi close yang nyusul di belakangnya dibiarin lewat di sini.
   if (process.platform !== "darwin") {
     win.on("close", (e) => {
       if (isQuitting) return;
       e.preventDefault();
+      win?.minimize();
+    });
+
+    // Windows lagi shutdown / restart / log off. Podium yang nolak close
+    // jangan sampai ikut nahan Windows mati.
+    win.on("session-end", () => {
       isQuitting = true;
-      requestStopRecordBeforeQuit(win);
-      setTimeout(() => {
-        app.quit();
-      }, 1500);
     });
   }
 
@@ -364,11 +378,12 @@ app.on("activate", () => {
 // ===============================
 // IPC
 // ===============================
-ipcMain.handle("minimize-window", () => {
-  const window = BrowserWindow.getFocusedWindow();
-  if (window) {
-    window.minimize();
-  }
+// Kecilin jendela yang NGIRIM permintaannya, bukan yang kebetulan lagi fokus.
+// Habis buka Whiteboard/Zoom fokusnya bisa nyangkut di aplikasi lain, dan
+// getFocusedWindow() balikin null — tombolnya kepencet tapi nggak ngapa-ngapain.
+ipcMain.handle("minimize-window", (event) => {
+  const window = BrowserWindow.fromWebContents(event.sender) ?? win;
+  window?.minimize();
 });
 
 ipcMain.handle("close-window", (event) => {
